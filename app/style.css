@@ -56,6 +56,11 @@ button, input, textarea { font: inherit; }
 .status-row { display:flex; justify-content:space-between; gap:8px; margin-top:8px; font-size: 12px; opacity:.8; }
 .sidebar { display: none; border-left: 1px solid var(--line); padding: 12px; background: var(--panel); }
 .sidebar h2 { font-size: 14px; margin: 4px 0; }
+.side-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 8px; }
+.tab-btn { padding: 8px; border-radius: 10px; }
+.tab-btn.active { border-color: #0aa; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
 .sidebar-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
 .sidebar button { width: 100%; text-align:left; }
 .bottombar {

@@ -33,11 +33,16 @@
     </main>
 
     <aside id="sidebar" class="sidebar" aria-label="sidebar">
-      <section>
+      <div class="side-tabs" role="tablist" aria-label="sidebar tabs">
+        <button type="button" class="tab-btn" data-tab="templates" aria-controls="panelTemplates">Templates</button>
+        <button type="button" class="tab-btn" data-tab="history" aria-controls="panelHistory">History</button>
+        <button type="button" class="tab-btn" data-tab="share" aria-controls="panelShare">Share</button>
+      </div>
+      <section id="panelTemplates" class="tab-panel" role="tabpanel">
         <h2>Templates</h2>
         <div id="sidebarTemplates" class="sidebar-list"></div>
       </section>
-      <section id="sideHistory">
+      <section id="panelHistory" class="tab-panel">
         <h2>History</h2>
         <div class="dialog-actions">
           <button id="btnSnapshot" type="button">スナップショット保存</button>
@@ -55,7 +60,7 @@
         </label>
         <div id="historyList" class="dialog-list dialog-body"></div>
       </section>
-      <section>
+      <section id="panelShare" class="tab-panel">
         <h2>Share</h2>
         <div id="sidebarShares" class="sidebar-list"></div>
       </section>

@@ -28,6 +28,7 @@
     fontSize: 16,
     fontFace: "sans-jp",
     editPanelPosition: "bottom",
+    sidebarTab: "templates",
     toolbar: {
       mic: true,
       find: true,
@@ -85,6 +86,7 @@
     applyTypography();
     applyEditPanelPosition();
     applyToolbarVisibility();
+    applySidebarTab(state.settings.sidebarTab || "templates");
     setupAutoSnapshot();
     bindEvents();
     renderTemplates();
@@ -148,12 +150,20 @@
       });
     }
     if (el.btnSidebar) {
-      el.btnSidebar.addEventListener("click", () => {
-        closeMenuIfOpen();
-        state.settings.ui.sidebar = !state.settings.ui.sidebar;
-        applySidebar();
+    el.btnSidebar.addEventListener("click", () => {
+      closeMenuIfOpen();
+      state.settings.ui.sidebar = !state.settings.ui.sidebar;
+      applySidebar();
+      saveSettings();
+    });
+    el.sideTabs.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const tab = btn.dataset.tab;
+        applySidebarTab(tab);
+        state.settings.sidebarTab = tab;
         saveSettings();
       });
+    });
     }
 
     if (el.btnHelp) {
@@ -800,6 +810,17 @@
     document.body.classList.toggle("with-sidebar", !!state.settings.ui.sidebar);
   }
 
+  function applySidebarTab(tab) {
+    const btn = el.sideTabs.find((b) => b.dataset.tab === tab);
+    const targetId = btn?.getAttribute("aria-controls") || `panel${capitalize(tab)}`;
+    el.sideTabs.forEach((b) => {
+      b.classList.toggle("active", b === btn);
+    });
+    el.tabPanels.forEach((panel) => {
+      panel.classList.toggle("active", panel.id === targetId);
+    });
+  }
+
   function renderSidebar() {
     el.sidebarTemplates.innerHTML = state.templates.slice(0, 3)
       .map((t) => `<button type="button" data-side="template" data-id="${t.id}">${escapeHtml(t.name)}</button>`).join("");
@@ -1003,6 +1024,7 @@
     state.settings.ui.sidebar = true;
     applySidebar();
     saveSettings();
+    applySidebarTab("history");
     renderHistory();
     if (el.sideHistory) {
       el.sideHistory.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -1131,6 +1153,7 @@
         fontFace: parsed.fontFace || fallback.fontFace,
         editPanelPosition: parsed.editPanelPosition || fallback.editPanelPosition,
         toolbar: { ...fallback.toolbar, ...(parsed.toolbar || {}) },
+        sidebarTab: parsed.sidebarTab || fallback.sidebarTab,
         apiKeys: { ...fallback.apiKeys, ...(parsed.apiKeys || {}) }
       };
     } catch {
@@ -1426,6 +1449,10 @@
     return { start, end };
   }
 
+  function capitalize(str) {
+    return `${str}`.charAt(0).toUpperCase() + `${str}`.slice(1);
+  }
+
   function uid() {
     return Math.random().toString(36).slice(2, 10);
   }
@@ -1447,6 +1474,8 @@
       sidebar: document.getElementById("sidebar"),
       sidebarTemplates: document.getElementById("sidebarTemplates"),
       sidebarShares: document.getElementById("sidebarShares"),
+      sideTabs: Array.from(document.querySelectorAll(".side-tabs .tab-btn")),
+      tabPanels: Array.from(document.querySelectorAll(".tab-panel")),
 
       btnSidebar: document.getElementById("btnSidebar"),
       btnEditTools: document.getElementById("btnEditTools"),
