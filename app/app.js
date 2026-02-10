@@ -229,6 +229,8 @@
       el.updateToast.classList.add("hidden");
     });
 
+    setupDialogDismiss();
+
     document.addEventListener("keydown", (evt) => {
       const ctrl = evt.ctrlKey || evt.metaKey;
       if (ctrl && evt.key.toLowerCase() === "f") {
@@ -254,6 +256,16 @@
     applySearchOptionsUI();
     refreshMatches();
     (focusReplace ? el.replaceQuery : el.findQuery).focus();
+  }
+
+  function setupDialogDismiss() {
+    [el.dlgHelp, el.dlgFindReplace, el.dlgHistory, el.dlgShare, el.dlgSettings].forEach((dialog) => {
+      dialog.addEventListener("click", (evt) => {
+        if (evt.target !== dialog) return;
+        const ok = confirm("閉じますか？未保存の変更がある場合は失われる可能性があります。");
+        if (ok) dialog.close();
+      });
+    });
   }
 
   function refreshMatches() {
