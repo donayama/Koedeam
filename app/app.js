@@ -199,10 +199,8 @@
 
     el.btnHistory.addEventListener("click", () => {
       closeMenuIfOpen();
-      renderHistory();
-      el.dlgHistory.showModal();
+      openHistoryPanel();
     });
-    el.btnCloseHistory.addEventListener("click", () => el.dlgHistory.close());
     el.btnSnapshot.addEventListener("click", () => {
       snapshotDraft();
       renderHistory();
@@ -336,7 +334,7 @@
   }
 
   function setupDialogDismiss() {
-    [el.dlgHelp, el.dlgFindReplace, el.dlgHistory, el.dlgShare, el.dlgSettings].forEach((dialog) => {
+    [el.dlgHelp, el.dlgFindReplace, el.dlgShare, el.dlgSettings].forEach((dialog) => {
       dialog.addEventListener("click", (evt) => {
         if (evt.target !== dialog) return;
         const ok = confirm("閉じますか？未保存の変更がある場合は失われる可能性があります。");
@@ -356,7 +354,7 @@
       closeMenu();
       if (act === "replace") openFindReplace(true);
       else if (act === "templates") openSettings("templates");
-      else if (act === "history") { renderHistory(); el.dlgHistory.showModal(); }
+      else if (act === "history") { openHistoryPanel(); }
       else if (act === "focus") { const next = !document.body.classList.contains("focus"); applyFocus(next); state.settings.focusDefault = next; saveSettings(); }
       else if (act === "sidebar") { state.settings.ui.sidebar = !state.settings.ui.sidebar; applySidebar(); saveSettings(); }
       else if (act === "settings") openSettings("appearance");
@@ -799,13 +797,12 @@
 
   function applySidebar() {
     el.layout.classList.toggle("with-sidebar", !!state.settings.ui.sidebar);
+    document.body.classList.toggle("with-sidebar", !!state.settings.ui.sidebar);
   }
 
   function renderSidebar() {
     el.sidebarTemplates.innerHTML = state.templates.slice(0, 3)
       .map((t) => `<button type="button" data-side="template" data-id="${t.id}">${escapeHtml(t.name)}</button>`).join("");
-    el.sidebarHistory.innerHTML = state.recentDrafts.slice(0, 5)
-      .map((h) => `<button type="button" data-side="history" data-id="${h.id}">${escapeHtml(h.title)}</button>`).join("");
     el.sidebarShares.innerHTML = state.settings.shareShortcuts.slice(0, 5)
       .map((s) => `<button type="button" data-side="share" data-id="${s.id}">${escapeHtml(s.name)}</button>`).join("");
 
@@ -817,12 +814,6 @@
           const t = state.templates.find((x) => x.id === id);
           if (t) {
             el.editor.value = `${el.editor.value}\n${t.text}`.trimStart();
-            triggerInput();
-          }
-        } else if (type === "history") {
-          const h = state.recentDrafts.find((x) => x.id === id);
-          if (h) {
-            el.editor.value = h.text;
             triggerInput();
           }
         } else if (type === "share") {
@@ -919,7 +910,7 @@
 
   function closeOpenDialog() {
     let closed = false;
-    [el.dlgHelp, el.dlgFindReplace, el.dlgHistory, el.dlgShare, el.dlgSettings].forEach((d) => {
+    [el.dlgHelp, el.dlgFindReplace, el.dlgShare, el.dlgSettings].forEach((d) => {
       if (d.open) {
         d.close();
         closed = true;
@@ -1006,6 +997,16 @@
       api: el.settingsApi
     }[section];
     if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function openHistoryPanel() {
+    state.settings.ui.sidebar = true;
+    applySidebar();
+    saveSettings();
+    renderHistory();
+    if (el.sideHistory) {
+      el.sideHistory.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
   }
 
   function togglePunctuationMode() {
@@ -1445,7 +1446,6 @@
       appMessage: document.getElementById("appMessage"),
       sidebar: document.getElementById("sidebar"),
       sidebarTemplates: document.getElementById("sidebarTemplates"),
-      sidebarHistory: document.getElementById("sidebarHistory"),
       sidebarShares: document.getElementById("sidebarShares"),
 
       btnSidebar: document.getElementById("btnSidebar"),
@@ -1501,11 +1501,10 @@
       templateText: document.getElementById("templateText"),
       btnTemplateReset: document.getElementById("btnTemplateReset"),
 
-      dlgHistory: document.getElementById("dlgHistory"),
+      sideHistory: document.getElementById("sideHistory"),
       btnSnapshot: document.getElementById("btnSnapshot"),
       autoSnapshotSelect: document.getElementById("autoSnapshotSelect"),
       historyList: document.getElementById("historyList"),
-      btnCloseHistory: document.getElementById("btnCloseHistory"),
 
       dlgShare: document.getElementById("dlgShare"),
       btnOpenSettingsShare: document.getElementById("btnOpenSettingsShare"),

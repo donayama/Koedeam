@@ -250,6 +250,25 @@ body.edit-tools-show.edit-pos-right .main { padding-right: calc(12px + var(--edi
   .layout.with-sidebar .sidebar { display:block; }
   .main { padding-bottom: 96px; }
 }
+body.with-sidebar { --sidebar-width: 320px; }
+body.with-sidebar .edit-tools.pos-right { right: var(--sidebar-width); }
+body.with-sidebar .edit-tools.pos-bottom,
+body.with-sidebar .edit-tools.pos-top { right: var(--sidebar-width); }
+@media (max-width: 899px) {
+  body.with-sidebar { --sidebar-width: min(320px, 90vw); }
+  body.with-sidebar .sidebar {
+    display: block;
+    position: fixed;
+    right: 0;
+    top: 56px;
+    bottom: 0;
+    width: var(--sidebar-width);
+    z-index: 5;
+    background: rgba(20,20,20,.94);
+    color: #fff;
+    overflow: auto;
+  }
+}
 .menu-overlay {
   position: fixed;
   inset: 0;

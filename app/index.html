@@ -37,9 +37,23 @@
         <h2>Templates</h2>
         <div id="sidebarTemplates" class="sidebar-list"></div>
       </section>
-      <section>
+      <section id="sideHistory">
         <h2>History</h2>
-        <div id="sidebarHistory" class="sidebar-list"></div>
+        <div class="dialog-actions">
+          <button id="btnSnapshot" type="button">スナップショット保存</button>
+        </div>
+        <label>自動スナップショット（分）
+          <select id="autoSnapshotSelect">
+            <option value="0">OFF</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="5">5</option>
+            <option value="10">10</option>
+            <option value="15">15</option>
+          </select>
+        </label>
+        <div id="historyList" class="dialog-list dialog-body"></div>
       </section>
       <section>
         <h2>Share</h2>
@@ -102,26 +116,6 @@
     <div class="dialog-footer">
       <button id="btnCloseFind" type="button">Close</button>
     </div>
-  </dialog>
-
-  <dialog id="dlgHistory">
-    <h2>履歴</h2>
-    <div class="dialog-actions">
-      <button id="btnSnapshot" type="button">スナップショット保存</button>
-    </div>
-    <label>自動スナップショット（分）
-      <select id="autoSnapshotSelect">
-        <option value="0">OFF</option>
-        <option value="1">1</option>
-        <option value="2">2</option>
-        <option value="3">3</option>
-        <option value="5">5</option>
-        <option value="10">10</option>
-        <option value="15">15</option>
-      </select>
-    </label>
-    <div id="historyList" class="dialog-list dialog-body"></div>
-    <div class="dialog-footer"><button id="btnCloseHistory" type="button">Close</button></div>
   </dialog>
 
   <dialog id="dlgShare">
