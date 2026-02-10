@@ -9,6 +9,8 @@
 
   const DEFAULT_TEMPLATES = [
     { id: uid(), name: "AI整理依頼", text: "次のメモを、目的・要点・次アクションの3項目で整理してください。\n\n[メモ]\n", updatedAt: Date.now() },
+    { id: uid(), name: "要約と見出し", text: "次の文章を3〜5行で要約し、見出しを付けてください。\n\n[本文]\n", updatedAt: Date.now() },
+    { id: uid(), name: "改善レビュー依頼", text: "次の下書きを、読みやすさ・説得力・簡潔さの観点で改善提案してください。\n\n[本文]\n", updatedAt: Date.now() },
     { id: uid(), name: "メール下書き", text: "件名：\n\n○○様\n\nいつもお世話になっております。\n\n要件：\n\nどうぞよろしくお願いいたします。", updatedAt: Date.now() },
     { id: uid(), name: "議事メモ", text: "# 議事メモ\n- 日時:\n- 参加者:\n\n## 決定事項\n- \n\n## ToDo\n- [ ] ", updatedAt: Date.now() }
   ];
@@ -18,7 +20,9 @@
     voiceInsertMode: "cursor",
     shareShortcuts: [
       { id: uid(), name: "メール", urlTemplate: "mailto:?subject={title}&body={text}" },
-      { id: uid(), name: "LINE", urlTemplate: "line://msg/text/{text}" }
+      { id: uid(), name: "LINE", urlTemplate: "line://msg/text/{text}" },
+      { id: uid(), name: "ChatGPT", urlTemplate: "https://chatgpt.com/?q={text}" },
+      { id: uid(), name: "Gemini", urlTemplate: "https://gemini.google.com/app?prompt={text}" }
     ],
     ui: { sidebar: false }
   };
@@ -76,6 +80,7 @@
       state.settings.focusDefault = next;
       saveSettings();
     });
+    el.btnEditTools.addEventListener("click", () => el.dlgEditTools.showModal());
     el.btnSidebar.addEventListener("click", () => {
       state.settings.ui.sidebar = !state.settings.ui.sidebar;
       applySidebar();
@@ -130,6 +135,18 @@
     el.btnCompressBlank.addEventListener("click", compressBlankLines);
     el.shareShortcutForm.addEventListener("submit", saveShareShortcut);
     el.btnShortcutReset.addEventListener("click", resetShareShortcutForm);
+
+    el.btnCloseEdit.addEventListener("click", () => el.dlgEditTools.close());
+    el.btnSelectLine.addEventListener("click", selectLine);
+    el.btnSelectBlock.addEventListener("click", selectBlock);
+    el.btnSelectAll.addEventListener("click", () => {
+      el.editor.focus();
+      el.editor.select();
+    });
+    el.btnLineStart.addEventListener("click", () => moveToLineEdge("start"));
+    el.btnLineEnd.addEventListener("click", () => moveToLineEdge("end"));
+    el.btnMoveUp.addEventListener("click", () => moveCursorLine(-1));
+    el.btnMoveDown.addEventListener("click", () => moveCursorLine(1));
 
     el.btnUpdateApp.addEventListener("click", () => {
       if (state.waitingWorker) {
@@ -658,7 +675,7 @@
   }
 
   function closeOpenDialog() {
-    [el.dlgHelp, el.dlgFindReplace, el.dlgTemplates, el.dlgHistory, el.dlgShare].forEach((d) => {
+    [el.dlgHelp, el.dlgFindReplace, el.dlgTemplates, el.dlgHistory, el.dlgShare, el.dlgEditTools].forEach((d) => {
       if (d.open) d.close();
     });
   }
@@ -749,6 +766,67 @@
     return text.replace(/\n/g, " ").slice(0, 80);
   }
 
+  function selectLine() {
+    const text = el.editor.value;
+    const pos = el.editor.selectionStart;
+    const { start, end } = getLineBounds(text, pos);
+    el.editor.focus();
+    el.editor.setSelectionRange(start, end);
+  }
+
+  function selectBlock() {
+    const text = el.editor.value;
+    const pos = el.editor.selectionStart;
+    const before = text.slice(0, pos);
+    const after = text.slice(pos);
+    const startBoundary = before.lastIndexOf("\n\n");
+    const endBoundary = after.indexOf("\n\n");
+    const start = startBoundary === -1 ? 0 : startBoundary + 2;
+    const end = endBoundary === -1 ? text.length : pos + endBoundary;
+    el.editor.focus();
+    el.editor.setSelectionRange(start, end);
+  }
+
+  function moveToLineEdge(edge) {
+    const text = el.editor.value;
+    const pos = el.editor.selectionStart;
+    const { start, end } = getLineBounds(text, pos);
+    const next = edge === "start" ? start : end;
+    el.editor.focus();
+    el.editor.setSelectionRange(next, next);
+  }
+
+  function moveCursorLine(dir) {
+    const text = el.editor.value;
+    const pos = el.editor.selectionStart;
+    const { start, end } = getLineBounds(text, pos);
+    const column = pos - start;
+    if (dir < 0) {
+      const prevEnd = start > 0 ? start - 1 : 0;
+      const prevStart = text.lastIndexOf("\n", prevEnd - 1);
+      const lineStart = prevStart === -1 ? 0 : prevStart + 1;
+      const lineEnd = text.indexOf("\n", lineStart);
+      const limit = lineEnd === -1 ? text.length : lineEnd;
+      const next = Math.min(lineStart + column, limit);
+      el.editor.focus();
+      el.editor.setSelectionRange(next, next);
+    } else {
+      const nextStart = end < text.length ? end + 1 : text.length;
+      const nextEnd = text.indexOf("\n", nextStart);
+      const limit = nextEnd === -1 ? text.length : nextEnd;
+      const next = Math.min(nextStart + column, limit);
+      el.editor.focus();
+      el.editor.setSelectionRange(next, next);
+    }
+  }
+
+  function getLineBounds(text, pos) {
+    const start = text.lastIndexOf("\n", Math.max(0, pos - 1)) + 1;
+    const endIndex = text.indexOf("\n", pos);
+    const end = endIndex === -1 ? text.length : endIndex;
+    return { start, end };
+  }
+
   function uid() {
     return Math.random().toString(36).slice(2, 10);
   }
@@ -773,6 +851,7 @@
       sidebarShares: document.getElementById("sidebarShares"),
 
       btnSidebar: document.getElementById("btnSidebar"),
+      btnEditTools: document.getElementById("btnEditTools"),
       btnFocus: document.getElementById("btnFocus"),
       btnHelp: document.getElementById("btnHelp"),
       btnMic: document.getElementById("btnMic"),
@@ -827,6 +906,16 @@
       shortcutUrl: document.getElementById("shortcutUrl"),
       btnShortcutReset: document.getElementById("btnShortcutReset"),
       btnCloseShare: document.getElementById("btnCloseShare"),
+
+      dlgEditTools: document.getElementById("dlgEditTools"),
+      btnSelectLine: document.getElementById("btnSelectLine"),
+      btnSelectBlock: document.getElementById("btnSelectBlock"),
+      btnSelectAll: document.getElementById("btnSelectAll"),
+      btnLineStart: document.getElementById("btnLineStart"),
+      btnLineEnd: document.getElementById("btnLineEnd"),
+      btnMoveUp: document.getElementById("btnMoveUp"),
+      btnMoveDown: document.getElementById("btnMoveDown"),
+      btnCloseEdit: document.getElementById("btnCloseEdit"),
 
       updateToast: document.getElementById("updateToast"),
       btnUpdateApp: document.getElementById("btnUpdateApp")

@@ -31,10 +31,11 @@ Koedeam は**本文をサーバー保存しません**。草稿・履歴・テ�
 
 - 音声入力（Web Speech API 対応環境）
 - 検索/置換（前へ・次へ・置換・次を置換して次へ・全置換・選択範囲置換）
+- 編集補助（行/ブロック選択、行頭/行末移動、上下移動）
 - 自動保存（800ms デバウンス）
 - 履歴（最大5件）スナップショット保存・復元
-- テンプレ管理（追加・編集・削除・適用）
-- 共有（Share API → Clipboard API → `execCommand('copy')` フォールバック）
+- テンプレ管理（定番プロンプト同梱・追加・編集・削除・適用）
+- 共有（Share API → Clipboard API → `execCommand('copy')` フォールバック、ショートカット編集/追加）
 - フォーカスモード
 - PWA（`/app/`）
 
@@ -50,7 +51,10 @@ Web Speech API（`SpeechRecognition` / `webkitSpeechRecognition`）は、ブラ�
 
 - `navigator.share` は端末・ブラウザ対応に依存
 - `navigator.clipboard` は HTTPS / 権限条件に依存
-- `mailto:` `line://` など URL スキーム起動は環境依存
+- `mailto:` `line://` `https://chatgpt.com/` `https://gemini.google.com/app` などの起動は環境依存
+- ChatGPT/Gemini 向けのショートカットは、アプリがインストールされていれば起動する場合があります
+- URL パラメータによる本文の自動入力は環境/仕様差で効かないことがあります（うまく動かない場合は URL を編集・またはコピー共有を利用）
+- 一部サービスでは、本文の自動入力にブラウザ拡張が必要な場合があります
 - 起動失敗時はコピーでの共有導線を利用
 
 ## PWA とホーム画面追加
