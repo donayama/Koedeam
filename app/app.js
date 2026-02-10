@@ -24,6 +24,7 @@
       caseSensitive: false,
       useRegex: false
     },
+    punctuationMode: "jp",
     shareShortcuts: [
       { id: uid(), name: "メール", urlTemplate: "mailto:?subject={title}&body={text}" },
       { id: uid(), name: "LINE", urlTemplate: "line://msg/text/{text}" },
@@ -63,6 +64,7 @@
     applyFocus(state.settings.focusDefault);
     applySidebar();
     applyVoiceModeUI();
+    applyPunctuationUI();
     setupAutoSnapshot();
     bindEvents();
     renderTemplates();
@@ -185,6 +187,10 @@
     el.btnMoveDown.addEventListener("click", () => moveCursorLine(1));
     el.btnMoveLeft.addEventListener("click", () => moveCursorChar(-1));
     el.btnMoveRight.addEventListener("click", () => moveCursorChar(1));
+    el.btnPuncMode.addEventListener("click", togglePunctuationMode);
+    el.btnComma.addEventListener("click", () => insertPunctuation("comma"));
+    el.btnPeriod.addEventListener("click", () => insertPunctuation("period"));
+    el.btnNewline.addEventListener("click", () => insertTextAtCursor("\n"));
     el.voiceModeRadios.forEach((radio) => {
       radio.addEventListener("change", () => {
         if (!radio.checked) return;
@@ -792,6 +798,31 @@
     });
   }
 
+  function togglePunctuationMode() {
+    state.settings.punctuationMode = state.settings.punctuationMode === "jp" ? "en" : "jp";
+    saveSettings();
+    applyPunctuationUI();
+  }
+
+  function applyPunctuationUI() {
+    const jp = state.settings.punctuationMode !== "en";
+    el.btnPuncMode.textContent = jp ? "JP" : "EN";
+    el.btnComma.querySelector(".icon").textContent = jp ? "、" : ",";
+    el.btnPeriod.querySelector(".icon").textContent = jp ? "。" : ".";
+  }
+
+  function insertPunctuation(kind) {
+    const jp = state.settings.punctuationMode !== "en";
+    const text = kind === "comma" ? (jp ? "、" : ",") : (jp ? "。" : ".");
+    insertTextAtCursor(text);
+  }
+
+  function insertTextAtCursor(text) {
+    const { selectionStart, selectionEnd } = el.editor;
+    el.editor.setRangeText(text, selectionStart, selectionEnd, "end");
+    triggerInput();
+  }
+
   function saveSettings() {
     safeSet(STORAGE_KEYS.settings, state.settings);
   }
@@ -839,7 +870,8 @@
         ...structuredClone(fallback),
         ...parsed,
         ui: { ...fallback.ui, ...(parsed.ui || {}) },
-        searchOptions: { ...fallback.searchOptions, ...(parsed.searchOptions || {}) }
+        searchOptions: { ...fallback.searchOptions, ...(parsed.searchOptions || {}) },
+        punctuationMode: parsed.punctuationMode || fallback.punctuationMode
       };
     } catch {
       preserveBroken(key);
@@ -1160,6 +1192,10 @@
       btnMoveDown: document.getElementById("btnMoveDown"),
       btnMoveLeft: document.getElementById("btnMoveLeft"),
       btnMoveRight: document.getElementById("btnMoveRight"),
+      btnPuncMode: document.getElementById("btnPuncMode"),
+      btnComma: document.getElementById("btnComma"),
+      btnPeriod: document.getElementById("btnPeriod"),
+      btnNewline: document.getElementById("btnNewline"),
 
       updateToast: document.getElementById("updateToast"),
       btnUpdateApp: document.getElementById("btnUpdateApp"),
