@@ -125,6 +125,20 @@ body.focus .topbar,
 body.focus .bottombar { display:none; }
 body.focus .main { padding: 12px; }
 body.focus #editor { min-height: calc(100vh - 32px); font-size: 19px; padding: 16px; }
+.focus-exit { display: none; }
+body.focus .focus-exit {
+  display: inline-flex;
+  position: fixed;
+  right: 12px;
+  bottom: 12px;
+  z-index: 6;
+  background: rgba(20,20,20,.86);
+  color: #fff;
+  border-color: rgba(255,255,255,.35);
+  padding: 8px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+}
 @media (min-width: 900px) {
   .desktop-only { display: inline-block; }
   .layout.with-sidebar { grid-template-columns: 1fr 320px; }

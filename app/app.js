@@ -85,12 +85,14 @@
       }, 800);
     });
 
-    el.btnFocus.addEventListener("click", () => {
+    const toggleFocus = () => {
       const next = !document.body.classList.contains("focus");
       applyFocus(next);
       state.settings.focusDefault = next;
       saveSettings();
-    });
+    };
+    el.btnFocus.addEventListener("click", toggleFocus);
+    el.btnExitFocus.addEventListener("click", toggleFocus);
     el.btnEditTools.addEventListener("click", () => el.dlgEditTools.showModal());
     el.btnSidebar.addEventListener("click", () => {
       state.settings.ui.sidebar = !state.settings.ui.sidebar;
@@ -209,7 +211,9 @@
         evt.preventDefault();
         el.dlgShare.showModal();
       } else if (evt.key === "Escape") {
-        closeOpenDialog();
+        if (!closeOpenDialog() && document.body.classList.contains("focus")) {
+          toggleFocus();
+        }
       }
     });
   }
@@ -750,9 +754,14 @@
   }
 
   function closeOpenDialog() {
+    let closed = false;
     [el.dlgHelp, el.dlgFindReplace, el.dlgTemplates, el.dlgHistory, el.dlgShare, el.dlgEditTools].forEach((d) => {
-      if (d.open) d.close();
+      if (d.open) {
+        d.close();
+        closed = true;
+      }
     });
+    return closed;
   }
 
   function triggerInput() {
@@ -1064,6 +1073,7 @@
       btnSidebar: document.getElementById("btnSidebar"),
       btnEditTools: document.getElementById("btnEditTools"),
       btnFocus: document.getElementById("btnFocus"),
+      btnExitFocus: document.getElementById("btnExitFocus"),
       btnHelp: document.getElementById("btnHelp"),
       btnMic: document.getElementById("btnMic"),
       btnFind: document.getElementById("btnFind"),
