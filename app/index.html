@@ -17,6 +17,7 @@
       <button id="btnSidebar" type="button" class="desktop-only btn-icon"><span class="icon">▤</span>Sidebar</button>
       <button id="btnEditTools" type="button" class="btn-icon"><span class="icon">✎</span>Edit</button>
       <button id="btnFocus" type="button" class="btn-icon"><span class="icon">◎</span>Focus</button>
+      <button id="btnSettings" type="button" class="btn-icon"><span class="icon">⚙</span>Settings</button>
       <button id="btnHelp" type="button" class="btn-icon"><span class="icon">?</span>Help</button>
     </div>
   </header>
@@ -82,21 +83,6 @@
     </div>
   </dialog>
 
-  <dialog id="dlgTemplates">
-    <h2>テンプレ管理</h2>
-    <div id="templateList" class="dialog-list"></div>
-    <form id="templateForm" class="template-form">
-      <input id="templateId" type="hidden" />
-      <label>名前<input id="templateName" type="text" maxlength="60" required /></label>
-      <label>本文<textarea id="templateText" rows="5" required></textarea></label>
-      <div class="dialog-actions">
-        <button id="btnTemplateSave" type="submit">保存</button>
-        <button id="btnTemplateReset" type="button">クリア</button>
-      </div>
-    </form>
-    <div class="dialog-actions"><button id="btnCloseTemplates" type="button">Close</button></div>
-  </dialog>
-
   <dialog id="dlgHistory">
     <h2>履歴</h2>
     <div class="dialog-actions">
@@ -133,16 +119,66 @@
     </div>
     <h3>共有ショートカット</h3>
     <div id="shareShortcutList" class="dialog-list"></div>
-    <form id="shareShortcutForm" class="template-form">
-      <input id="shortcutId" type="hidden" />
-      <label>名前<input id="shortcutName" type="text" required /></label>
-      <label>URLテンプレート<input id="shortcutUrl" type="text" placeholder="mailto:?subject={title}&body={text}" required /></label>
-      <div class="dialog-actions">
-        <button type="submit">保存</button>
-        <button id="btnShortcutReset" type="button">クリア</button>
-      </div>
-    </form>
+    <div class="dialog-actions">
+      <button id="btnOpenSettingsShare" type="button">ショートカット管理へ</button>
+    </div>
     <div class="dialog-actions"><button id="btnCloseShare" type="button">Close</button></div>
+  </dialog>
+
+  <dialog id="dlgSettings">
+    <h2>設定</h2>
+    <section id="settingsAppearance" class="settings-section">
+      <h3>表示</h3>
+      <label>フォントサイズ <span id="fontSizeValue" class="hint"></span>
+        <input id="fontSizeRange" type="range" min="14" max="24" step="1" />
+      </label>
+      <label>フォントフェイス
+        <select id="fontFaceSelect">
+          <option value="sans-jp">サンセリフ（和文）</option>
+          <option value="serif-jp">セリフ（和文）</option>
+          <option value="sans-en">サンセリフ（英文）</option>
+          <option value="serif-en">セリフ（英文）</option>
+          <option value="mono">等幅</option>
+        </select>
+      </label>
+    </section>
+    <section id="settingsTemplates" class="settings-section">
+      <h3>テンプレ</h3>
+      <div id="templateList" class="dialog-list"></div>
+      <form id="templateForm" class="template-form">
+        <input id="templateId" type="hidden" />
+        <label>名前<input id="templateName" type="text" maxlength="60" required /></label>
+        <label>本文<textarea id="templateText" rows="5" required></textarea></label>
+        <div class="dialog-actions">
+          <button id="btnTemplateSave" type="submit">保存</button>
+          <button id="btnTemplateReset" type="button">クリア</button>
+        </div>
+      </form>
+    </section>
+    <section id="settingsShare" class="settings-section">
+      <h3>共有ショートカット</h3>
+      <div id="settingsShareList" class="dialog-list"></div>
+      <form id="shareShortcutForm" class="template-form">
+        <input id="shortcutId" type="hidden" />
+        <label>名前<input id="shortcutName" type="text" required /></label>
+        <label>URLテンプレート<input id="shortcutUrl" type="text" placeholder="mailto:?subject={title}&body={text}" required /></label>
+        <div class="dialog-actions">
+          <button type="submit">保存</button>
+          <button id="btnShortcutReset" type="button">クリア</button>
+        </div>
+      </form>
+    </section>
+    <section id="settingsApi" class="settings-section">
+      <h3>APIキー（端末内保存）</h3>
+      <label>OpenAI API Key
+        <input id="apiKeyOpenAI" type="password" placeholder="sk-..." />
+      </label>
+      <label>Other API Key
+        <input id="apiKeyOther" type="password" placeholder="任意" />
+      </label>
+      <p class="hint">キーは端末内のみ保存され、外部送信は行いません。</p>
+    </section>
+    <div class="dialog-actions"><button id="btnCloseSettings" type="button">Close</button></div>
   </dialog>
 
   <section id="editToolsPanel" class="edit-tools" aria-label="edit tools">

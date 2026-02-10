@@ -25,6 +25,12 @@
       useRegex: false
     },
     punctuationMode: "jp",
+    fontSize: 16,
+    fontFace: "sans-jp",
+    apiKeys: {
+      openai: "",
+      other: ""
+    },
     shareShortcuts: [
       { id: uid(), name: "メール", urlTemplate: "mailto:?subject={title}&body={text}" },
       { id: uid(), name: "LINE", urlTemplate: "line://msg/text/{text}" },
@@ -65,6 +71,7 @@
     applySidebar();
     applyVoiceModeUI();
     applyPunctuationUI();
+    applyTypography();
     setupAutoSnapshot();
     bindEvents();
     renderTemplates();
@@ -99,6 +106,7 @@
       const next = !el.editToolsPanel.classList.contains("show");
       el.editToolsPanel.classList.toggle("show", next);
     });
+    el.btnSettings.addEventListener("click", () => openSettings("appearance"));
     el.btnSidebar.addEventListener("click", () => {
       state.settings.ui.sidebar = !state.settings.ui.sidebar;
       applySidebar();
@@ -129,10 +137,8 @@
     el.btnReplaceInSelection.addEventListener("click", () => replaceAll(true));
 
     el.btnTemplates.addEventListener("click", () => {
-      renderTemplates();
-      el.dlgTemplates.showModal();
+      openSettings("templates");
     });
-    el.btnCloseTemplates.addEventListener("click", () => el.dlgTemplates.close());
     el.templateForm.addEventListener("submit", saveTemplate);
     el.btnTemplateReset.addEventListener("click", resetTemplateForm);
 
@@ -158,6 +164,7 @@
       el.dlgShare.showModal();
     });
     el.btnCloseShare.addEventListener("click", () => el.dlgShare.close());
+    el.btnOpenSettingsShare.addEventListener("click", () => openSettings("share"));
     el.btnShareAll.addEventListener("click", () => setShareMode("all"));
     el.btnShareSelection.addEventListener("click", () => setShareMode("selection"));
     el.btnNativeShare.addEventListener("click", doShare);
@@ -198,6 +205,19 @@
         saveSettings();
       });
     });
+    el.fontSizeRange.addEventListener("input", () => {
+      state.settings.fontSize = Number(el.fontSizeRange.value);
+      applyTypography();
+      saveSettings();
+    });
+    el.fontFaceSelect.addEventListener("change", () => {
+      state.settings.fontFace = el.fontFaceSelect.value;
+      applyTypography();
+      saveSettings();
+    });
+    el.apiKeyOpenAI.addEventListener("change", () => saveApiKeys());
+    el.apiKeyOther.addEventListener("change", () => saveApiKeys());
+    el.btnCloseSettings.addEventListener("click", () => el.dlgSettings.close());
 
     el.btnUpdateApp.addEventListener("click", () => {
       if (state.waitingWorker) {
@@ -570,10 +590,19 @@
   function renderShareShortcuts() {
     setShareMode(state.shareMode);
     el.shareShortcutList.innerHTML = "";
+    el.settingsShareList.innerHTML = "";
     for (const s of state.settings.shareShortcuts.slice(0, 5)) {
-      const row = document.createElement("div");
-      row.className = "dialog-item";
-      row.innerHTML = `
+      const shareRow = document.createElement("div");
+      shareRow.className = "dialog-item";
+      shareRow.innerHTML = `
+        <div class="dialog-item-head"><strong>${escapeHtml(s.name)}</strong></div>
+        <small>${escapeHtml(s.urlTemplate)}</small>
+        <div class="dialog-actions">
+          <button data-act="open" data-id="${s.id}" type="button">起動</button>
+        </div>`;
+      const settingsRow = document.createElement("div");
+      settingsRow.className = "dialog-item";
+      settingsRow.innerHTML = `
         <div class="dialog-item-head"><strong>${escapeHtml(s.name)}</strong></div>
         <small>${escapeHtml(s.urlTemplate)}</small>
         <div class="dialog-actions">
@@ -581,8 +610,10 @@
           <button data-act="edit" data-id="${s.id}" type="button">編集</button>
           <button data-act="delete" data-id="${s.id}" type="button">削除</button>
         </div>`;
-      row.addEventListener("click", (evt) => handleShareShortcutAction(evt));
-      el.shareShortcutList.append(row);
+      shareRow.addEventListener("click", (evt) => handleShareShortcutAction(evt));
+      settingsRow.addEventListener("click", (evt) => handleShareShortcutAction(evt));
+      el.shareShortcutList.append(shareRow);
+      el.settingsShareList.append(settingsRow);
     }
   }
 
@@ -765,7 +796,7 @@
 
   function closeOpenDialog() {
     let closed = false;
-    [el.dlgHelp, el.dlgFindReplace, el.dlgTemplates, el.dlgHistory, el.dlgShare].forEach((d) => {
+    [el.dlgHelp, el.dlgFindReplace, el.dlgHistory, el.dlgShare, el.dlgSettings].forEach((d) => {
       if (d.open) {
         d.close();
         closed = true;
@@ -798,6 +829,46 @@
     });
   }
 
+  function applyTypography() {
+    const size = Number(state.settings.fontSize || 16);
+    el.editor.style.fontSize = `${size}px`;
+    el.fontSizeRange.value = String(size);
+    el.fontSizeValue.textContent = `${size}px`;
+    el.fontFaceSelect.value = state.settings.fontFace || "sans-jp";
+    el.editor.style.fontFamily = getFontFamily(state.settings.fontFace);
+  }
+
+  function getFontFamily(key) {
+    switch (key) {
+      case "serif-jp":
+        return "\"Yu Mincho\", \"Hiragino Mincho ProN\", \"MS PMincho\", serif";
+      case "sans-en":
+        return "\"Segoe UI\", Arial, sans-serif";
+      case "serif-en":
+        return "Georgia, \"Times New Roman\", serif";
+      case "mono":
+        return "\"Cascadia Mono\", \"Consolas\", \"SFMono-Regular\", monospace";
+      case "sans-jp":
+      default:
+        return "\"Hiragino Kaku Gothic ProN\", \"Yu Gothic\", \"Meiryo\", system-ui, sans-serif";
+    }
+  }
+
+  function openSettings(section) {
+    el.dlgSettings.showModal();
+    applyTypography();
+    renderTemplates();
+    renderShareShortcuts();
+    loadApiKeys();
+    const target = {
+      appearance: el.settingsAppearance,
+      templates: el.settingsTemplates,
+      share: el.settingsShare,
+      api: el.settingsApi
+    }[section];
+    if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   function togglePunctuationMode() {
     state.settings.punctuationMode = state.settings.punctuationMode === "jp" ? "en" : "jp";
     saveSettings();
@@ -821,6 +892,20 @@
     const { selectionStart, selectionEnd } = el.editor;
     el.editor.setRangeText(text, selectionStart, selectionEnd, "end");
     triggerInput();
+  }
+
+  function loadApiKeys() {
+    const keys = state.settings.apiKeys || {};
+    el.apiKeyOpenAI.value = keys.openai || "";
+    el.apiKeyOther.value = keys.other || "";
+  }
+
+  function saveApiKeys() {
+    state.settings.apiKeys = {
+      openai: el.apiKeyOpenAI.value.trim(),
+      other: el.apiKeyOther.value.trim()
+    };
+    saveSettings();
   }
 
   function saveSettings() {
@@ -871,7 +956,10 @@
         ...parsed,
         ui: { ...fallback.ui, ...(parsed.ui || {}) },
         searchOptions: { ...fallback.searchOptions, ...(parsed.searchOptions || {}) },
-        punctuationMode: parsed.punctuationMode || fallback.punctuationMode
+        punctuationMode: parsed.punctuationMode || fallback.punctuationMode,
+        fontSize: parsed.fontSize || fallback.fontSize,
+        fontFace: parsed.fontFace || fallback.fontFace,
+        apiKeys: { ...fallback.apiKeys, ...(parsed.apiKeys || {}) }
       };
     } catch {
       preserveBroken(key);
@@ -1117,6 +1205,7 @@
       btnEditTools: document.getElementById("btnEditTools"),
       btnFocus: document.getElementById("btnFocus"),
       btnExitFocus: document.getElementById("btnExitFocus"),
+      btnSettings: document.getElementById("btnSettings"),
       btnHelp: document.getElementById("btnHelp"),
       btnMic: document.getElementById("btnMic"),
       btnFind: document.getElementById("btnFind"),
@@ -1143,14 +1232,23 @@
       btnReplaceInSelection: document.getElementById("btnReplaceInSelection"),
       btnCloseFind: document.getElementById("btnCloseFind"),
 
-      dlgTemplates: document.getElementById("dlgTemplates"),
+      dlgSettings: document.getElementById("dlgSettings"),
+      settingsAppearance: document.getElementById("settingsAppearance"),
+      settingsTemplates: document.getElementById("settingsTemplates"),
+      settingsShare: document.getElementById("settingsShare"),
+      settingsApi: document.getElementById("settingsApi"),
+      fontSizeRange: document.getElementById("fontSizeRange"),
+      fontSizeValue: document.getElementById("fontSizeValue"),
+      fontFaceSelect: document.getElementById("fontFaceSelect"),
+      apiKeyOpenAI: document.getElementById("apiKeyOpenAI"),
+      apiKeyOther: document.getElementById("apiKeyOther"),
+      btnCloseSettings: document.getElementById("btnCloseSettings"),
       templateList: document.getElementById("templateList"),
       templateForm: document.getElementById("templateForm"),
       templateId: document.getElementById("templateId"),
       templateName: document.getElementById("templateName"),
       templateText: document.getElementById("templateText"),
       btnTemplateReset: document.getElementById("btnTemplateReset"),
-      btnCloseTemplates: document.getElementById("btnCloseTemplates"),
 
       dlgHistory: document.getElementById("dlgHistory"),
       btnSnapshot: document.getElementById("btnSnapshot"),
@@ -1159,6 +1257,7 @@
       btnCloseHistory: document.getElementById("btnCloseHistory"),
 
       dlgShare: document.getElementById("dlgShare"),
+      btnOpenSettingsShare: document.getElementById("btnOpenSettingsShare"),
       btnShareAll: document.getElementById("btnShareAll"),
       btnShareSelection: document.getElementById("btnShareSelection"),
       btnNativeShare: document.getElementById("btnNativeShare"),
@@ -1168,6 +1267,7 @@
       btnNormalize: document.getElementById("btnNormalize"),
       btnCompressBlank: document.getElementById("btnCompressBlank"),
       shareShortcutList: document.getElementById("shareShortcutList"),
+      settingsShareList: document.getElementById("settingsShareList"),
       shareShortcutForm: document.getElementById("shareShortcutForm"),
       shortcutId: document.getElementById("shortcutId"),
       shortcutName: document.getElementById("shortcutName"),
