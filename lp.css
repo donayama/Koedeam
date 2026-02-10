@@ -1,0 +1,24 @@
+:root { color-scheme: light dark; }
+* { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; line-height: 1.6; }
+.wrap { max-width: 980px; margin: 0 auto; padding: 16px; }
+.header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.logo { height: 40px; width: auto; }
+.nav { display: flex; gap: 8px; }
+.hero { padding: 32px 0; }
+.hero h1 { margin: 0 0 8px; font-size: 32px; }
+.hero p { margin: 0 0 16px; opacity: .9; }
+.cta { display: flex; gap: 10px; flex-wrap: wrap; }
+
+.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 16px 0; }
+.card { border: 1px solid rgba(127,127,127,.35); border-radius: 12px; padding: 14px; background: rgba(127,127,127,.06); }
+.how { margin: 28px 0; }
+
+.btn { display: inline-block; padding: 10px 14px; border-radius: 10px; border: 1px solid rgba(127,127,127,.5); text-decoration: none; color: inherit; }
+.btn.primary { border-color: rgba(0,160,160,.8); }
+.footer { opacity: .8; padding-top: 24px; padding-bottom: 40px; }
+
+@media (max-width: 860px) {
+  .grid3 { grid-template-columns: 1fr; }
+  .logo { height: 36px; }
+}

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="120" viewBox="0 0 560 120">
+  <defs>
+    <linearGradient id="g" x1="0" x2="1">
+      <stop offset="0" stop-color="#2b6cff"/>
+      <stop offset="0.5" stop-color="#14b8a6"/>
+      <stop offset="1" stop-color="#22c55e"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="560" height="120" fill="none"/>
+  <g transform="translate(18,18)">
+    <rect x="0" y="0" width="84" height="84" rx="18" fill="url(#g)" opacity="0.15"/>
+    <path d="M14 44c8-16 16 16 24 0s16 16 24 0 16 16 24 0" fill="none" stroke="url(#g)" stroke-width="6" stroke-linecap="round"/>
+    <path d="M56 20 L56 68 L72 52" fill="none" stroke="url(#g)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text x="130" y="62" font-family="system-ui,-apple-system,Segoe UI,sans-serif" font-size="44" font-weight="700" fill="currentColor">Koedeam</text>
+  <text x="130" y="92" font-family="system-ui,-apple-system,Segoe UI,sans-serif" font-size="16" fill="currentColor" opacity="0.75">声で編む</text>
+</svg>

@@ -1,0 +1,50 @@
+:root { color-scheme: light dark; }
+* { box-sizing: border-box; }
+body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+.topbar {
+  position: sticky; top: 0;
+  display:flex; align-items:center; justify-content:space-between;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(127,127,127,.35);
+  backdrop-filter: blur(6px);
+  background: rgba(20,20,20,.02);
+}
+.brand { text-decoration:none; color: inherit; font-weight: 600; }
+.top-actions { display:flex; gap: 8px; }
+
+.main { padding: 10px 12px 76px; }
+#editor {
+  width:100%;
+  min-height: calc(100vh - 140px);
+  resize: none;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(127,127,127,.35);
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.bottombar{
+  position: fixed; left:0; right:0; bottom:0;
+  display:flex; gap: 6px;
+  padding: 10px 10px;
+  border-top: 1px solid rgba(127,127,127,.35);
+  background: rgba(20,20,20,.04);
+  backdrop-filter: blur(8px);
+}
+button{
+  flex:1;
+  padding: 10px 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(127,127,127,.45);
+  background: transparent;
+  color: inherit;
+}
+
+body.focus .topbar,
+body.focus .bottombar { display:none; }
+body.focus .main { padding: 12px; }
+body.focus #editor { min-height: calc(100vh - 24px); font-size: 18px; }
+
+dialog { border: 1px solid rgba(127,127,127,.35); border-radius: 14px; padding: 14px; max-width: 560px; }
+dialog::backdrop { background: rgba(0,0,0,.35); }

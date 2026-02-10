@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Koedeam Editor</title>
+  <meta name="description" content="声で編む、草稿エディタ（ローカル保存・共有）" />
+
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./assets/icon-32.png" />
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../">Koedeam</a>
+    <div class="top-actions">
+      <button id="btnFocus" type="button">Focus</button>
+      <button id="btnHelp" type="button">Help</button>
+    </div>
+  </header>
+
+  <main class="main">
+    <textarea id="editor" placeholder="話して、書いて、整えて、共有。"></textarea>
+  </main>
+
+  <nav class="bottombar" aria-label="tools">
+    <button id="btnMic" type="button">Mic</button>
+    <button id="btnFind" type="button">Find</button>
+    <button id="btnReplace" type="button">Replace</button>
+    <button id="btnTemplates" type="button">Templates</button>
+    <button id="btnHistory" type="button">History</button>
+    <button id="btnShare" type="button">Share</button>
+  </nav>
+
+  <dialog id="dlgHelp">
+    <h2>Koedeam</h2>
+    <p>本文は端末内（localStorage）に保存されます。サーバー送信は行いません。</p>
+    <p>Web Speech APIはブラウザ実装により外部認識サービスが使われる可能性があります。気になる場合はOS音声入力をご利用ください。</p>
+    <button id="btnCloseHelp" type="button">Close</button>
+  </dialog>
+
+  <script src="./app.js"></script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js"));
+    }
+  </script>
+</body>
+</html>

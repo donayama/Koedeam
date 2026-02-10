@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Koedeam（コエデアム） - 声で編む、草稿エディタ</title>
+  <meta name="description" content="音声で草稿を作り、編集で整え、すぐ共有。本文は端末内に留める軽量エディタ。" />
+
+  <meta property="og:title" content="Koedeam（コエデアム）" />
+  <meta property="og:description" content="声で編む、草稿エディタ。音声→編集→共有。本文は端末内。" />
+  <meta property="og:image" content="./assets/ogp.png" />
+  <meta property="og:type" content="website" />
+
+  <link rel="stylesheet" href="./lp.css" />
+</head>
+<body>
+  <header class="wrap header">
+    <div class="brand">
+      <img src="./assets/logo.svg" alt="Koedeam" class="logo" />
+    </div>
+    <nav class="nav">
+      <a href="./app/" class="btn primary">使ってみる</a>
+    </nav>
+  </header>
+
+  <main class="wrap">
+    <section class="hero">
+      <h1>声で編む、草稿エディタ。</h1>
+      <p>音声で吐き出し、編集で整え、すぐ共有。本文は端末内に留めます。</p>
+      <div class="cta">
+        <a href="./app/" class="btn primary">エディタを開く</a>
+        <a href="#how" class="btn">使い方</a>
+      </div>
+    </section>
+
+    <section class="grid3">
+      <div class="card">
+        <h2>音声で草稿</h2>
+        <p>思いついた瞬間に話して下書き化。</p>
+      </div>
+      <div class="card">
+        <h2>編集で整える</h2>
+        <p>検索・置換、選択、切り貼りまでスマホで完結。</p>
+      </div>
+      <div class="card">
+        <h2>共有で放つ</h2>
+        <p>LINE、メール、AI、SNSへそのまま渡す。</p>
+      </div>
+    </section>
+
+    <section id="how" class="how">
+      <h2>Speak → Edit → Share</h2>
+      <ol>
+        <li>Speak：音声入力でラフに書く</li>
+        <li>Edit：検索・置換／選択／カット＆ペーストで整える</li>
+        <li>Share：共有（Share／コピー／ショートカット）</li>
+      </ol>
+      <div class="cta">
+        <a href="./app/" class="btn primary">今すぐ使う</a>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>安心設計（No Server）</h2>
+      <p>本文はサーバーに保存しません。保存は端末内（localStorage）のみです。</p>
+      <p>音声入力（Web Speech API）はブラウザ実装により外部認識サービスが使われる可能性があります。気になる場合はOSの音声入力キーボードをご利用ください。</p>
+    </section>
+
+    <section class="card">
+      <h2>対応環境と制約</h2>
+      <ul>
+        <li>スマホ（iOS/Android）、タブレット、PCで動作</li>
+        <li>音声入力（Web Speech API）はブラウザ依存</li>
+        <li>URLスキーム起動は環境依存。失敗時はコピー共有で代替</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer class="wrap footer">
+    <a href="./README.md">README</a>
+  </footer>
+</body>
+</html>
