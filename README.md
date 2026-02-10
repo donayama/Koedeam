@@ -1,26 +1,79 @@
 # Koedeam（コエデアム）
+
 声で編む、草稿エディタ。音声で草稿を作り、編集で整え、共有するための軽量ツールです。
 
-## 公開（GitHub Pages）
-1. GitHubの Settings → Pages
-2. Deploy from a branch
-3. Branch: main / root
-4. 公開URLの `/` がLP、`/app/` がエディタです
-
-## 使い方
 - LP: `/`
-- Editor: `/app/`
-- 本文は端末内（localStorage）に保存され、サーバー保存は行いません。
+- エディタ本体（PWA）: `/app/`
 
-## PWA（ホーム画面に追加）
-- `/app/` を開く
-- iOS: 共有 → ホーム画面に追加
-- Android: メニュー → アプリをインストール（またはホーム画面に追加）
+## No Server ポリシー
 
-## 重要な制約
-- Web Speech API（ブラウザ内音声認識）は、ブラウザ実装により外部の認識サービスが使われる可能性があります。
-  - 機密が気になる場合は OS の音声入力キーボードを利用してください。
-- `navigator.share` や URLスキーム起動は端末・ブラウザ依存です。失敗時はコピー共有で代替します。
+Koedeam は**本文をサーバー保存しません**。草稿・履歴・テンプレ・設定は端末内の `localStorage` のみを利用します。
 
-## ローカルデータ
-- localStorage を使います。消す場合はブラウザのサイトデータを削除してください。
+使用キー:
+
+- `koedeam.version`
+- `koedeam.currentDraft`
+- `koedeam.recentDrafts`
+- `koedeam.templates`
+- `koedeam.settings`
+
+## GitHub Pages 公開手順
+
+1. GitHub リポジトリを開く
+2. `Settings` → `Pages`
+3. `Build and deployment` を `Deploy from a branch` に設定
+4. Branch を `main` / `/ (root)` に設定して保存
+5. 公開後、`/` が LP、`/app/` がエディタとして利用可能
+
+> すべて相対パス構成のため、Pages サブパス配下でも動作します。
+
+## 主要機能
+
+- 音声入力（Web Speech API 対応環境）
+- 検索/置換（前へ・次へ・置換・次を置換して次へ・全置換・選択範囲置換）
+- 自動保存（800ms デバウンス）
+- 履歴（最大5件）スナップショット保存・復元
+- テンプレ管理（追加・編集・削除・適用）
+- 共有（Share API → Clipboard API → `execCommand('copy')` フォールバック）
+- フォーカスモード
+- PWA（`/app/`）
+
+## Web Speech API の注意
+
+Web Speech API（`SpeechRecognition` / `webkitSpeechRecognition`）は、ブラウザ実装により外部認識サービスが利用される可能性があります。
+
+- この挙動はアプリ側から送信先を制御できません
+- 機密情報の音声入力は避けてください
+- 非対応ブラウザでは OS の音声入力キーボードを使用してください
+
+## 共有・URLスキーム制約
+
+- `navigator.share` は端末・ブラウザ対応に依存
+- `navigator.clipboard` は HTTPS / 権限条件に依存
+- `mailto:` `line://` など URL スキーム起動は環境依存
+- 起動失敗時はコピーでの共有導線を利用
+
+## PWA とホーム画面追加
+
+### iOS
+1. Safari で `/app/` を開く
+2. 共有メニュー
+3. 「ホーム画面に追加」
+
+### Android
+1. Chrome で `/app/` を開く
+2. メニュー
+3. 「アプリをインストール」または「ホーム画面に追加」
+
+## localStorage データを削除する方法
+
+- ブラウザ設定の「サイトデータ削除」から対象サイトを削除
+- または DevTools の Application/Storage から `localStorage` を削除
+
+## ローカル開発
+
+```bash
+python -m http.server 8000
+```
+
+その後、`http://localhost:8000/` を開いて確認します。

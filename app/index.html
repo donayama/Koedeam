@@ -7,21 +7,43 @@
   <meta name="description" content="声で編む、草稿エディタ（ローカル保存・共有）" />
 
   <link rel="manifest" href="./manifest.webmanifest" />
-  <link rel="icon" href="./assets/icon-32.png" />
+  <link rel="icon" href="../assets/icon.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
   <header class="topbar">
     <a class="brand" href="../">Koedeam</a>
     <div class="top-actions">
+      <button id="btnSidebar" type="button" class="desktop-only">Sidebar</button>
       <button id="btnFocus" type="button">Focus</button>
       <button id="btnHelp" type="button">Help</button>
     </div>
   </header>
 
-  <main class="main">
-    <textarea id="editor" placeholder="話して、書いて、整えて、共有。"></textarea>
-  </main>
+  <div class="layout">
+    <main class="main" aria-label="editor area">
+      <textarea id="editor" placeholder="話して、書いて、整えて、共有。"></textarea>
+      <div class="status-row">
+        <span id="saveStatus">Ready</span>
+        <span id="appMessage" aria-live="polite"></span>
+      </div>
+    </main>
+
+    <aside id="sidebar" class="sidebar" aria-label="sidebar">
+      <section>
+        <h2>Templates</h2>
+        <div id="sidebarTemplates" class="sidebar-list"></div>
+      </section>
+      <section>
+        <h2>History</h2>
+        <div id="sidebarHistory" class="sidebar-list"></div>
+      </section>
+      <section>
+        <h2>Share</h2>
+        <div id="sidebarShares" class="sidebar-list"></div>
+      </section>
+    </aside>
+  </div>
 
   <nav class="bottombar" aria-label="tools">
     <button id="btnMic" type="button">Mic</button>
@@ -32,18 +54,95 @@
     <button id="btnShare" type="button">Share</button>
   </nav>
 
+  <dialog id="dlgFindReplace">
+    <h2>検索 / 置換</h2>
+    <label>検索語
+      <input id="findQuery" type="text" />
+    </label>
+    <label>置換語
+      <input id="replaceQuery" type="text" />
+    </label>
+    <p id="findStatus">0件</p>
+    <div class="dialog-actions wrap">
+      <button id="btnFindPrev" type="button">前へ</button>
+      <button id="btnFindNext" type="button">次へ</button>
+      <button id="btnReplaceOne" type="button">置換</button>
+      <button id="btnReplaceNext" type="button">次を置換して次へ</button>
+      <button id="btnReplaceAll" type="button">全置換</button>
+      <button id="btnReplaceInSelection" type="button">選択範囲のみ全置換</button>
+      <button id="btnCloseFind" type="button">Close</button>
+    </div>
+  </dialog>
+
+  <dialog id="dlgTemplates">
+    <h2>テンプレ管理</h2>
+    <div id="templateList" class="dialog-list"></div>
+    <form id="templateForm" class="template-form">
+      <input id="templateId" type="hidden" />
+      <label>名前<input id="templateName" type="text" maxlength="60" required /></label>
+      <label>本文<textarea id="templateText" rows="5" required></textarea></label>
+      <div class="dialog-actions">
+        <button id="btnTemplateSave" type="submit">保存</button>
+        <button id="btnTemplateReset" type="button">クリア</button>
+      </div>
+    </form>
+    <div class="dialog-actions"><button id="btnCloseTemplates" type="button">Close</button></div>
+  </dialog>
+
+  <dialog id="dlgHistory">
+    <h2>履歴</h2>
+    <div class="dialog-actions">
+      <button id="btnSnapshot" type="button">スナップショット保存</button>
+    </div>
+    <div id="historyList" class="dialog-list"></div>
+    <div class="dialog-actions"><button id="btnCloseHistory" type="button">Close</button></div>
+  </dialog>
+
+  <dialog id="dlgShare">
+    <h2>共有</h2>
+    <div class="share-mode">
+      <button id="btnShareAll" type="button" data-mode="all">全文</button>
+      <button id="btnShareSelection" type="button" data-mode="selection">選択範囲</button>
+    </div>
+    <div class="dialog-actions wrap">
+      <button id="btnNativeShare" type="button">Share API</button>
+      <button id="btnCopy" type="button">Copy</button>
+      <button id="btnCut" type="button">Cut</button>
+      <button id="btnPaste" type="button">Paste</button>
+      <button id="btnNormalize" type="button">改行統一LF</button>
+      <button id="btnCompressBlank" type="button">空行圧縮</button>
+    </div>
+    <h3>共有ショートカット</h3>
+    <div id="shareShortcutList" class="dialog-list"></div>
+    <form id="shareShortcutForm" class="template-form">
+      <input id="shortcutId" type="hidden" />
+      <label>名前<input id="shortcutName" type="text" required /></label>
+      <label>URLテンプレート<input id="shortcutUrl" type="text" placeholder="mailto:?subject={title}&body={text}" required /></label>
+      <div class="dialog-actions">
+        <button type="submit">保存</button>
+        <button id="btnShortcutReset" type="button">クリア</button>
+      </div>
+    </form>
+    <div class="dialog-actions"><button id="btnCloseShare" type="button">Close</button></div>
+  </dialog>
+
   <dialog id="dlgHelp">
-    <h2>Koedeam</h2>
+    <h2>Koedeam Help</h2>
     <p>本文は端末内（localStorage）に保存されます。サーバー送信は行いません。</p>
-    <p>Web Speech APIはブラウザ実装により外部認識サービスが使われる可能性があります。気になる場合はOS音声入力をご利用ください。</p>
+    <p>Web Speech API はブラウザ実装により外部認識サービスが使われる可能性があります。機密文面は OS 音声入力の利用も検討してください。</p>
+    <ul>
+      <li>Mic: 音声入力（非対応時は OS 音声入力を使用）</li>
+      <li>Find/Replace: テキスト検索・置換</li>
+      <li>Templates/History/Share: 下書きを素早く再利用・共有</li>
+    </ul>
     <button id="btnCloseHelp" type="button">Close</button>
   </dialog>
 
+  <div id="updateToast" class="toast hidden">
+    <span>更新できます</span>
+    <button id="btnUpdateApp" type="button">更新</button>
+  </div>
+
   <script src="./app.js"></script>
-  <script>
-    if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js"));
-    }
-  </script>
 </body>
 </html>
