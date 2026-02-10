@@ -17,6 +17,10 @@
   <header class="wrap header">
     <div class="brand">
       <img src="./assets/logo.svg" alt="Koedeam" class="logo" />
+      <div class="brand-text">
+        <div class="brand-name">Koedeam</div>
+        <div class="brand-tag">声で編む、草稿エディタ</div>
+      </div>
     </div>
     <nav class="nav">
       <a href="./app/" class="btn primary">使ってみる</a>
@@ -25,26 +29,85 @@
 
   <main class="wrap">
     <section class="hero">
-      <h1>声で編む、草稿エディタ。</h1>
-      <p>音声で吐き出し、編集で整え、すぐ共有。本文は端末内に留めます。</p>
-      <div class="cta">
-        <a href="./app/" class="btn primary">エディタを開く</a>
-        <a href="#how" class="btn">使い方</a>
+      <div class="hero-wrap">
+        <div class="hero-copy">
+          <h1>声で編む、草稿エディタ。</h1>
+          <p>音声で吐き出し、編集で整え、すぐ共有。本文は端末内に留めます。</p>
+          <div class="cta">
+            <a href="./app/" class="btn primary">エディタを開く</a>
+            <a href="#how" class="btn">使い方</a>
+          </div>
+          <div class="hero-badges">
+            <span>No Server</span>
+            <span>PWA対応</span>
+            <span>Shareショートカット</span>
+          </div>
+        </div>
+        <div class="hero-mark" aria-hidden="true">
+          <img src="./assets/logo.svg" alt="" class="hero-logo" />
+          <img src="./assets/icon.svg" alt="" class="hero-icon" />
+        </div>
+      </div>
+    </section>
+
+    <section class="feature-grid">
+      <div class="card">
+        <h2>音声で草稿</h2>
+        <p>思いついた瞬間に話して下書き化。音声→テキストの流れを最短に。</p>
+      </div>
+      <div class="card">
+        <h2>検索・置換が速い</h2>
+        <p>サイドパネルで前へ/次へ、選択範囲置換まで一気に。</p>
+      </div>
+      <div class="card">
+        <h2>編集補助パネル</h2>
+        <p>カーソル移動、選択拡張、Copy/Cut/Pasteで細部を整える。</p>
+      </div>
+      <div class="card">
+        <h2>テンプレ & 履歴</h2>
+        <p>定番プロンプトと直近スナップショットでやり直しが簡単。</p>
+      </div>
+      <div class="card">
+        <h2>共有が軽い</h2>
+        <p>共有ボタン、コピー、ショートカットを横並びに。</p>
+      </div>
+      <div class="card">
+        <h2>集中モード</h2>
+        <p>余白と文字サイズを最適化。書くことに没入できます。</p>
+      </div>
+    </section>
+
+    <section class="feature-strip">
+      <div class="strip-item">
+        <h3>No Server</h3>
+        <p>本文は端末内にのみ保存。</p>
+      </div>
+      <div class="strip-item">
+        <h3>PWA</h3>
+        <p>ホーム追加でアプリ化。</p>
+      </div>
+      <div class="strip-item">
+        <h3>ツールバー</h3>
+        <p>表示/順序を設定で調整。</p>
+      </div>
+      <div class="strip-item">
+        <h3>ショートカット</h3>
+        <p>LINE/ChatGPT/Geminiへ。</p>
       </div>
     </section>
 
     <section class="grid3">
       <div class="card">
-        <h2>音声で草稿</h2>
-        <p>思いついた瞬間に話して下書き化。</p>
+        <h2>軽い作業台</h2>
+        <p>中規模テキストを編集して、そのまま外へ。</p>
       </div>
       <div class="card">
-        <h2>編集で整える</h2>
-        <p>検索・置換、選択、切り貼りまでスマホで完結。</p>
+        <h2>やり直しが効く</h2>
+        <p>履歴スナップショットと復元で誤操作に強い。</p>
       </div>
       <div class="card">
-        <h2>共有で放つ</h2>
-        <p>LINE、メール、AI、SNSへそのまま渡す。</p>
+        <h2>テンプレで速い</h2>
+        <p>定番プロンプトや文面を即投入。</p>
       </div>
     </section>
 
@@ -52,12 +115,21 @@
       <h2>Speak → Edit → Share</h2>
       <ol>
         <li>Speak：音声入力でラフに書く</li>
-        <li>Edit：検索・置換／選択／カット＆ペーストで整える</li>
-        <li>Share：共有（Share／コピー／ショートカット）</li>
+        <li>Edit：検索・置換／選択／編集補助で整える</li>
+        <li>Share：共有（共有ボタン／コピー／ショートカット）</li>
       </ol>
       <div class="cta">
         <a href="./app/" class="btn primary">今すぐ使う</a>
       </div>
+    </section>
+
+    <section class="card">
+      <h2>こんな用途に</h2>
+      <ul>
+        <li>AIプロンプトの下書き</li>
+        <li>メール/DM/案内文の叩き台</li>
+        <li>SNS投稿やメモの整理</li>
+      </ul>
     </section>
 
     <section class="card">
@@ -71,12 +143,16 @@
       <ul>
         <li>スマホ（iOS/Android）、タブレット、PCで動作</li>
         <li>音声入力（Web Speech API）はブラウザ依存</li>
-        <li>URLスキーム起動は環境依存。失敗時はコピー共有で代替</li>
+        <li>共有ショートカット（LINE/ChatGPT/Gemini等）は環境依存。失敗時はコピー共有で代替</li>
       </ul>
     </section>
   </main>
 
   <footer class="wrap footer">
+    <div class="footer-brand">
+      <img src="./assets/icon.svg" alt="" class="footer-icon" />
+      <span>Koedeam</span>
+    </div>
     <a href="./README.md">README</a>
   </footer>
 </body>

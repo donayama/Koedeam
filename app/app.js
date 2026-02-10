@@ -307,6 +307,7 @@
     el.apiKeyOpenAI.addEventListener("change", () => saveApiKeys());
     el.apiKeyOther.addEventListener("change", () => saveApiKeys());
     el.btnCloseSettings.addEventListener("click", () => el.dlgSettings.close());
+    el.btnResetApp.addEventListener("click", resetApp);
 
     el.btnUpdateApp.addEventListener("click", () => {
       if (state.waitingWorker) {
@@ -1204,6 +1205,37 @@
     saveSettings();
   }
 
+  function resetApp() {
+    const ok = confirm("設定・下書き・履歴・テンプレを初期化します。よろしいですか？");
+    if (!ok) return;
+    try {
+      localStorage.removeItem(STORAGE_KEYS.currentDraft);
+      localStorage.removeItem(STORAGE_KEYS.recentDrafts);
+      localStorage.removeItem(STORAGE_KEYS.templates);
+      localStorage.removeItem(STORAGE_KEYS.settings);
+      localStorage.setItem(STORAGE_KEYS.version, "1");
+    } catch {
+      // ignore
+    }
+    state.draft = "";
+    state.recentDrafts = [];
+    state.templates = structuredClone(DEFAULT_TEMPLATES);
+    state.settings = structuredClone(DEFAULT_SETTINGS);
+    el.editor.value = "";
+    applyFocus(state.settings.focusDefault);
+    applySidebar();
+    applyVoiceModeUI();
+    applyPunctuationUI();
+    applyTypography();
+    applyEditPanelPosition();
+    applyToolbarVisibility();
+    renderTemplates();
+    renderHistory();
+    renderShareShortcuts();
+    renderSidebar();
+    toast("初期化しました");
+  }
+
   function saveSettings() {
     safeSet(STORAGE_KEYS.settings, state.settings);
   }
@@ -1625,6 +1657,7 @@
       editPanelPosRadios: Array.from(document.querySelectorAll("input[name='editPanelPos']")),
       toolbarChecks: Array.from(document.querySelectorAll("input[data-toolbar]")),
       toolbarButtons: Array.from(document.querySelectorAll(".toolbar-item")),
+      btnResetApp: document.getElementById("btnResetApp"),
       toolbarOrderList: document.getElementById("toolbarOrderList"),
       bottombar: document.querySelector(".bottombar"),
       apiKeyOpenAI: document.getElementById("apiKeyOpenAI"),
