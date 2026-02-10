@@ -2,6 +2,7 @@
   color-scheme: light dark;
   --line: rgba(127, 127, 127, 0.35);
   --panel: rgba(127, 127, 127, 0.06);
+  --edit-panel-size: 140px;
 }
 * { box-sizing: border-box; }
 body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
@@ -71,15 +72,6 @@ dialog h2 { margin-top: 0; }
   padding: 8px 0 0;
   margin-top: 8px;
 }
-.dialog-body { margin-bottom: 12px; }
-.dialog-footer {
-  position: sticky;
-  bottom: 0;
-  background: rgba(10,10,10,.85);
-  backdrop-filter: blur(6px);
-  padding: 8px 0 0;
-  margin-top: 8px;
-}
 .hint { font-size: 12px; opacity: .75; margin: 4px 0 8px; }
 label { display:flex; flex-direction:column; gap: 4px; margin: 8px 0; }
 input, textarea {
@@ -115,6 +107,14 @@ select {
 }
 .segment legend { font-size: 12px; opacity: .8; padding: 0 6px; }
 .segment label { flex-direction: row; align-items:center; gap: 8px; margin: 6px 0; }
+.radio-sample { display: grid; grid-template-columns: 18px 1fr; gap: 6px 10px; align-items: center; margin: 8px 0; }
+.radio-sample .label { font-weight: 600; }
+.radio-sample .sample { grid-column: 2 / -1; opacity: .85; font-size: 13px; }
+.font-sans-jp { font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", system-ui, sans-serif; }
+.font-serif-jp { font-family: "Yu Mincho", "Hiragino Mincho ProN", "MS PMincho", serif; }
+.font-sans-en { font-family: "Segoe UI", Arial, sans-serif; }
+.font-serif-en { font-family: Georgia, "Times New Roman", serif; }
+.font-mono { font-family: "Cascadia Mono", "Consolas", "SFMono-Regular", monospace; }
 .settings-section { border: 1px solid var(--line); border-radius: 12px; padding: 10px; margin: 10px 0; background: var(--panel); }
 .settings-section h3 { margin: 0 0 8px; font-size: 14px; }
 .dialog-actions { display:flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
@@ -125,10 +125,9 @@ select {
 .share-mode { display:flex; gap: 8px; margin-bottom: 8px; }
 .share-mode button.active { border-color: #0aa; }
 .edit-tools {
-  position: sticky;
-  bottom: 70px;
+  position: fixed;
   z-index: 4;
-  margin: 0 10px 10px;
+  margin: 10px;
   padding: 10px;
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -137,6 +136,10 @@ select {
   display: none;
 }
 .edit-tools.show { display: block; }
+.edit-tools.pos-bottom { left: 0; right: 0; bottom: 70px; }
+.edit-tools.pos-top { left: 0; right: 0; top: 56px; }
+.edit-tools.pos-left { left: 0; top: 56px; bottom: 70px; width: min(320px, 90vw); overflow: auto; }
+.edit-tools.pos-right { right: 0; top: 56px; bottom: 70px; width: min(320px, 90vw); overflow: auto; }
 .edit-tools-head { display:flex; align-items:center; gap: 8px; margin-bottom: 6px; }
 .edit-tools-row { display:flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
 .edit-tools-row button { flex: 1 1 22%; min-width: 72px; height: 40px; }
@@ -180,7 +183,6 @@ body.focus .topbar,
 body.focus .bottombar { display:none; }
 body.focus .main { padding: 12px; }
 body.focus #editor { min-height: calc(100vh - 32px); font-size: 19px; padding: 16px; }
-.focus-exit { display: none; }
 body.focus .edit-tools { display: none; }
 .focus-exit { display: none; }
 body.focus .focus-exit {
@@ -196,6 +198,10 @@ body.focus .focus-exit {
   border-radius: 999px;
   font-size: 12px;
 }
+body.edit-tools-show.edit-pos-bottom .main { padding-bottom: calc(82px + var(--edit-panel-size)); }
+body.edit-tools-show.edit-pos-top .main { padding-top: calc(12px + var(--edit-panel-size)); }
+body.edit-tools-show.edit-pos-left .main { padding-left: calc(12px + var(--edit-panel-size)); }
+body.edit-tools-show.edit-pos-right .main { padding-right: calc(12px + var(--edit-panel-size)); }
 @media (min-width: 900px) {
   .desktop-only { display: inline-block; }
   .layout.with-sidebar { grid-template-columns: 1fr 320px; }

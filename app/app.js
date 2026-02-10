@@ -27,6 +27,7 @@
     punctuationMode: "jp",
     fontSize: 16,
     fontFace: "sans-jp",
+    editPanelPosition: "bottom",
     apiKeys: {
       openai: "",
       other: ""
@@ -53,7 +54,8 @@
     waitingWorker: null,
     autoSnapshotTimer: null,
     lastAutoSnapshotText: "",
-    dismissedUpdate: false
+    dismissedUpdate: false,
+    editToolsVisible: false
   };
 
   const el = getElements();
@@ -72,6 +74,7 @@
     applyVoiceModeUI();
     applyPunctuationUI();
     applyTypography();
+    applyEditPanelPosition();
     setupAutoSnapshot();
     bindEvents();
     renderTemplates();
@@ -103,8 +106,8 @@
     el.btnFocus.addEventListener("click", toggleFocus);
     el.btnExitFocus.addEventListener("click", toggleFocus);
     el.btnEditTools.addEventListener("click", () => {
-      const next = !el.editToolsPanel.classList.contains("show");
-      el.editToolsPanel.classList.toggle("show", next);
+      const next = !state.editToolsVisible;
+      setEditToolsVisible(next);
     });
     el.btnSettings.addEventListener("click", () => openSettings("appearance"));
     el.btnSidebar.addEventListener("click", () => {
@@ -210,10 +213,21 @@
       applyTypography();
       saveSettings();
     });
-    el.fontFaceSelect.addEventListener("change", () => {
-      state.settings.fontFace = el.fontFaceSelect.value;
-      applyTypography();
-      saveSettings();
+    el.fontFaceRadios.forEach((radio) => {
+      radio.addEventListener("change", () => {
+        if (!radio.checked) return;
+        state.settings.fontFace = radio.value;
+        applyTypography();
+        saveSettings();
+      });
+    });
+    el.editPanelPosRadios.forEach((radio) => {
+      radio.addEventListener("change", () => {
+        if (!radio.checked) return;
+        state.settings.editPanelPosition = radio.value;
+        applyEditPanelPosition();
+        saveSettings();
+      });
     });
     el.apiKeyOpenAI.addEventListener("change", () => saveApiKeys());
     el.apiKeyOther.addEventListener("change", () => saveApiKeys());
@@ -684,6 +698,11 @@
 
   function applyFocus(on) {
     document.body.classList.toggle("focus", !!on);
+    if (on) {
+      document.body.classList.remove("edit-tools-show");
+    } else if (state.editToolsVisible) {
+      document.body.classList.add("edit-tools-show");
+    }
   }
 
   function applySidebar() {
@@ -846,7 +865,9 @@
     el.editor.style.fontSize = `${size}px`;
     el.fontSizeRange.value = String(size);
     el.fontSizeValue.textContent = `${size}px`;
-    el.fontFaceSelect.value = state.settings.fontFace || "sans-jp";
+    el.fontFaceRadios.forEach((radio) => {
+      radio.checked = radio.value === (state.settings.fontFace || "sans-jp");
+    });
     el.editor.style.fontFamily = getFontFamily(state.settings.fontFace);
   }
 
@@ -872,6 +893,7 @@
     renderTemplates();
     renderShareShortcuts();
     loadApiKeys();
+    applyEditPanelPosition();
     const target = {
       appearance: el.settingsAppearance,
       templates: el.settingsTemplates,
@@ -904,6 +926,36 @@
     const { selectionStart, selectionEnd } = el.editor;
     el.editor.setRangeText(text, selectionStart, selectionEnd, "end");
     triggerInput();
+  }
+
+  function setEditToolsVisible(on) {
+    state.editToolsVisible = !!on;
+    el.editToolsPanel.classList.toggle("show", state.editToolsVisible);
+    const allow = state.editToolsVisible && !document.body.classList.contains("focus");
+    document.body.classList.toggle("edit-tools-show", allow);
+    applyEditPanelPosition();
+    requestAnimationFrame(updateEditPanelSize);
+  }
+
+  function applyEditPanelPosition() {
+    const pos = state.settings.editPanelPosition || "bottom";
+    document.body.classList.remove("edit-pos-bottom", "edit-pos-top", "edit-pos-left", "edit-pos-right");
+    document.body.classList.add(`edit-pos-${pos}`);
+    el.editToolsPanel.classList.remove("pos-bottom", "pos-top", "pos-left", "pos-right");
+    el.editToolsPanel.classList.add(`pos-${pos}`);
+    el.editPanelPosRadios.forEach((radio) => {
+      radio.checked = radio.value === pos;
+    });
+    requestAnimationFrame(updateEditPanelSize);
+  }
+
+  function updateEditPanelSize() {
+    if (!state.editToolsVisible) return;
+    const pos = state.settings.editPanelPosition || "bottom";
+    const size = (pos === "left" || pos === "right")
+      ? el.editToolsPanel.offsetWidth
+      : el.editToolsPanel.offsetHeight;
+    if (size) document.documentElement.style.setProperty("--edit-panel-size", `${Math.max(size, 120)}px`);
   }
 
   function loadApiKeys() {
@@ -971,6 +1023,7 @@
         punctuationMode: parsed.punctuationMode || fallback.punctuationMode,
         fontSize: parsed.fontSize || fallback.fontSize,
         fontFace: parsed.fontFace || fallback.fontFace,
+        editPanelPosition: parsed.editPanelPosition || fallback.editPanelPosition,
         apiKeys: { ...fallback.apiKeys, ...(parsed.apiKeys || {}) }
       };
     } catch {
@@ -1251,7 +1304,8 @@
       settingsApi: document.getElementById("settingsApi"),
       fontSizeRange: document.getElementById("fontSizeRange"),
       fontSizeValue: document.getElementById("fontSizeValue"),
-      fontFaceSelect: document.getElementById("fontFaceSelect"),
+      fontFaceRadios: Array.from(document.querySelectorAll("input[name='fontFace']")),
+      editPanelPosRadios: Array.from(document.querySelectorAll("input[name='editPanelPos']")),
       apiKeyOpenAI: document.getElementById("apiKeyOpenAI"),
       apiKeyOther: document.getElementById("apiKeyOther"),
       btnCloseSettings: document.getElementById("btnCloseSettings"),

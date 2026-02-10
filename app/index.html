@@ -132,17 +132,43 @@
     <section id="settingsAppearance" class="settings-section">
       <h3>表示</h3>
       <label>フォントサイズ <span id="fontSizeValue" class="hint"></span>
-        <input id="fontSizeRange" type="range" min="14" max="24" step="1" />
+        <input id="fontSizeRange" type="range" min="12" max="32" step="1" />
       </label>
-      <label>フォントフェイス
-        <select id="fontFaceSelect">
-          <option value="sans-jp">サンセリフ（和文）</option>
-          <option value="serif-jp">セリフ（和文）</option>
-          <option value="sans-en">サンセリフ（英文）</option>
-          <option value="serif-en">セリフ（英文）</option>
-          <option value="mono">等幅</option>
-        </select>
-      </label>
+      <fieldset class="segment">
+        <legend>フォントフェイス</legend>
+        <label class="radio-sample">
+          <input type="radio" name="fontFace" value="sans-jp" />
+          <span class="label">サンセリフ（和文）</span>
+          <span class="sample font-sans-jp">見出しと本文の例 / 今日は晴れです</span>
+        </label>
+        <label class="radio-sample">
+          <input type="radio" name="fontFace" value="serif-jp" />
+          <span class="label">セリフ（和文）</span>
+          <span class="sample font-serif-jp">見出しと本文の例 / 今日は晴れです</span>
+        </label>
+        <label class="radio-sample">
+          <input type="radio" name="fontFace" value="sans-en" />
+          <span class="label">サンセリフ（英文）</span>
+          <span class="sample font-sans-en">The quick brown fox jumps.</span>
+        </label>
+        <label class="radio-sample">
+          <input type="radio" name="fontFace" value="serif-en" />
+          <span class="label">セリフ（英文）</span>
+          <span class="sample font-serif-en">The quick brown fox jumps.</span>
+        </label>
+        <label class="radio-sample">
+          <input type="radio" name="fontFace" value="mono" />
+          <span class="label">等幅</span>
+          <span class="sample font-mono">function hello() { return 42; }</span>
+        </label>
+      </fieldset>
+      <fieldset class="segment">
+        <legend>編集パネル配置</legend>
+        <label><input type="radio" name="editPanelPos" value="bottom" />下</label>
+        <label><input type="radio" name="editPanelPos" value="top" />上</label>
+        <label><input type="radio" name="editPanelPos" value="left" />左</label>
+        <label><input type="radio" name="editPanelPos" value="right" />右</label>
+      </fieldset>
     </section>
     <section id="settingsTemplates" class="settings-section">
       <h3>テンプレ</h3>
