@@ -1421,11 +1421,12 @@
       btnPeriod: document.getElementById("btnPeriod"),
       btnNewline: document.getElementById("btnNewline"),
 
+      dlgMenu: document.getElementById("dlgMenu"),
+      btnCloseMenu: document.getElementById("btnCloseMenu"),
+
       updateToast: document.getElementById("updateToast"),
       btnUpdateApp: document.getElementById("btnUpdateApp"),
       btnUpdateLater: document.getElementById("btnUpdateLater")
     };
   }
 })();
-      dlgMenu: document.getElementById("dlgMenu"),
-      btnCloseMenu: document.getElementById("btnCloseMenu"),
