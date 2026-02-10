@@ -18,6 +18,8 @@
   const DEFAULT_SETTINGS = {
     focusDefault: false,
     voiceInsertMode: "cursor",
+    autoSnapshotMinutes: 0,
+    searchHistory: [],
     shareShortcuts: [
       { id: uid(), name: "メール", urlTemplate: "mailto:?subject={title}&body={text}" },
       { id: uid(), name: "LINE", urlTemplate: "line://msg/text/{text}" },
@@ -37,7 +39,10 @@
     speaking: false,
     activeMatchIndex: -1,
     matches: [],
-    waitingWorker: null
+    waitingWorker: null,
+    autoSnapshotTimer: null,
+    lastAutoSnapshotText: "",
+    dismissedUpdate: false
   };
 
   const el = getElements();
@@ -53,6 +58,8 @@
     el.editor.value = state.draft;
     applyFocus(state.settings.focusDefault);
     applySidebar();
+    applyVoiceModeUI();
+    setupAutoSnapshot();
     bindEvents();
     renderTemplates();
     renderHistory();
@@ -94,8 +101,15 @@
     el.btnReplace.addEventListener("click", () => openFindReplace(true));
     el.btnCloseFind.addEventListener("click", () => el.dlgFindReplace.close());
     el.findQuery.addEventListener("input", refreshMatches);
-    el.btnFindNext.addEventListener("click", () => jumpMatch(1));
-    el.btnFindPrev.addEventListener("click", () => jumpMatch(-1));
+    el.findQuery.addEventListener("blur", () => recordSearch(el.findQuery.value));
+    el.btnFindNext.addEventListener("click", () => {
+      recordSearch(el.findQuery.value);
+      jumpMatch(1);
+    });
+    el.btnFindPrev.addEventListener("click", () => {
+      recordSearch(el.findQuery.value);
+      jumpMatch(-1);
+    });
     el.btnReplaceOne.addEventListener("click", replaceCurrent);
     el.btnReplaceNext.addEventListener("click", replaceAndNext);
     el.btnReplaceAll.addEventListener("click", () => replaceAll(false));
@@ -119,6 +133,12 @@
       renderHistory();
       renderSidebar();
     });
+    el.autoSnapshotSelect.addEventListener("change", () => {
+      const mins = Number(el.autoSnapshotSelect.value || 0);
+      state.settings.autoSnapshotMinutes = Number.isFinite(mins) ? mins : 0;
+      saveSettings();
+      setupAutoSnapshot();
+    });
 
     el.btnShare.addEventListener("click", () => {
       renderShareShortcuts();
@@ -139,6 +159,10 @@
     el.btnCloseEdit.addEventListener("click", () => el.dlgEditTools.close());
     el.btnSelectLine.addEventListener("click", selectLine);
     el.btnSelectBlock.addEventListener("click", selectBlock);
+    el.btnSelectParaPrev.addEventListener("click", () => moveParagraph(-1));
+    el.btnSelectParaNext.addEventListener("click", () => moveParagraph(1));
+    el.btnExpandUp.addEventListener("click", () => expandSelection(-1));
+    el.btnExpandDown.addEventListener("click", () => expandSelection(1));
     el.btnSelectAll.addEventListener("click", () => {
       el.editor.focus();
       el.editor.select();
@@ -147,11 +171,22 @@
     el.btnLineEnd.addEventListener("click", () => moveToLineEdge("end"));
     el.btnMoveUp.addEventListener("click", () => moveCursorLine(-1));
     el.btnMoveDown.addEventListener("click", () => moveCursorLine(1));
+    el.voiceModeRadios.forEach((radio) => {
+      radio.addEventListener("change", () => {
+        if (!radio.checked) return;
+        state.settings.voiceInsertMode = radio.value;
+        saveSettings();
+      });
+    });
 
     el.btnUpdateApp.addEventListener("click", () => {
       if (state.waitingWorker) {
         state.waitingWorker.postMessage({ type: "SKIP_WAITING" });
       }
+    });
+    el.btnUpdateLater.addEventListener("click", () => {
+      state.dismissedUpdate = true;
+      el.updateToast.classList.add("hidden");
     });
 
     document.addEventListener("keydown", (evt) => {
@@ -173,6 +208,7 @@
 
   function openFindReplace(focusReplace) {
     el.dlgFindReplace.showModal();
+    renderFindRecent();
     refreshMatches();
     (focusReplace ? el.replaceQuery : el.findQuery).focus();
   }
@@ -221,6 +257,7 @@
       el.editor.setRangeText(replace, selectionStart, selectionEnd, "select");
       triggerInput();
       refreshMatches();
+      recordSearch(find);
       toast("置換しました");
     } else {
       jumpMatch(1);
@@ -249,6 +286,7 @@
     }
     triggerInput();
     refreshMatches();
+    recordSearch(find);
     toast("全置換しました");
   }
 
@@ -329,18 +367,25 @@
   }
 
   function snapshotDraft() {
+    snapshotDraftInternal(false);
+  }
+
+  function snapshotDraftInternal(isAuto) {
     const text = el.editor.value;
     if (!text.trim()) return toast("空の本文は保存しません");
+    if (isAuto && text === state.lastAutoSnapshotText) return;
     const title = firstLine(text);
     const item = { id: uid(), title, text, updatedAt: Date.now() };
     state.recentDrafts.unshift(item);
     state.recentDrafts = state.recentDrafts.slice(0, 5);
     persistRecentDrafts();
-    toast("スナップショットを保存");
+    state.lastAutoSnapshotText = text;
+    toast(isAuto ? "自動スナップショットを保存" : "スナップショットを保存");
   }
 
   function renderHistory() {
     el.historyList.innerHTML = "";
+    el.autoSnapshotSelect.value = String(state.settings.autoSnapshotMinutes || 0);
     if (!state.recentDrafts.length) {
       el.historyList.innerHTML = '<p class="dialog-item">履歴はありません。</p>';
       return;
@@ -671,6 +716,7 @@
 
   function showUpdate(worker) {
     state.waitingWorker = worker;
+    if (state.dismissedUpdate) return;
     el.updateToast.classList.remove("hidden");
   }
 
@@ -682,6 +728,26 @@
 
   function triggerInput() {
     el.editor.dispatchEvent(new Event("input", { bubbles: true }));
+  }
+
+  function setupAutoSnapshot() {
+    if (state.autoSnapshotTimer) {
+      clearInterval(state.autoSnapshotTimer);
+      state.autoSnapshotTimer = null;
+    }
+    const mins = Number(state.settings.autoSnapshotMinutes || 0);
+    if (!mins) return;
+    state.autoSnapshotTimer = setInterval(() => {
+      snapshotDraftInternal(true);
+      renderHistory();
+      renderSidebar();
+    }, mins * 60 * 1000);
+  }
+
+  function applyVoiceModeUI() {
+    el.voiceModeRadios.forEach((radio) => {
+      radio.checked = radio.value === state.settings.voiceInsertMode;
+    });
   }
 
   function saveSettings() {
@@ -766,6 +832,29 @@
     return text.replace(/\n/g, " ").slice(0, 80);
   }
 
+  function recordSearch(query) {
+    const q = (query || "").trim();
+    if (!q) return;
+    const next = [q, ...state.settings.searchHistory.filter((x) => x !== q)].slice(0, 3);
+    state.settings.searchHistory = next;
+    saveSettings();
+    renderFindRecent();
+  }
+
+  function renderFindRecent() {
+    el.findRecent.innerHTML = "";
+    for (const q of state.settings.searchHistory.slice(0, 3)) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = q;
+      btn.addEventListener("click", () => {
+        el.findQuery.value = q;
+        refreshMatches();
+      });
+      el.findRecent.append(btn);
+    }
+  }
+
   function selectLine() {
     const text = el.editor.value;
     const pos = el.editor.selectionStart;
@@ -777,14 +866,50 @@
   function selectBlock() {
     const text = el.editor.value;
     const pos = el.editor.selectionStart;
-    const before = text.slice(0, pos);
-    const after = text.slice(pos);
-    const startBoundary = before.lastIndexOf("\n\n");
-    const endBoundary = after.indexOf("\n\n");
-    const start = startBoundary === -1 ? 0 : startBoundary + 2;
-    const end = endBoundary === -1 ? text.length : pos + endBoundary;
+    const { start, end } = getBlockBounds(text, pos);
     el.editor.focus();
     el.editor.setSelectionRange(start, end);
+  }
+
+  function moveParagraph(dir) {
+    const text = el.editor.value;
+    const pos = el.editor.selectionStart;
+    const { start, end } = getBlockBounds(text, pos);
+    if (dir < 0) {
+      const before = text.slice(0, Math.max(0, start - 2));
+      const prevStartBoundary = before.lastIndexOf("\n\n");
+      const nextPos = prevStartBoundary === -1 ? 0 : prevStartBoundary + 2;
+      el.editor.focus();
+      el.editor.setSelectionRange(nextPos, nextPos);
+    } else {
+      const after = text.slice(Math.min(text.length, end + 2));
+      const nextBoundary = after.indexOf("\n\n");
+      const nextPos = nextBoundary === -1 ? text.length : end + 2 + nextBoundary + 2;
+      el.editor.focus();
+      el.editor.setSelectionRange(nextPos, nextPos);
+    }
+  }
+
+  function expandSelection(dir) {
+    const text = el.editor.value;
+    const { selectionStart, selectionEnd } = el.editor;
+    if (selectionStart === selectionEnd) {
+      selectLine();
+      return;
+    }
+    if (dir < 0) {
+      const { start } = getLineBounds(text, selectionStart);
+      const prevStart = text.lastIndexOf("\n", Math.max(0, start - 2));
+      const nextStart = prevStart === -1 ? 0 : prevStart + 1;
+      el.editor.focus();
+      el.editor.setSelectionRange(nextStart, selectionEnd);
+    } else {
+      const { end } = getLineBounds(text, selectionEnd);
+      const nextEnd = text.indexOf("\n", end + 1);
+      const next = nextEnd === -1 ? text.length : nextEnd;
+      el.editor.focus();
+      el.editor.setSelectionRange(selectionStart, next);
+    }
   }
 
   function moveToLineEdge(edge) {
@@ -827,6 +952,16 @@
     return { start, end };
   }
 
+  function getBlockBounds(text, pos) {
+    const before = text.slice(0, pos);
+    const after = text.slice(pos);
+    const startBoundary = before.lastIndexOf("\n\n");
+    const endBoundary = after.indexOf("\n\n");
+    const start = startBoundary === -1 ? 0 : startBoundary + 2;
+    const end = endBoundary === -1 ? text.length : pos + endBoundary;
+    return { start, end };
+  }
+
   function uid() {
     return Math.random().toString(36).slice(2, 10);
   }
@@ -866,6 +1001,7 @@
 
       dlgFindReplace: document.getElementById("dlgFindReplace"),
       findQuery: document.getElementById("findQuery"),
+      findRecent: document.getElementById("findRecent"),
       replaceQuery: document.getElementById("replaceQuery"),
       findStatus: document.getElementById("findStatus"),
       btnFindPrev: document.getElementById("btnFindPrev"),
@@ -887,6 +1023,7 @@
 
       dlgHistory: document.getElementById("dlgHistory"),
       btnSnapshot: document.getElementById("btnSnapshot"),
+      autoSnapshotSelect: document.getElementById("autoSnapshotSelect"),
       historyList: document.getElementById("historyList"),
       btnCloseHistory: document.getElementById("btnCloseHistory"),
 
@@ -908,8 +1045,13 @@
       btnCloseShare: document.getElementById("btnCloseShare"),
 
       dlgEditTools: document.getElementById("dlgEditTools"),
+      voiceModeRadios: Array.from(document.querySelectorAll("input[name='voiceMode']")),
       btnSelectLine: document.getElementById("btnSelectLine"),
       btnSelectBlock: document.getElementById("btnSelectBlock"),
+      btnSelectParaPrev: document.getElementById("btnSelectParaPrev"),
+      btnSelectParaNext: document.getElementById("btnSelectParaNext"),
+      btnExpandUp: document.getElementById("btnExpandUp"),
+      btnExpandDown: document.getElementById("btnExpandDown"),
       btnSelectAll: document.getElementById("btnSelectAll"),
       btnLineStart: document.getElementById("btnLineStart"),
       btnLineEnd: document.getElementById("btnLineEnd"),
@@ -918,7 +1060,8 @@
       btnCloseEdit: document.getElementById("btnCloseEdit"),
 
       updateToast: document.getElementById("updateToast"),
-      btnUpdateApp: document.getElementById("btnUpdateApp")
+      btnUpdateApp: document.getElementById("btnUpdateApp"),
+      btnUpdateLater: document.getElementById("btnUpdateLater")
     };
   }
 })();

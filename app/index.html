@@ -60,6 +60,7 @@
     <label>検索語
       <input id="findQuery" type="text" />
     </label>
+    <div id="findRecent" class="chip-list"></div>
     <label>置換語
       <input id="replaceQuery" type="text" />
     </label>
@@ -95,6 +96,14 @@
     <div class="dialog-actions">
       <button id="btnSnapshot" type="button">スナップショット保存</button>
     </div>
+    <label>自動スナップショット（分）
+      <select id="autoSnapshotSelect">
+        <option value="0">OFF</option>
+        <option value="2">2</option>
+        <option value="5">5</option>
+        <option value="10">10</option>
+      </select>
+    </label>
     <div id="historyList" class="dialog-list"></div>
     <div class="dialog-actions"><button id="btnCloseHistory" type="button">Close</button></div>
   </dialog>
@@ -130,9 +139,19 @@
   <dialog id="dlgEditTools">
     <h2>編集補助</h2>
     <p class="hint">スマホ/タブレットでの選択や移動を補助します。</p>
+    <fieldset class="segment">
+      <legend>音声挿入モード</legend>
+      <label><input type="radio" name="voiceMode" value="append" />末尾に追記</label>
+      <label><input type="radio" name="voiceMode" value="cursor" />カーソル位置に挿入</label>
+      <label><input type="radio" name="voiceMode" value="replace" />選択範囲を置換</label>
+    </fieldset>
     <div class="dialog-actions wrap">
       <button id="btnSelectLine" type="button">行を選択</button>
       <button id="btnSelectBlock" type="button">ブロック選択</button>
+      <button id="btnSelectParaPrev" type="button">前の段落へ</button>
+      <button id="btnSelectParaNext" type="button">次の段落へ</button>
+      <button id="btnExpandUp" type="button">上に1行拡張</button>
+      <button id="btnExpandDown" type="button">下に1行拡張</button>
       <button id="btnSelectAll" type="button">全選択</button>
       <button id="btnLineStart" type="button">行頭へ</button>
       <button id="btnLineEnd" type="button">行末へ</button>
@@ -159,6 +178,7 @@
   <div id="updateToast" class="toast hidden">
     <span>更新できます</span>
     <button id="btnUpdateApp" type="button">更新</button>
+    <button id="btnUpdateLater" type="button">後で</button>
   </div>
 
   <script src="./app.js"></script>
