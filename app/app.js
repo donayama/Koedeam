@@ -28,7 +28,7 @@
     fontSize: 16,
     fontFace: "sans-jp",
     editPanelPosition: "bottom",
-    sidebarTab: "templates",
+    sidebarTab: "replace",
     toolbar: {
       mic: true,
       find: true,
@@ -44,9 +44,9 @@
     },
     shareShortcuts: [
       { id: uid(), name: "メール", urlTemplate: "mailto:?subject={title}&body={text}" },
-      { id: uid(), name: "LINE", urlTemplate: "line://msg/text/{text}" },
-      { id: uid(), name: "ChatGPT", urlTemplate: "https://chatgpt.com/?q={text}" },
-      { id: uid(), name: "Gemini", urlTemplate: "https://gemini.google.com/app?prompt={text}" }
+      { id: uid(), name: "LINE", urlTemplate: "https://line.me/R/share?text={prompt}" },
+      { id: uid(), name: "ChatGPT", urlTemplate: "https://chatgpt.com/?q={prompt}" },
+      { id: uid(), name: "Gemini", urlTemplate: "https://gemini.google.com/app?q={prompt}" }
     ],
     ui: { sidebar: false }
   };
@@ -65,7 +65,8 @@
     autoSnapshotTimer: null,
     lastAutoSnapshotText: "",
     dismissedUpdate: false,
-    editToolsVisible: false
+    editToolsVisible: false,
+    sideTabsBound: false
   };
 
   const el = getElements();
@@ -150,51 +151,30 @@
       });
     }
     if (el.btnSidebar) {
-      el.btnSidebar.addEventListener("click", () => {
-        closeMenuIfOpen();
-        state.settings.ui.sidebar = !state.settings.ui.sidebar;
-        applySidebar();
-        saveSettings();
-      });
+    el.btnSidebar.addEventListener("click", () => {
+      closeMenuIfOpen();
+      toggleSidebar();
+    });
+    el.btnCloseSidebar.addEventListener("click", () => toggleSidebar());
     }
-    if (el.sideTabs && el.sideTabs.length) {
-      el.sideTabs.forEach((btn) => {
-        btn.addEventListener("click", () => {
-          const tab = btn.dataset.tab;
-          applySidebarTab(tab);
-          state.settings.sidebarTab = tab;
-          saveSettings();
-        });
-      });
-    }
-    if (el.sidebar) {
-      el.sidebar.addEventListener("click", (evt) => {
-        const tabBtn = evt.target.closest(".tab-btn");
-        if (!tabBtn) return;
-        const tab = tabBtn.dataset.tab;
-        applySidebarTab(tab);
-        state.settings.sidebarTab = tab;
-        saveSettings();
-      });
-    }
+    bindSideTabs();
 
     if (el.btnHelp) {
-      el.btnHelp.addEventListener("click", () => {
-        closeMenuIfOpen();
-        el.dlgHelp.showModal();
-      });
+    el.btnHelp.addEventListener("click", () => {
+      closeMenuIfOpen();
+      el.dlgHelp.showModal();
+    });
     }
     el.btnCloseHelp.addEventListener("click", () => el.dlgHelp.close());
 
     el.btnFind.addEventListener("click", () => {
       closeMenuIfOpen();
-      openFindReplace(false);
+      openSidebarPanel("replace");
     });
     el.btnReplace.addEventListener("click", () => {
       closeMenuIfOpen();
-      openFindReplace(true);
+      openSidebarPanel("replace");
     });
-    el.btnCloseFind.addEventListener("click", () => el.dlgFindReplace.close());
     el.findQuery.addEventListener("input", refreshMatches);
     el.findQuery.addEventListener("blur", () => recordSearch(el.findQuery.value));
     el.optCase.addEventListener("change", updateSearchOptions);
@@ -214,14 +194,14 @@
 
     el.btnTemplates.addEventListener("click", () => {
       closeMenuIfOpen();
-      openSettings("templates");
+      openSidebarPanel("templates");
     });
     el.templateForm.addEventListener("submit", saveTemplate);
     el.btnTemplateReset.addEventListener("click", resetTemplateForm);
 
     el.btnHistory.addEventListener("click", () => {
       closeMenuIfOpen();
-      openHistoryPanel();
+      openSidebarPanel("history");
     });
     el.btnSnapshot.addEventListener("click", () => {
       snapshotDraft();
@@ -245,10 +225,7 @@
     el.btnShareSelection.addEventListener("click", () => setShareMode("selection"));
     el.btnNativeShare.addEventListener("click", doShare);
     el.btnCopy.addEventListener("click", copyCurrentText);
-    el.btnCut.addEventListener("click", cutSelection);
-    el.btnPaste.addEventListener("click", pasteClipboard);
-    el.btnNormalize.addEventListener("click", normalizeLineBreaks);
-    el.btnCompressBlank.addEventListener("click", compressBlankLines);
+    // share dialog: only Share + Copy
     el.shareShortcutForm.addEventListener("submit", saveShareShortcut);
     el.btnShortcutReset.addEventListener("click", resetShareShortcutForm);
 
@@ -274,6 +251,9 @@
     el.btnComma.addEventListener("click", () => insertPunctuation("comma"));
     el.btnPeriod.addEventListener("click", () => insertPunctuation("period"));
     el.btnNewline.addEventListener("click", () => insertTextAtCursor("\n"));
+    el.btnCopySel.addEventListener("click", copySelection);
+    el.btnCutSel.addEventListener("click", cutSelection);
+    el.btnPasteSel.addEventListener("click", pasteClipboard);
     el.voiceModeRadios.forEach((radio) => {
       radio.addEventListener("change", () => {
         if (!radio.checked) return;
@@ -348,7 +328,7 @@
   }
 
   function openFindReplace(focusReplace) {
-    el.dlgFindReplace.showModal();
+    openSidebarPanel("replace");
     renderFindRecent();
     applySearchOptionsUI();
     refreshMatches();
@@ -356,7 +336,7 @@
   }
 
   function setupDialogDismiss() {
-    [el.dlgHelp, el.dlgFindReplace, el.dlgShare, el.dlgSettings].forEach((dialog) => {
+    [el.dlgHelp, el.dlgShare, el.dlgSettings].forEach((dialog) => {
       dialog.addEventListener("click", (evt) => {
         if (evt.target !== dialog) return;
         const ok = confirm("閉じますか？未保存の変更がある場合は失われる可能性があります。");
@@ -374,11 +354,11 @@
       if (!btn) return;
       const act = btn.dataset.menu;
       closeMenu();
-      if (act === "replace") openFindReplace(true);
-      else if (act === "templates") openSettings("templates");
-      else if (act === "history") { openHistoryPanel(); }
+      if (act === "replace") openSidebarPanel("replace");
+      else if (act === "templates") openSidebarPanel("templates");
+      else if (act === "history") { openSidebarPanel("history"); }
       else if (act === "focus") { const next = !document.body.classList.contains("focus"); applyFocus(next); state.settings.focusDefault = next; saveSettings(); }
-      else if (act === "sidebar") { state.settings.ui.sidebar = !state.settings.ui.sidebar; applySidebar(); saveSettings(); }
+      else if (act === "sidebar") { toggleSidebar(); }
       else if (act === "settings") openSettings("appearance");
       else if (act === "help") el.dlgHelp.showModal();
     });
@@ -705,17 +685,6 @@
     }
   }
 
-  function normalizeLineBreaks() {
-    el.editor.value = el.editor.value.replace(/\r\n?/g, "\n");
-    triggerInput();
-    toast("改行をLFに統一");
-  }
-
-  function compressBlankLines() {
-    el.editor.value = el.editor.value.replace(/\n{3,}/g, "\n\n");
-    triggerInput();
-    toast("連続空行を圧縮");
-  }
 
   function getShareText() {
     if (state.shareMode === "selection") {
@@ -734,7 +703,6 @@
       shareRow.className = "dialog-item";
       shareRow.innerHTML = `
         <div class="dialog-item-head"><strong>${escapeHtml(s.name)}</strong></div>
-        <small>${escapeHtml(s.urlTemplate)}</small>
         <div class="dialog-actions">
           <button data-act="open" data-id="${s.id}" type="button">起動</button>
         </div>`;
@@ -766,7 +734,8 @@
       const title = firstLine(text || "Koedeam");
       const url = item.urlTemplate
         .replaceAll("{text}", encodeURIComponent(text))
-        .replaceAll("{title}", encodeURIComponent(title));
+        .replaceAll("{title}", encodeURIComponent(title))
+        .replaceAll("{prompt}", encodeURIComponent(text));
       try {
         window.location.href = url;
       } catch {
@@ -820,6 +789,51 @@
   function applySidebar() {
     el.layout.classList.toggle("with-sidebar", !!state.settings.ui.sidebar);
     document.body.classList.toggle("with-sidebar", !!state.settings.ui.sidebar);
+    if (state.settings.ui.sidebar) {
+      refreshSideTabElements();
+      bindSideTabs();
+      applySidebarTab(state.settings.sidebarTab || "replace");
+    }
+  }
+
+  async function copySelection() {
+    const { selectionStart, selectionEnd } = el.editor;
+    if (selectionStart === selectionEnd) return toast("選択してからCopyしてください");
+    const selected = el.editor.value.slice(selectionStart, selectionEnd);
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(selected);
+        return toast("Copyしました");
+      }
+    } catch {
+      // fallback
+    }
+    const temp = document.createElement("textarea");
+    temp.value = selected;
+    document.body.append(temp);
+    temp.select();
+    const ok = document.execCommand("copy");
+    temp.remove();
+    toast(ok ? "Copyしました" : "Copyできませんでした");
+  }
+
+  function refreshSideTabElements() {
+    el.sideTabs = Array.from(document.querySelectorAll(".side-tabs .tab-btn"));
+    el.tabPanels = Array.from(document.querySelectorAll(".tab-panel"));
+  }
+
+  function bindSideTabs() {
+    if (state.sideTabsBound) return;
+    if (!el.sidebar) return;
+    el.sidebar.addEventListener("click", (evt) => {
+      const tabBtn = evt.target.closest(".tab-btn");
+      if (!tabBtn) return;
+      const tab = tabBtn.dataset.tab;
+      applySidebarTab(tab);
+      state.settings.sidebarTab = tab;
+      saveSettings();
+    });
+    state.sideTabsBound = true;
   }
 
   function applySidebarTab(tab) {
@@ -836,9 +850,6 @@
   function renderSidebar() {
     el.sidebarTemplates.innerHTML = state.templates.slice(0, 3)
       .map((t) => `<button type="button" data-side="template" data-id="${t.id}">${escapeHtml(t.name)}</button>`).join("");
-    el.sidebarShares.innerHTML = state.settings.shareShortcuts.slice(0, 5)
-      .map((s) => `<button type="button" data-side="share" data-id="${s.id}">${escapeHtml(s.name)}</button>`).join("");
-
     el.sidebar.querySelectorAll("button").forEach((btn) => {
       btn.addEventListener("click", () => {
         const type = btn.dataset.side;
@@ -849,9 +860,6 @@
             el.editor.value = `${el.editor.value}\n${t.text}`.trimStart();
             triggerInput();
           }
-        } else if (type === "share") {
-          const fakeEvt = { target: { dataset: { id, act: "open" } } };
-          handleShareShortcutAction(fakeEvt);
         }
       });
     });
@@ -943,7 +951,7 @@
 
   function closeOpenDialog() {
     let closed = false;
-    [el.dlgHelp, el.dlgFindReplace, el.dlgShare, el.dlgSettings].forEach((d) => {
+    [el.dlgHelp, el.dlgShare, el.dlgSettings].forEach((d) => {
       if (d.open) {
         d.close();
         closed = true;
@@ -1033,14 +1041,24 @@
   }
 
   function openHistoryPanel() {
+    openSidebarPanel("history");
+  }
+
+  function openSidebarPanel(tab) {
     state.settings.ui.sidebar = true;
     applySidebar();
+    applySidebarTab(tab);
     saveSettings();
-    applySidebarTab("history");
-    renderHistory();
-    if (el.sideHistory) {
-      el.sideHistory.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
+    if (tab === "history") renderHistory();
+    if (tab === "templates") renderSidebar();
+    if (tab === "replace") refreshMatches();
+    if (el.sidebar) el.sidebar.scrollTop = 0;
+  }
+
+  function toggleSidebar() {
+    state.settings.ui.sidebar = !state.settings.ui.sidebar;
+    applySidebar();
+    saveSettings();
   }
 
   function togglePunctuationMode() {
@@ -1485,9 +1503,9 @@
       appMessage: document.getElementById("appMessage"),
       sidebar: document.getElementById("sidebar"),
       sidebarTemplates: document.getElementById("sidebarTemplates"),
-      sidebarShares: document.getElementById("sidebarShares"),
       sideTabs: Array.from(document.querySelectorAll(".side-tabs .tab-btn")),
       tabPanels: Array.from(document.querySelectorAll(".tab-panel")),
+      btnCloseSidebar: document.getElementById("btnCloseSidebar"),
 
       btnSidebar: document.getElementById("btnSidebar"),
       btnEditTools: document.getElementById("btnEditTools"),
@@ -1506,7 +1524,6 @@
       dlgHelp: document.getElementById("dlgHelp"),
       btnCloseHelp: document.getElementById("btnCloseHelp"),
 
-      dlgFindReplace: document.getElementById("dlgFindReplace"),
       findQuery: document.getElementById("findQuery"),
       findRecent: document.getElementById("findRecent"),
       optCase: document.getElementById("optCase"),
@@ -1519,7 +1536,6 @@
       btnReplaceNext: document.getElementById("btnReplaceNext"),
       btnReplaceAll: document.getElementById("btnReplaceAll"),
       btnReplaceInSelection: document.getElementById("btnReplaceInSelection"),
-      btnCloseFind: document.getElementById("btnCloseFind"),
 
       dlgSettings: document.getElementById("dlgSettings"),
       settingsAppearance: document.getElementById("settingsAppearance"),
@@ -1553,10 +1569,6 @@
       btnShareSelection: document.getElementById("btnShareSelection"),
       btnNativeShare: document.getElementById("btnNativeShare"),
       btnCopy: document.getElementById("btnCopy"),
-      btnCut: document.getElementById("btnCut"),
-      btnPaste: document.getElementById("btnPaste"),
-      btnNormalize: document.getElementById("btnNormalize"),
-      btnCompressBlank: document.getElementById("btnCompressBlank"),
       shareShortcutList: document.getElementById("shareShortcutList"),
       settingsShareList: document.getElementById("settingsShareList"),
       shareShortcutForm: document.getElementById("shareShortcutForm"),
@@ -1587,6 +1599,9 @@
       btnComma: document.getElementById("btnComma"),
       btnPeriod: document.getElementById("btnPeriod"),
       btnNewline: document.getElementById("btnNewline"),
+      btnCopySel: document.getElementById("btnCopySel"),
+      btnCutSel: document.getElementById("btnCutSel"),
+      btnPasteSel: document.getElementById("btnPasteSel"),
 
       caretLine: document.getElementById("caretLine"),
       caretDot: document.getElementById("caretDot"),

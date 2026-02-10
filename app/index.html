@@ -33,11 +33,39 @@
     </main>
 
     <aside id="sidebar" class="sidebar" aria-label="sidebar">
+      <div class="side-head">
+        <strong>Sidebar</strong>
+        <button id="btnCloseSidebar" type="button" class="btn-icon"><span class="icon">✕</span>Close</button>
+      </div>
       <div class="side-tabs" role="tablist" aria-label="sidebar tabs">
+        <button type="button" class="tab-btn" data-tab="replace" aria-controls="panelReplace">Replace</button>
         <button type="button" class="tab-btn" data-tab="templates" aria-controls="panelTemplates">Templates</button>
         <button type="button" class="tab-btn" data-tab="history" aria-controls="panelHistory">History</button>
-        <button type="button" class="tab-btn" data-tab="share" aria-controls="panelShare">Share</button>
       </div>
+      <section id="panelReplace" class="tab-panel" role="tabpanel">
+        <h2>検索 / 置換</h2>
+        <label>検索語
+          <input id="findQuery" type="text" />
+        </label>
+        <div id="findRecent" class="chip-list"></div>
+        <fieldset class="segment">
+          <legend>検索オプション</legend>
+          <label><input id="optCase" type="checkbox" />大文字/小文字を区別</label>
+          <label><input id="optRegex" type="checkbox" />正規表現</label>
+        </fieldset>
+        <label>置換語
+          <input id="replaceQuery" type="text" />
+        </label>
+        <p id="findStatus">0件</p>
+        <div class="dialog-actions wrap">
+          <button id="btnFindPrev" type="button">前へ</button>
+          <button id="btnFindNext" type="button">次へ</button>
+          <button id="btnReplaceOne" type="button">置換</button>
+          <button id="btnReplaceNext" type="button">次を置換して次へ</button>
+          <button id="btnReplaceAll" type="button">全置換</button>
+          <button id="btnReplaceInSelection" type="button">選択範囲のみ全置換</button>
+        </div>
+      </section>
       <section id="panelTemplates" class="tab-panel" role="tabpanel">
         <h2>Templates</h2>
         <div id="sidebarTemplates" class="sidebar-list"></div>
@@ -59,10 +87,6 @@
           </select>
         </label>
         <div id="historyList" class="dialog-list dialog-body"></div>
-      </section>
-      <section id="panelShare" class="tab-panel">
-        <h2>Share</h2>
-        <div id="sidebarShares" class="sidebar-list"></div>
       </section>
     </aside>
   </div>
@@ -95,34 +119,6 @@
     </aside>
   </div>
 
-  <dialog id="dlgFindReplace">
-    <h2>検索 / 置換</h2>
-    <label>検索語
-      <input id="findQuery" type="text" />
-    </label>
-    <div id="findRecent" class="chip-list"></div>
-    <fieldset class="segment">
-      <legend>検索オプション</legend>
-      <label><input id="optCase" type="checkbox" />大文字/小文字を区別</label>
-      <label><input id="optRegex" type="checkbox" />正規表現</label>
-    </fieldset>
-    <label>置換語
-      <input id="replaceQuery" type="text" />
-    </label>
-    <p id="findStatus">0件</p>
-    <div class="dialog-actions wrap dialog-body">
-      <button id="btnFindPrev" type="button">前へ</button>
-      <button id="btnFindNext" type="button">次へ</button>
-      <button id="btnReplaceOne" type="button">置換</button>
-      <button id="btnReplaceNext" type="button">次を置換して次へ</button>
-      <button id="btnReplaceAll" type="button">全置換</button>
-      <button id="btnReplaceInSelection" type="button">選択範囲のみ全置換</button>
-    </div>
-    <div class="dialog-footer">
-      <button id="btnCloseFind" type="button">Close</button>
-    </div>
-  </dialog>
-
   <dialog id="dlgShare">
     <h2>共有</h2>
     <div class="share-mode">
@@ -130,15 +126,11 @@
       <button id="btnShareSelection" type="button" data-mode="selection">選択範囲</button>
     </div>
     <div class="dialog-actions wrap">
-      <button id="btnNativeShare" type="button">Share API</button>
+      <button id="btnNativeShare" type="button" class="btn-icon"><span class="icon">⇪</span>共有</button>
       <button id="btnCopy" type="button">Copy</button>
-      <button id="btnCut" type="button">Cut</button>
-      <button id="btnPaste" type="button">Paste</button>
-      <button id="btnNormalize" type="button">改行統一LF</button>
-      <button id="btnCompressBlank" type="button">空行圧縮</button>
     </div>
     <h3>共有ショートカット</h3>
-    <div id="shareShortcutList" class="dialog-list dialog-body"></div>
+    <div id="shareShortcutList" class="shortcut-grid dialog-body"></div>
     <div class="dialog-actions">
       <button id="btnOpenSettingsShare" type="button">ショートカット管理へ</button>
     </div>
@@ -267,12 +259,17 @@
             <button id="btnSelectParaNext" type="button" class="nav-wide">次段落<span class="icon">⤓</span></button>
           </div>
         </div>
-        <div class="edit-tools-row">
-          <button id="btnPuncMode" type="button" class="chip">JP</button>
-          <button id="btnComma" type="button"><span class="icon">,</span>カンマ</button>
-          <button id="btnPeriod" type="button"><span class="icon">.</span>ピリオド</button>
-          <button id="btnNewline" type="button"><span class="icon">↵</span>改行</button>
-        </div>
+      <div class="edit-tools-row">
+        <button id="btnPuncMode" type="button" class="chip">JP</button>
+        <button id="btnComma" type="button"><span class="icon">,</span>カンマ</button>
+        <button id="btnPeriod" type="button"><span class="icon">.</span>ピリオド</button>
+        <button id="btnNewline" type="button"><span class="icon">↵</span>改行</button>
+      </div>
+      <div class="edit-tools-row">
+        <button id="btnCopySel" type="button"><span class="icon">⎘</span>Copy</button>
+        <button id="btnCutSel" type="button"><span class="icon">✂</span>Cut</button>
+        <button id="btnPasteSel" type="button"><span class="icon">⎘</span>Paste</button>
+      </div>
       </div>
       <div class="edit-group">
         <div class="edit-group-head">範囲選択</div>
