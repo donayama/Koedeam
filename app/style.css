@@ -162,6 +162,26 @@ select {
 .edit-tools.pos-top { left: 0; right: 0; top: 56px; }
 .edit-tools.pos-left { left: 0; top: 56px; bottom: 70px; width: min(320px, 90vw); overflow: auto; }
 .edit-tools.pos-right { right: 0; top: 56px; bottom: 70px; width: min(320px, 90vw); overflow: auto; }
+.edit-tools.pos-bottom .edit-tools-block,
+.edit-tools.pos-top .edit-tools-block {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.edit-tools.pos-bottom .edit-group,
+.edit-tools.pos-top .edit-group {
+  margin-bottom: 0;
+}
+.edit-tools.pos-left .edit-tools-block,
+.edit-tools.pos-right .edit-tools-block {
+  display: block;
+}
+@media (max-width: 520px) {
+  .edit-tools.pos-bottom .edit-tools-block,
+  .edit-tools.pos-top .edit-tools-block {
+    grid-template-columns: 1fr;
+  }
+}
 .edit-tools-head { display:flex; align-items:center; gap: 8px; margin-bottom: 6px; }
 .edit-tools-row { display:flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
 .edit-tools-row button { flex: 1 1 22%; min-width: 72px; height: 40px; }
