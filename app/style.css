@@ -120,6 +120,13 @@ select {
 .edit-tools-head { display:flex; align-items:center; gap: 8px; margin-bottom: 6px; }
 .edit-tools-row { display:flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
 .edit-tools-row button { flex: 1 1 22%; min-width: 80px; }
+.edit-group { border: 1px dashed var(--line); border-radius: 10px; padding: 8px; margin-bottom: 8px; }
+.edit-group-head { font-size: 12px; opacity: .8; margin-bottom: 6px; }
+.nav-cluster { display:flex; flex-direction: column; gap: 6px; }
+.nav-row { display:grid; grid-template-columns: 1fr 64px 1fr; gap: 6px; align-items:center; }
+.nav-pad { height: 44px; font-size: 16px; }
+.nav-wide { height: 44px; display:flex; align-items:center; justify-content:space-between; gap: 6px; }
+.icon { font-size: 12px; opacity: .9; }
 .chip {
   display:inline-flex;
   align-items:center;

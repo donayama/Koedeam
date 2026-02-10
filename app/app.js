@@ -183,6 +183,8 @@
     el.btnLineEnd.addEventListener("click", () => moveToLineEdge("end"));
     el.btnMoveUp.addEventListener("click", () => moveCursorLine(-1));
     el.btnMoveDown.addEventListener("click", () => moveCursorLine(1));
+    el.btnMoveLeft.addEventListener("click", () => moveCursorChar(-1));
+    el.btnMoveRight.addEventListener("click", () => moveCursorChar(1));
     el.voiceModeRadios.forEach((radio) => {
       radio.addEventListener("change", () => {
         if (!radio.checked) return;
@@ -1032,6 +1034,13 @@
     }
   }
 
+  function moveCursorChar(step) {
+    const pos = el.editor.selectionStart;
+    const next = Math.max(0, Math.min(el.editor.value.length, pos + step));
+    el.editor.focus();
+    el.editor.setSelectionRange(next, next);
+  }
+
   function getLineBounds(text, pos) {
     const start = text.lastIndexOf("\n", Math.max(0, pos - 1)) + 1;
     const endIndex = text.indexOf("\n", pos);
@@ -1149,6 +1158,8 @@
       btnLineEnd: document.getElementById("btnLineEnd"),
       btnMoveUp: document.getElementById("btnMoveUp"),
       btnMoveDown: document.getElementById("btnMoveDown"),
+      btnMoveLeft: document.getElementById("btnMoveLeft"),
+      btnMoveRight: document.getElementById("btnMoveRight"),
 
       updateToast: document.getElementById("updateToast"),
       btnUpdateApp: document.getElementById("btnUpdateApp"),

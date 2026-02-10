@@ -156,24 +156,38 @@
         <label class="chip"><input type="radio" name="voiceMode" value="cursor" />カーソル</label>
         <label class="chip"><input type="radio" name="voiceMode" value="replace" />置換</label>
       </div>
-      <div class="edit-tools-row">
-        <button id="btnSelectLine" type="button">行選択</button>
-        <button id="btnSelectBlock" type="button">ブロック</button>
-        <button id="btnSelectPara" type="button">段落</button>
-        <button id="btnSelectAll" type="button">全選択</button>
+      <div class="edit-group">
+        <div class="edit-group-head">移動</div>
+        <div class="nav-cluster">
+          <div class="nav-row">
+            <button id="btnLineStart" type="button" class="nav-wide"><span class="icon">|◀</span>行頭</button>
+            <button id="btnMoveUp" type="button" class="nav-pad"><span class="icon">▲</span></button>
+            <button id="btnLineEnd" type="button" class="nav-wide">行末<span class="icon">▶|</span></button>
+          </div>
+          <div class="nav-row">
+            <button id="btnMoveLeft" type="button" class="nav-pad"><span class="icon">◀</span></button>
+            <button id="btnMoveRight" type="button" class="nav-pad"><span class="icon">▶</span></button>
+          </div>
+          <div class="nav-row">
+            <button id="btnSelectParaPrev" type="button" class="nav-wide"><span class="icon">⤒</span>前段落</button>
+            <button id="btnMoveDown" type="button" class="nav-pad"><span class="icon">▼</span></button>
+            <button id="btnSelectParaNext" type="button" class="nav-wide">次段落<span class="icon">⤓</span></button>
+          </div>
+        </div>
       </div>
-      <div class="edit-tools-row">
-        <button id="btnSelectParaPrev" type="button">前段落</button>
-        <button id="btnSelectParaNext" type="button">次段落</button>
-        <button id="btnLineStart" type="button">行頭</button>
-        <button id="btnLineEnd" type="button">行末</button>
-      </div>
-      <div class="edit-tools-row">
-        <button id="btnExpandUp" type="button">上に拡張</button>
-        <button id="btnExpandDown" type="button">下に拡張</button>
-        <button id="btnShrinkDown" type="button">下を縮小</button>
-        <button id="btnMoveUp" type="button">上へ</button>
-        <button id="btnMoveDown" type="button">下へ</button>
+      <div class="edit-group">
+        <div class="edit-group-head">範囲選択</div>
+        <div class="edit-tools-row">
+          <button id="btnSelectLine" type="button"><span class="icon">▭</span>行選択</button>
+          <button id="btnSelectBlock" type="button"><span class="icon">▦</span>ブロック</button>
+          <button id="btnSelectPara" type="button"><span class="icon">≡</span>段落</button>
+          <button id="btnSelectAll" type="button"><span class="icon">▣</span>全選択</button>
+        </div>
+        <div class="edit-tools-row">
+          <button id="btnExpandUp" type="button"><span class="icon">⇑</span>上に拡張</button>
+          <button id="btnExpandDown" type="button"><span class="icon">⇓</span>下に拡張</button>
+          <button id="btnShrinkDown" type="button"><span class="icon">⇢</span>下を縮小</button>
+        </div>
       </div>
     </div>
   </section>
