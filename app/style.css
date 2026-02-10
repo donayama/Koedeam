@@ -152,6 +152,10 @@ select {
 .dialog-item-head { display:flex; justify-content:space-between; gap: 8px; }
 .shortcut-grid { display:flex; flex-wrap: wrap; gap: 8px; }
 .shortcut-grid .dialog-item { flex: 1 1 44%; min-width: 120px; }
+.shortcut-inline { align-items: center; }
+.shortcut-inline-list { display:flex; flex-wrap: wrap; gap: 6px; }
+.shortcut-inline-list button { padding: 8px 10px; border-radius: 999px; }
+.settings-tabs { margin-bottom: 10px; }
 .share-mode { display:flex; gap: 8px; margin-bottom: 8px; }
 .share-mode button.active { border-color: #0aa; }
 .edit-tools {

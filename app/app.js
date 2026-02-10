@@ -66,7 +66,8 @@
     lastAutoSnapshotText: "",
     dismissedUpdate: false,
     editToolsVisible: false,
-    sideTabsBound: false
+    sideTabsBound: false,
+    settingsTabsBound: false
   };
 
   const el = getElements();
@@ -151,19 +152,22 @@
       });
     }
     if (el.btnSidebar) {
-    el.btnSidebar.addEventListener("click", () => {
-      closeMenuIfOpen();
-      toggleSidebar();
-    });
-    el.btnCloseSidebar.addEventListener("click", () => toggleSidebar());
+      el.btnSidebar.addEventListener("click", () => {
+        closeMenuIfOpen();
+        toggleSidebar();
+      });
+    }
+    if (el.btnCloseSidebar) {
+      el.btnCloseSidebar.addEventListener("click", () => toggleSidebar());
     }
     bindSideTabs();
+    bindSettingsTabs();
 
     if (el.btnHelp) {
-    el.btnHelp.addEventListener("click", () => {
-      closeMenuIfOpen();
-      el.dlgHelp.showModal();
-    });
+      el.btnHelp.addEventListener("click", () => {
+        closeMenuIfOpen();
+        el.dlgHelp.showModal();
+      });
     }
     el.btnCloseHelp.addEventListener("click", () => el.dlgHelp.close());
 
@@ -699,13 +703,11 @@
     el.shareShortcutList.innerHTML = "";
     el.settingsShareList.innerHTML = "";
     for (const s of state.settings.shareShortcuts.slice(0, 5)) {
-      const shareRow = document.createElement("div");
-      shareRow.className = "dialog-item";
-      shareRow.innerHTML = `
-        <div class="dialog-item-head"><strong>${escapeHtml(s.name)}</strong></div>
-        <div class="dialog-actions">
-          <button data-act="open" data-id="${s.id}" type="button">起動</button>
-        </div>`;
+      const shareRow = document.createElement("button");
+      shareRow.type = "button";
+      shareRow.dataset.act = "open";
+      shareRow.dataset.id = s.id;
+      shareRow.textContent = s.name;
       const settingsRow = document.createElement("div");
       settingsRow.className = "dialog-item";
       settingsRow.innerHTML = `
@@ -845,6 +847,18 @@
     el.tabPanels.forEach((panel) => {
       panel.classList.toggle("active", panel.id === targetId);
     });
+  }
+
+  function bindSettingsTabs() {
+    if (state.settingsTabsBound) return;
+    if (!el.settingsTabs || !el.settingsTabs.length) return;
+    el.settingsTabs.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const tab = btn.dataset.tab;
+        applySettingsTab(tab);
+      });
+    });
+    state.settingsTabsBound = true;
   }
 
   function renderSidebar() {
@@ -1031,13 +1045,16 @@
     renderShareShortcuts();
     loadApiKeys();
     applyEditPanelPosition();
-    const target = {
-      appearance: el.settingsAppearance,
-      templates: el.settingsTemplates,
-      share: el.settingsShare,
-      api: el.settingsApi
-    }[section];
-    if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+    applySettingsTab(section || "appearance");
+  }
+
+  function applySettingsTab(tab) {
+    el.settingsTabs.forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.tab === tab);
+    });
+    el.settingsPanels.forEach((panel) => {
+      panel.classList.toggle("active", panel.id === `panelSettings${capitalize(tab)}`);
+    });
   }
 
   function openHistoryPanel() {
@@ -1538,10 +1555,12 @@
       btnReplaceInSelection: document.getElementById("btnReplaceInSelection"),
 
       dlgSettings: document.getElementById("dlgSettings"),
-      settingsAppearance: document.getElementById("settingsAppearance"),
-      settingsTemplates: document.getElementById("settingsTemplates"),
-      settingsShare: document.getElementById("settingsShare"),
-      settingsApi: document.getElementById("settingsApi"),
+      settingsAppearance: document.getElementById("panelSettingsAppearance"),
+      settingsTemplates: document.getElementById("panelSettingsTemplates"),
+      settingsShare: document.getElementById("panelSettingsShare"),
+      settingsApi: document.getElementById("panelSettingsApi"),
+      settingsTabs: Array.from(document.querySelectorAll("#dlgSettings .settings-tabs .tab-btn")),
+      settingsPanels: Array.from(document.querySelectorAll("#dlgSettings .tab-panel")),
       fontSizeRange: document.getElementById("fontSizeRange"),
       fontSizeValue: document.getElementById("fontSizeValue"),
       fontFaceRadios: Array.from(document.querySelectorAll("input[name='fontFace']")),

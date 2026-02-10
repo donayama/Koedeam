@@ -125,12 +125,12 @@
       <button id="btnShareAll" type="button" data-mode="all">全文</button>
       <button id="btnShareSelection" type="button" data-mode="selection">選択範囲</button>
     </div>
-    <div class="dialog-actions wrap">
+    <div class="dialog-actions wrap shortcut-inline">
       <button id="btnNativeShare" type="button" class="btn-icon"><span class="icon">⇪</span>共有</button>
-      <button id="btnCopy" type="button">Copy</button>
+      <button id="btnCopy" type="button">COPY</button>
+      <div id="shareShortcutList" class="shortcut-inline-list"></div>
     </div>
     <h3>共有ショートカット</h3>
-    <div id="shareShortcutList" class="shortcut-grid dialog-body"></div>
     <div class="dialog-actions">
       <button id="btnOpenSettingsShare" type="button">ショートカット管理へ</button>
     </div>
@@ -139,7 +139,13 @@
 
   <dialog id="dlgSettings">
     <h2>設定</h2>
-    <section id="settingsAppearance" class="settings-section">
+    <div class="side-tabs settings-tabs" role="tablist" aria-label="settings tabs">
+      <button type="button" class="tab-btn" data-tab="appearance" aria-controls="panelSettingsAppearance">表示</button>
+      <button type="button" class="tab-btn" data-tab="templates" aria-controls="panelSettingsTemplates">テンプレート</button>
+      <button type="button" class="tab-btn" data-tab="share" aria-controls="panelSettingsShare">共有ショートカット</button>
+      <button type="button" class="tab-btn" data-tab="api" aria-controls="panelSettingsApi">API</button>
+    </div>
+    <section id="panelSettingsAppearance" class="tab-panel settings-section" role="tabpanel">
       <h3>表示</h3>
       <label>フォントサイズ <span id="fontSizeValue" class="hint"></span>
         <input id="fontSizeRange" type="range" min="12" max="32" step="1" />
@@ -196,7 +202,7 @@
         <label><input type="checkbox" data-toolbar="share" />Share</label>
       </fieldset>
     </section>
-    <section id="settingsTemplates" class="settings-section">
+    <section id="panelSettingsTemplates" class="tab-panel settings-section">
       <h3>テンプレ</h3>
       <div id="templateList" class="dialog-list dialog-body"></div>
       <form id="templateForm" class="template-form">
@@ -209,7 +215,7 @@
         </div>
       </form>
     </section>
-    <section id="settingsShare" class="settings-section">
+    <section id="panelSettingsShare" class="tab-panel settings-section">
       <h3>共有ショートカット</h3>
       <div id="settingsShareList" class="dialog-list dialog-body"></div>
       <form id="shareShortcutForm" class="template-form">
@@ -222,7 +228,7 @@
         </div>
       </form>
     </section>
-    <section id="settingsApi" class="settings-section">
+    <section id="panelSettingsApi" class="tab-panel settings-section">
       <h3>APIキー（端末内保存）</h3>
       <label>OpenAI API Key
         <input id="apiKeyOpenAI" type="password" placeholder="sk-..." />
