@@ -87,6 +87,9 @@
 
   function bindEvents() {
     let saveTimer = null;
+    const closeMenuIfOpen = () => {
+      if (el.dlgMenu && el.dlgMenu.open) el.dlgMenu.close();
+    };
     el.editor.addEventListener("input", () => {
       if (saveTimer) clearTimeout(saveTimer);
       el.saveStatus.textContent = "Typing...";
@@ -105,24 +108,40 @@
     };
     el.btnMenu.addEventListener("click", () => el.dlgMenu.showModal());
     el.btnCloseMenu.addEventListener("click", () => el.dlgMenu.close());
-    el.btnFocus.addEventListener("click", toggleFocus);
+    el.btnFocus.addEventListener("click", () => {
+      closeMenuIfOpen();
+      toggleFocus();
+    });
     el.btnExitFocus.addEventListener("click", toggleFocus);
     el.btnEditTools.addEventListener("click", () => {
       const next = !state.editToolsVisible;
       setEditToolsVisible(next);
     });
-    el.btnSettings.addEventListener("click", () => openSettings("appearance"));
+    el.btnSettings.addEventListener("click", () => {
+      closeMenuIfOpen();
+      openSettings("appearance");
+    });
     el.btnSidebar.addEventListener("click", () => {
+      closeMenuIfOpen();
       state.settings.ui.sidebar = !state.settings.ui.sidebar;
       applySidebar();
       saveSettings();
     });
 
-    el.btnHelp.addEventListener("click", () => el.dlgHelp.showModal());
+    el.btnHelp.addEventListener("click", () => {
+      closeMenuIfOpen();
+      el.dlgHelp.showModal();
+    });
     el.btnCloseHelp.addEventListener("click", () => el.dlgHelp.close());
 
-    el.btnFind.addEventListener("click", () => openFindReplace(false));
-    el.btnReplace.addEventListener("click", () => openFindReplace(true));
+    el.btnFind.addEventListener("click", () => {
+      closeMenuIfOpen();
+      openFindReplace(false);
+    });
+    el.btnReplace.addEventListener("click", () => {
+      closeMenuIfOpen();
+      openFindReplace(true);
+    });
     el.btnCloseFind.addEventListener("click", () => el.dlgFindReplace.close());
     el.findQuery.addEventListener("input", refreshMatches);
     el.findQuery.addEventListener("blur", () => recordSearch(el.findQuery.value));
@@ -142,12 +161,14 @@
     el.btnReplaceInSelection.addEventListener("click", () => replaceAll(true));
 
     el.btnTemplates.addEventListener("click", () => {
+      closeMenuIfOpen();
       openSettings("templates");
     });
     el.templateForm.addEventListener("submit", saveTemplate);
     el.btnTemplateReset.addEventListener("click", resetTemplateForm);
 
     el.btnHistory.addEventListener("click", () => {
+      closeMenuIfOpen();
       renderHistory();
       el.dlgHistory.showModal();
     });
@@ -275,7 +296,7 @@
   }
 
   function setupDialogDismiss() {
-    [el.dlgHelp, el.dlgFindReplace, el.dlgHistory, el.dlgShare, el.dlgSettings].forEach((dialog) => {
+    [el.dlgHelp, el.dlgFindReplace, el.dlgHistory, el.dlgShare, el.dlgSettings, el.dlgMenu].forEach((dialog) => {
       dialog.addEventListener("click", (evt) => {
         if (evt.target !== dialog) return;
         const ok = confirm("閉じますか？未保存の変更がある場合は失われる可能性があります。");
