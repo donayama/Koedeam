@@ -189,6 +189,12 @@
         <label><input type="radio" name="editPanelPos" value="right" />右</label>
       </fieldset>
       <fieldset class="segment">
+        <legend>音声挿入モード</legend>
+        <label><input type="radio" name="voiceMode" value="append" />末尾に追記</label>
+        <label><input type="radio" name="voiceMode" value="cursor" />カーソル位置に挿入</label>
+        <label><input type="radio" name="voiceMode" value="replace" />選択範囲を置換</label>
+      </fieldset>
+      <fieldset class="segment">
         <legend>ツールバー表示</legend>
         <label><input type="checkbox" data-toolbar="mic" />Mic</label>
         <label><input type="checkbox" data-toolbar="find" />Find</label>
@@ -244,13 +250,8 @@
       <span class="hint">リアルタイム操作用</span>
     </div>
     <div class="edit-tools-block">
-      <div class="edit-tools-row">
-        <label class="chip"><input type="radio" name="voiceMode" value="append" />末尾</label>
-        <label class="chip"><input type="radio" name="voiceMode" value="cursor" />カーソル</label>
-        <label class="chip"><input type="radio" name="voiceMode" value="replace" />置換</label>
-      </div>
       <div class="edit-group">
-        <div class="edit-group-head">移動</div>
+        <div class="edit-group-head">カーソル</div>
         <div class="nav-cluster">
           <div class="nav-row">
             <button id="btnLineStart" type="button" class="nav-wide"><span class="icon">|◀</span>行頭</button>
@@ -267,6 +268,12 @@
             <button id="btnSelectParaNext" type="button" class="nav-wide">次段落<span class="icon">⤓</span></button>
           </div>
         </div>
+        <div class="edit-tools-row">
+          <button id="btnPuncMode" type="button" class="chip">JP</button>
+          <button id="btnComma" type="button"><span class="icon">,</span>カンマ</button>
+          <button id="btnPeriod" type="button"><span class="icon">.</span>ピリオド</button>
+          <button id="btnNewline" type="button"><span class="icon">↵</span>改行</button>
+        </div>
       </div>
       <div class="edit-group">
         <div class="edit-group-head">範囲選択</div>
@@ -280,15 +287,6 @@
           <button id="btnExpandUp" type="button"><span class="icon">⇑</span>上に拡張</button>
           <button id="btnExpandDown" type="button"><span class="icon">⇓</span>下に拡張</button>
           <button id="btnShrinkDown" type="button"><span class="icon">⇢</span>下を縮小</button>
-        </div>
-      </div>
-      <div class="edit-group">
-        <div class="edit-group-head">記号/改行</div>
-        <div class="edit-tools-row">
-          <button id="btnPuncMode" type="button" class="chip">JP</button>
-          <button id="btnComma" type="button"><span class="icon">,</span>カンマ</button>
-          <button id="btnPeriod" type="button"><span class="icon">.</span>ピリオド</button>
-          <button id="btnNewline" type="button"><span class="icon">↵</span>改行</button>
         </div>
       </div>
     </div>
