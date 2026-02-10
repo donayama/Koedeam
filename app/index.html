@@ -145,32 +145,38 @@
     <div class="dialog-actions"><button id="btnCloseShare" type="button">Close</button></div>
   </dialog>
 
-  <dialog id="dlgEditTools">
-    <h2>編集補助</h2>
-    <p class="hint">スマホ/タブレットでの選択や移動を補助します。</p>
-    <fieldset class="segment">
-      <legend>音声挿入モード</legend>
-      <label><input type="radio" name="voiceMode" value="append" />末尾に追記</label>
-      <label><input type="radio" name="voiceMode" value="cursor" />カーソル位置に挿入</label>
-      <label><input type="radio" name="voiceMode" value="replace" />選択範囲を置換</label>
-    </fieldset>
-    <div class="dialog-actions wrap">
-      <button id="btnSelectLine" type="button">行を選択</button>
-      <button id="btnSelectBlock" type="button">ブロック選択</button>
-      <button id="btnSelectPara" type="button">段落選択</button>
-      <button id="btnSelectParaPrev" type="button">前の段落へ</button>
-      <button id="btnSelectParaNext" type="button">次の段落へ</button>
-      <button id="btnExpandUp" type="button">上に1行拡張</button>
-      <button id="btnExpandDown" type="button">下に1行拡張</button>
-      <button id="btnShrinkDown" type="button">下を1行縮める</button>
-      <button id="btnSelectAll" type="button">全選択</button>
-      <button id="btnLineStart" type="button">行頭へ</button>
-      <button id="btnLineEnd" type="button">行末へ</button>
-      <button id="btnMoveUp" type="button">上の行へ</button>
-      <button id="btnMoveDown" type="button">下の行へ</button>
+  <section id="editToolsPanel" class="edit-tools" aria-label="edit tools">
+    <div class="edit-tools-head">
+      <strong>編集補助</strong>
+      <span class="hint">リアルタイム操作用</span>
     </div>
-    <div class="dialog-actions"><button id="btnCloseEdit" type="button">Close</button></div>
-  </dialog>
+    <div class="edit-tools-block">
+      <div class="edit-tools-row">
+        <label class="chip"><input type="radio" name="voiceMode" value="append" />末尾</label>
+        <label class="chip"><input type="radio" name="voiceMode" value="cursor" />カーソル</label>
+        <label class="chip"><input type="radio" name="voiceMode" value="replace" />置換</label>
+      </div>
+      <div class="edit-tools-row">
+        <button id="btnSelectLine" type="button">行選択</button>
+        <button id="btnSelectBlock" type="button">ブロック</button>
+        <button id="btnSelectPara" type="button">段落</button>
+        <button id="btnSelectAll" type="button">全選択</button>
+      </div>
+      <div class="edit-tools-row">
+        <button id="btnSelectParaPrev" type="button">前段落</button>
+        <button id="btnSelectParaNext" type="button">次段落</button>
+        <button id="btnLineStart" type="button">行頭</button>
+        <button id="btnLineEnd" type="button">行末</button>
+      </div>
+      <div class="edit-tools-row">
+        <button id="btnExpandUp" type="button">上に拡張</button>
+        <button id="btnExpandDown" type="button">下に拡張</button>
+        <button id="btnShrinkDown" type="button">下を縮小</button>
+        <button id="btnMoveUp" type="button">上へ</button>
+        <button id="btnMoveDown" type="button">下へ</button>
+      </div>
+    </div>
+  </section>
 
   <dialog id="dlgHelp">
     <h2>Koedeam Help</h2>

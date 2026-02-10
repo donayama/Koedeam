@@ -104,6 +104,32 @@ select {
 .dialog-item-head { display:flex; justify-content:space-between; gap: 8px; }
 .share-mode { display:flex; gap: 8px; margin-bottom: 8px; }
 .share-mode button.active { border-color: #0aa; }
+.edit-tools {
+  position: sticky;
+  bottom: 70px;
+  z-index: 4;
+  margin: 0 10px 10px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(10,10,10,.06);
+  backdrop-filter: blur(6px);
+  display: none;
+}
+.edit-tools.show { display: block; }
+.edit-tools-head { display:flex; align-items:center; gap: 8px; margin-bottom: 6px; }
+.edit-tools-row { display:flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+.edit-tools-row button { flex: 1 1 22%; min-width: 80px; }
+.chip {
+  display:inline-flex;
+  align-items:center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: transparent;
+  font-size: 12px;
+}
 .toast {
   position: fixed;
   left: 12px;
@@ -125,6 +151,8 @@ body.focus .topbar,
 body.focus .bottombar { display:none; }
 body.focus .main { padding: 12px; }
 body.focus #editor { min-height: calc(100vh - 32px); font-size: 19px; padding: 16px; }
+.focus-exit { display: none; }
+body.focus .edit-tools { display: none; }
 .focus-exit { display: none; }
 body.focus .focus-exit {
   display: inline-flex;

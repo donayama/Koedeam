@@ -93,7 +93,10 @@
     };
     el.btnFocus.addEventListener("click", toggleFocus);
     el.btnExitFocus.addEventListener("click", toggleFocus);
-    el.btnEditTools.addEventListener("click", () => el.dlgEditTools.showModal());
+    el.btnEditTools.addEventListener("click", () => {
+      const next = !el.editToolsPanel.classList.contains("show");
+      el.editToolsPanel.classList.toggle("show", next);
+    });
     el.btnSidebar.addEventListener("click", () => {
       state.settings.ui.sidebar = !state.settings.ui.sidebar;
       applySidebar();
@@ -164,7 +167,6 @@
     el.shareShortcutForm.addEventListener("submit", saveShareShortcut);
     el.btnShortcutReset.addEventListener("click", resetShareShortcutForm);
 
-    el.btnCloseEdit.addEventListener("click", () => el.dlgEditTools.close());
     el.btnSelectLine.addEventListener("click", selectLine);
     el.btnSelectBlock.addEventListener("click", selectBlock);
     el.btnSelectPara.addEventListener("click", selectBlock);
@@ -755,7 +757,7 @@
 
   function closeOpenDialog() {
     let closed = false;
-    [el.dlgHelp, el.dlgFindReplace, el.dlgTemplates, el.dlgHistory, el.dlgShare, el.dlgEditTools].forEach((d) => {
+    [el.dlgHelp, el.dlgFindReplace, el.dlgTemplates, el.dlgHistory, el.dlgShare].forEach((d) => {
       if (d.open) {
         d.close();
         closed = true;
@@ -1132,7 +1134,7 @@
       btnShortcutReset: document.getElementById("btnShortcutReset"),
       btnCloseShare: document.getElementById("btnCloseShare"),
 
-      dlgEditTools: document.getElementById("dlgEditTools"),
+      editToolsPanel: document.getElementById("editToolsPanel"),
       voiceModeRadios: Array.from(document.querySelectorAll("input[name='voiceMode']")),
       btnSelectLine: document.getElementById("btnSelectLine"),
       btnSelectBlock: document.getElementById("btnSelectBlock"),
@@ -1147,7 +1149,6 @@
       btnLineEnd: document.getElementById("btnLineEnd"),
       btnMoveUp: document.getElementById("btnMoveUp"),
       btnMoveDown: document.getElementById("btnMoveDown"),
-      btnCloseEdit: document.getElementById("btnCloseEdit"),
 
       updateToast: document.getElementById("updateToast"),
       btnUpdateApp: document.getElementById("btnUpdateApp"),
