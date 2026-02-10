@@ -1,12 +1,12 @@
 :root {
-  color-scheme: light dark;
-  --bg: #f7f4ef;
+  color-scheme: light;
+  --bg: #ffffff;
   --ink: #1c1a18;
   --muted: #625c55;
   --accent: #156c6b;
   --accent-2: #d0b98f;
-  --card: rgba(255, 255, 255, 0.7);
-  --card-border: rgba(60, 52, 45, 0.2);
+  --card: rgba(255, 255, 255, 0.92);
+  --card-border: rgba(60, 52, 45, 0.18);
 }
 * { box-sizing: border-box; }
 body {
@@ -14,7 +14,7 @@ body {
   font-family: "Avenir Next", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif;
   line-height: 1.7;
   color: var(--ink);
-  background: radial-gradient(circle at top, rgba(255, 250, 240, 0.9), var(--bg));
+  background: var(--bg);
 }
 .wrap { max-width: 1080px; margin: 0 auto; padding: 20px; }
 .header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
@@ -22,7 +22,20 @@ body {
 .brand-text { display: flex; flex-direction: column; gap: 2px; }
 .brand-name { font-size: 18px; font-weight: 700; letter-spacing: .06em; }
 .brand-tag { font-size: 13px; color: var(--muted); }
-.logo { height: 44px; width: auto; }
+.logo-frame {
+  width: 170px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+.logo {
+  width: 180px;
+  height: 72px;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
 .nav { display: flex; gap: 8px; }
 .hero { padding: 36px 0 24px; }
 .hero-wrap { display: grid; grid-template-columns: 1.1fr .9fr; gap: 20px; align-items: center; }
@@ -50,7 +63,12 @@ body {
   background: linear-gradient(135deg, rgba(21, 108, 107, 0.14), rgba(208, 185, 143, 0.2));
   border: 1px solid rgba(21, 108, 107, 0.2);
 }
-.hero-logo { width: 220px; height: auto; }
+.hero-logo {
+  width: 240px;
+  height: 96px;
+  object-fit: cover;
+  object-position: center;
+}
 .hero-icon { width: 64px; height: auto; opacity: .75; }
 .cta { display: flex; gap: 10px; flex-wrap: wrap; }
 
@@ -100,6 +118,17 @@ body {
 .footer-brand { display: flex; align-items: center; gap: 8px; }
 .footer-icon { width: 24px; height: 24px; }
 
+.hero-character {
+  display: grid;
+  place-items: center;
+  margin: 10px 0 26px;
+}
+.hero-character-img {
+  width: min(520px, 88vw);
+  height: auto;
+  filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.12));
+}
+
 @media (max-width: 980px) {
   .hero-wrap { grid-template-columns: 1fr; }
   .feature-strip { grid-template-columns: repeat(2, 1fr); }
@@ -108,18 +137,7 @@ body {
 @media (max-width: 860px) {
   .feature-grid { grid-template-columns: 1fr; }
   .grid3 { grid-template-columns: 1fr; }
-  .logo { height: 36px; }
-  .hero-logo { width: 180px; }
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #111111;
-    --ink: #f2ece6;
-    --muted: #b2a79d;
-    --card: rgba(25, 24, 23, 0.75);
-    --card-border: rgba(255, 255, 255, 0.12);
-  }
-  body { background: radial-gradient(circle at top, rgba(34, 29, 25, 0.9), var(--bg)); }
-  .hero-mark { border-color: rgba(255, 255, 255, 0.16); }
+  .logo-frame { width: 150px; height: 46px; }
+  .logo { width: 160px; height: 66px; }
+  .hero-logo { width: 200px; height: 84px; }
 }
