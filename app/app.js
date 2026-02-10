@@ -1140,12 +1140,14 @@
       const nextPos = prevStartBoundary === -1 ? 0 : prevStartBoundary + 2;
       el.editor.focus();
       el.editor.setSelectionRange(nextPos, nextPos);
+      ensureCaretVisible();
     } else {
       const after = text.slice(Math.min(text.length, end + 2));
       const nextBoundary = after.indexOf("\n\n");
       const nextPos = nextBoundary === -1 ? text.length : end + 2 + nextBoundary + 2;
       el.editor.focus();
       el.editor.setSelectionRange(nextPos, nextPos);
+      ensureCaretVisible();
     }
   }
 
@@ -1224,6 +1226,38 @@
     const next = Math.max(0, Math.min(el.editor.value.length, pos + step));
     el.editor.focus();
     el.editor.setSelectionRange(next, next);
+  }
+
+  function ensureCaretVisible() {
+    const ta = el.editor;
+    const pos = ta.selectionStart;
+    const text = ta.value.slice(0, pos);
+    const cs = window.getComputedStyle(ta);
+    const mirror = document.createElement("div");
+    mirror.style.position = "absolute";
+    mirror.style.visibility = "hidden";
+    mirror.style.whiteSpace = "pre-wrap";
+    mirror.style.wordWrap = "break-word";
+    mirror.style.fontFamily = cs.fontFamily;
+    mirror.style.fontSize = cs.fontSize;
+    mirror.style.lineHeight = cs.lineHeight;
+    mirror.style.padding = cs.padding;
+    mirror.style.border = cs.border;
+    mirror.style.width = `${ta.clientWidth}px`;
+    mirror.textContent = text;
+    const marker = document.createElement("span");
+    marker.textContent = "▮";
+    mirror.append(marker);
+    document.body.append(mirror);
+    const markerTop = marker.offsetTop;
+    const padTop = parseFloat(cs.paddingTop) || 0;
+    const viewTop = ta.scrollTop;
+    const viewBottom = viewTop + ta.clientHeight;
+    const caretTop = markerTop + padTop;
+    if (caretTop < viewTop || caretTop > viewBottom - 24) {
+      ta.scrollTop = Math.max(0, caretTop - ta.clientHeight / 2);
+    }
+    mirror.remove();
   }
 
   function getLineBounds(text, pos) {
