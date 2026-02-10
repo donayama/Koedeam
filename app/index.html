@@ -61,6 +61,11 @@
       <input id="findQuery" type="text" />
     </label>
     <div id="findRecent" class="chip-list"></div>
+    <fieldset class="segment">
+      <legend>検索オプション</legend>
+      <label><input id="optCase" type="checkbox" />大文字/小文字を区別</label>
+      <label><input id="optRegex" type="checkbox" />正規表現</label>
+    </fieldset>
     <label>置換語
       <input id="replaceQuery" type="text" />
     </label>
@@ -99,9 +104,12 @@
     <label>自動スナップショット（分）
       <select id="autoSnapshotSelect">
         <option value="0">OFF</option>
+        <option value="1">1</option>
         <option value="2">2</option>
+        <option value="3">3</option>
         <option value="5">5</option>
         <option value="10">10</option>
+        <option value="15">15</option>
       </select>
     </label>
     <div id="historyList" class="dialog-list"></div>
@@ -148,10 +156,12 @@
     <div class="dialog-actions wrap">
       <button id="btnSelectLine" type="button">行を選択</button>
       <button id="btnSelectBlock" type="button">ブロック選択</button>
+      <button id="btnSelectPara" type="button">段落選択</button>
       <button id="btnSelectParaPrev" type="button">前の段落へ</button>
       <button id="btnSelectParaNext" type="button">次の段落へ</button>
       <button id="btnExpandUp" type="button">上に1行拡張</button>
       <button id="btnExpandDown" type="button">下に1行拡張</button>
+      <button id="btnShrinkDown" type="button">下を1行縮める</button>
       <button id="btnSelectAll" type="button">全選択</button>
       <button id="btnLineStart" type="button">行頭へ</button>
       <button id="btnLineEnd" type="button">行末へ</button>

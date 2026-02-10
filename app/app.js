@@ -20,6 +20,10 @@
     voiceInsertMode: "cursor",
     autoSnapshotMinutes: 0,
     searchHistory: [],
+    searchOptions: {
+      caseSensitive: false,
+      useRegex: false
+    },
     shareShortcuts: [
       { id: uid(), name: "メール", urlTemplate: "mailto:?subject={title}&body={text}" },
       { id: uid(), name: "LINE", urlTemplate: "line://msg/text/{text}" },
@@ -102,6 +106,8 @@
     el.btnCloseFind.addEventListener("click", () => el.dlgFindReplace.close());
     el.findQuery.addEventListener("input", refreshMatches);
     el.findQuery.addEventListener("blur", () => recordSearch(el.findQuery.value));
+    el.optCase.addEventListener("change", updateSearchOptions);
+    el.optRegex.addEventListener("change", updateSearchOptions);
     el.btnFindNext.addEventListener("click", () => {
       recordSearch(el.findQuery.value);
       jumpMatch(1);
@@ -159,10 +165,12 @@
     el.btnCloseEdit.addEventListener("click", () => el.dlgEditTools.close());
     el.btnSelectLine.addEventListener("click", selectLine);
     el.btnSelectBlock.addEventListener("click", selectBlock);
+    el.btnSelectPara.addEventListener("click", selectBlock);
     el.btnSelectParaPrev.addEventListener("click", () => moveParagraph(-1));
     el.btnSelectParaNext.addEventListener("click", () => moveParagraph(1));
     el.btnExpandUp.addEventListener("click", () => expandSelection(-1));
     el.btnExpandDown.addEventListener("click", () => expandSelection(1));
+    el.btnShrinkDown.addEventListener("click", () => shrinkSelection(1));
     el.btnSelectAll.addEventListener("click", () => {
       el.editor.focus();
       el.editor.select();
@@ -209,6 +217,7 @@
   function openFindReplace(focusReplace) {
     el.dlgFindReplace.showModal();
     renderFindRecent();
+    applySearchOptionsUI();
     refreshMatches();
     (focusReplace ? el.replaceQuery : el.findQuery).focus();
   }
@@ -222,12 +231,19 @@
       el.findStatus.textContent = "0件";
       return;
     }
-    let index = 0;
-    while (index <= text.length) {
-      const found = text.indexOf(query, index);
-      if (found === -1) break;
-      state.matches.push({ start: found, end: found + query.length });
-      index = found + Math.max(query.length, 1);
+    const { regex, error } = buildSearchRegex(query);
+    if (error) {
+      state.activeMatchIndex = -1;
+      el.findStatus.textContent = "正規表現エラー";
+      return;
+    }
+    if (regex) {
+      let match;
+      while ((match = regex.exec(text)) !== null) {
+        const m = match[0];
+        state.matches.push({ start: match.index, end: match.index + m.length, text: m });
+        if (m.length === 0) regex.lastIndex += 1;
+      }
     }
     state.activeMatchIndex = state.matches.length ? 0 : -1;
     el.findStatus.textContent = `${state.matches.length}件`;
@@ -253,7 +269,18 @@
     if (!find) return;
     const replace = el.replaceQuery.value;
     const { selectionStart, selectionEnd, value } = el.editor;
-    if (value.slice(selectionStart, selectionEnd) === find) {
+    const active = state.matches[state.activeMatchIndex];
+    const { regex, error } = buildSearchRegex(find, true);
+    if (error) return toast("正規表現エラー");
+    if (active && selectionStart === active.start && selectionEnd === active.end) {
+      const selected = value.slice(selectionStart, selectionEnd);
+      const replaced = regex ? selected.replace(regex, replace) : replace;
+      el.editor.setRangeText(replaced, selectionStart, selectionEnd, "select");
+      triggerInput();
+      refreshMatches();
+      recordSearch(find);
+      toast("置換しました");
+    } else if (!regex && value.slice(selectionStart, selectionEnd) === find) {
       el.editor.setRangeText(replace, selectionStart, selectionEnd, "select");
       triggerInput();
       refreshMatches();
@@ -274,15 +301,17 @@
     const find = el.findQuery.value;
     if (!find) return toast("検索語を入力してください");
     const replace = el.replaceQuery.value;
+    const { regex, error } = buildSearchRegex(find);
+    if (error) return toast("正規表現エラー");
     if (inSelectionOnly) {
       const start = el.editor.selectionStart;
       const end = el.editor.selectionEnd;
       if (start === end) return toast("選択範囲がありません");
       const selected = el.editor.value.slice(start, end);
-      const replaced = selected.split(find).join(replace);
+      const replaced = regex ? selected.replace(regex, replace) : selected.split(find).join(replace);
       el.editor.setRangeText(replaced, start, end, "select");
     } else {
-      el.editor.value = el.editor.value.split(find).join(replace);
+      el.editor.value = regex ? el.editor.value.replace(regex, replace) : el.editor.value.split(find).join(replace);
     }
     triggerInput();
     refreshMatches();
@@ -793,7 +822,12 @@
       const raw = localStorage.getItem(key);
       if (!raw) return structuredClone(fallback);
       const parsed = JSON.parse(raw);
-      return { ...structuredClone(fallback), ...parsed, ui: { ...fallback.ui, ...(parsed.ui || {}) } };
+      return {
+        ...structuredClone(fallback),
+        ...parsed,
+        ui: { ...fallback.ui, ...(parsed.ui || {}) },
+        searchOptions: { ...fallback.searchOptions, ...(parsed.searchOptions || {}) }
+      };
     } catch {
       preserveBroken(key);
       return structuredClone(fallback);
@@ -855,6 +889,33 @@
     }
   }
 
+  function updateSearchOptions() {
+    state.settings.searchOptions = {
+      caseSensitive: !!el.optCase.checked,
+      useRegex: !!el.optRegex.checked
+    };
+    saveSettings();
+    refreshMatches();
+  }
+
+  function applySearchOptionsUI() {
+    const opts = state.settings.searchOptions || {};
+    el.optCase.checked = !!opts.caseSensitive;
+    el.optRegex.checked = !!opts.useRegex;
+  }
+
+  function buildSearchRegex(query, single) {
+    const opts = state.settings.searchOptions || {};
+    const flags = `${single ? "" : "g"}${opts.caseSensitive ? "" : "i"}`;
+    try {
+      if (opts.useRegex) return { regex: new RegExp(query, flags) };
+      const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      return { regex: new RegExp(escaped, flags) };
+    } catch {
+      return { regex: null, error: true };
+    }
+  }
+
   function selectLine() {
     const text = el.editor.value;
     const pos = el.editor.selectionStart;
@@ -910,6 +971,21 @@
       el.editor.focus();
       el.editor.setSelectionRange(selectionStart, next);
     }
+  }
+
+  function shrinkSelection() {
+    const text = el.editor.value;
+    const { selectionStart, selectionEnd } = el.editor;
+    if (selectionStart === selectionEnd) return;
+    const { end } = getLineBounds(text, selectionEnd);
+    const prevEnd = text.lastIndexOf("\n", Math.max(0, end - 2));
+    const nextEnd = prevEnd === -1 ? selectionStart : prevEnd;
+    if (nextEnd <= selectionStart) {
+      el.editor.setSelectionRange(selectionStart, selectionStart);
+    } else {
+      el.editor.setSelectionRange(selectionStart, nextEnd);
+    }
+    el.editor.focus();
   }
 
   function moveToLineEdge(edge) {
@@ -1002,6 +1078,8 @@
       dlgFindReplace: document.getElementById("dlgFindReplace"),
       findQuery: document.getElementById("findQuery"),
       findRecent: document.getElementById("findRecent"),
+      optCase: document.getElementById("optCase"),
+      optRegex: document.getElementById("optRegex"),
       replaceQuery: document.getElementById("replaceQuery"),
       findStatus: document.getElementById("findStatus"),
       btnFindPrev: document.getElementById("btnFindPrev"),
@@ -1048,10 +1126,12 @@
       voiceModeRadios: Array.from(document.querySelectorAll("input[name='voiceMode']")),
       btnSelectLine: document.getElementById("btnSelectLine"),
       btnSelectBlock: document.getElementById("btnSelectBlock"),
+      btnSelectPara: document.getElementById("btnSelectPara"),
       btnSelectParaPrev: document.getElementById("btnSelectParaPrev"),
       btnSelectParaNext: document.getElementById("btnSelectParaNext"),
       btnExpandUp: document.getElementById("btnExpandUp"),
       btnExpandDown: document.getElementById("btnExpandDown"),
+      btnShrinkDown: document.getElementById("btnShrinkDown"),
       btnSelectAll: document.getElementById("btnSelectAll"),
       btnLineStart: document.getElementById("btnLineStart"),
       btnLineEnd: document.getElementById("btnLineEnd"),
