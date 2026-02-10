@@ -28,6 +28,15 @@
     fontSize: 16,
     fontFace: "sans-jp",
     editPanelPosition: "bottom",
+    toolbar: {
+      mic: true,
+      find: true,
+      replace: false,
+      templates: false,
+      history: false,
+      edit: true,
+      share: true
+    },
     apiKeys: {
       openai: "",
       other: ""
@@ -75,6 +84,7 @@
     applyPunctuationUI();
     applyTypography();
     applyEditPanelPosition();
+    applyToolbarVisibility();
     setupAutoSnapshot();
     bindEvents();
     renderTemplates();
@@ -88,7 +98,7 @@
   function bindEvents() {
     let saveTimer = null;
     const closeMenuIfOpen = () => {
-      if (el.dlgMenu && el.dlgMenu.open) el.dlgMenu.close();
+      if (el.menuOverlay && !el.menuOverlay.classList.contains("hidden")) closeMenu();
     };
     el.editor.addEventListener("input", () => {
       if (saveTimer) clearTimeout(saveTimer);
@@ -106,8 +116,8 @@
       state.settings.focusDefault = next;
       saveSettings();
     };
-    el.btnMenu.addEventListener("click", () => el.dlgMenu.showModal());
-    el.btnCloseMenu.addEventListener("click", () => el.dlgMenu.close());
+    el.btnMenu.addEventListener("click", () => openMenu());
+    el.btnCloseMenu.addEventListener("click", () => closeMenu());
     el.btnFocus.addEventListener("click", () => {
       closeMenuIfOpen();
       toggleFocus();
@@ -252,6 +262,14 @@
         saveSettings();
       });
     });
+    el.toolbarChecks.forEach((check) => {
+      check.addEventListener("change", () => {
+        state.settings.toolbar = state.settings.toolbar || {};
+        state.settings.toolbar[check.dataset.toolbar] = check.checked;
+        applyToolbarVisibility();
+        saveSettings();
+      });
+    });
     el.apiKeyOpenAI.addEventListener("change", () => saveApiKeys());
     el.apiKeyOther.addEventListener("change", () => saveApiKeys());
     el.btnCloseSettings.addEventListener("click", () => el.dlgSettings.close());
@@ -267,6 +285,7 @@
     });
 
     setupDialogDismiss();
+    setupMenuOverlay();
 
     document.addEventListener("keydown", (evt) => {
       const ctrl = evt.ctrlKey || evt.metaKey;
@@ -280,6 +299,7 @@
         evt.preventDefault();
         el.dlgShare.showModal();
       } else if (evt.key === "Escape") {
+        closeMenuIfOpen();
         if (!closeOpenDialog() && document.body.classList.contains("focus")) {
           toggleFocus();
         }
@@ -296,13 +316,42 @@
   }
 
   function setupDialogDismiss() {
-    [el.dlgHelp, el.dlgFindReplace, el.dlgHistory, el.dlgShare, el.dlgSettings, el.dlgMenu].forEach((dialog) => {
+    [el.dlgHelp, el.dlgFindReplace, el.dlgHistory, el.dlgShare, el.dlgSettings].forEach((dialog) => {
       dialog.addEventListener("click", (evt) => {
         if (evt.target !== dialog) return;
         const ok = confirm("閉じますか？未保存の変更がある場合は失われる可能性があります。");
         if (ok) dialog.close();
       });
     });
+  }
+
+  function setupMenuOverlay() {
+    el.menuOverlay.addEventListener("click", (evt) => {
+      if (evt.target === el.menuOverlay) closeMenu();
+    });
+    el.menuPanel.addEventListener("click", (evt) => {
+      const btn = evt.target.closest("button[data-menu]");
+      if (!btn) return;
+      const act = btn.dataset.menu;
+      closeMenu();
+      if (act === "replace") openFindReplace(true);
+      else if (act === "templates") openSettings("templates");
+      else if (act === "history") { renderHistory(); el.dlgHistory.showModal(); }
+      else if (act === "focus") { const next = !document.body.classList.contains("focus"); applyFocus(next); state.settings.focusDefault = next; saveSettings(); }
+      else if (act === "sidebar") { state.settings.ui.sidebar = !state.settings.ui.sidebar; applySidebar(); saveSettings(); }
+      else if (act === "settings") openSettings("appearance");
+      else if (act === "help") el.dlgHelp.showModal();
+    });
+  }
+
+  function openMenu() {
+    el.menuOverlay.classList.remove("hidden");
+    el.menuOverlay.setAttribute("aria-hidden", "false");
+  }
+
+  function closeMenu() {
+    el.menuOverlay.classList.add("hidden");
+    el.menuOverlay.setAttribute("aria-hidden", "true");
   }
 
   function refreshMatches() {
@@ -850,7 +899,7 @@
 
   function closeOpenDialog() {
     let closed = false;
-    [el.dlgHelp, el.dlgFindReplace, el.dlgHistory, el.dlgShare, el.dlgSettings, el.dlgMenu].forEach((d) => {
+    [el.dlgHelp, el.dlgFindReplace, el.dlgHistory, el.dlgShare, el.dlgSettings].forEach((d) => {
       if (d.open) {
         d.close();
         closed = true;
@@ -894,6 +943,18 @@
     el.editor.style.fontFamily = getFontFamily(state.settings.fontFace);
   }
 
+  function applyToolbarVisibility() {
+    const t = { ...DEFAULT_SETTINGS.toolbar, ...(state.settings.toolbar || {}) };
+    state.settings.toolbar = t;
+    el.toolbarChecks.forEach((check) => {
+      check.checked = !!t[check.dataset.toolbar];
+    });
+    el.toolbarButtons.forEach((btn) => {
+      const key = btn.dataset.tool;
+      btn.classList.toggle("toolbar-hidden", !t[key]);
+    });
+  }
+
   function getFontFamily(key) {
     switch (key) {
       case "serif-jp":
@@ -913,6 +974,7 @@
   function openSettings(section) {
     el.dlgSettings.showModal();
     applyTypography();
+    applyToolbarVisibility();
     renderTemplates();
     renderShareShortcuts();
     loadApiKeys();
@@ -1047,6 +1109,7 @@
         fontSize: parsed.fontSize || fallback.fontSize,
         fontFace: parsed.fontFace || fallback.fontFace,
         editPanelPosition: parsed.editPanelPosition || fallback.editPanelPosition,
+        toolbar: { ...fallback.toolbar, ...(parsed.toolbar || {}) },
         apiKeys: { ...fallback.apiKeys, ...(parsed.apiKeys || {}) }
       };
     } catch {
@@ -1364,6 +1427,8 @@
       fontSizeValue: document.getElementById("fontSizeValue"),
       fontFaceRadios: Array.from(document.querySelectorAll("input[name='fontFace']")),
       editPanelPosRadios: Array.from(document.querySelectorAll("input[name='editPanelPos']")),
+      toolbarChecks: Array.from(document.querySelectorAll("input[data-toolbar]")),
+      toolbarButtons: Array.from(document.querySelectorAll(".toolbar-item")),
       apiKeyOpenAI: document.getElementById("apiKeyOpenAI"),
       apiKeyOther: document.getElementById("apiKeyOther"),
       btnCloseSettings: document.getElementById("btnCloseSettings"),
@@ -1421,7 +1486,8 @@
       btnPeriod: document.getElementById("btnPeriod"),
       btnNewline: document.getElementById("btnNewline"),
 
-      dlgMenu: document.getElementById("dlgMenu"),
+      menuOverlay: document.getElementById("menuOverlay"),
+      menuPanel: document.getElementById("menuPanel"),
       btnCloseMenu: document.getElementById("btnCloseMenu"),
 
       updateToast: document.getElementById("updateToast"),

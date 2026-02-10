@@ -50,6 +50,7 @@ button, input, textarea { font: inherit; }
   border-top: 1px solid var(--line);
   background: rgba(20,20,20,.04);
   backdrop-filter: blur(8px);
+  flex-wrap: wrap;
 }
 button {
   padding: 10px 8px;
@@ -59,6 +60,7 @@ button {
   color: inherit;
 }
 .bottombar button { flex: 1; min-width: 0; }
+.toolbar-hidden { display: none !important; }
 button:disabled { opacity: .5; }
 dialog { width: min(680px, 94vw); border:1px solid var(--line); border-radius: 14px; padding: 14px; max-height: 84vh; overflow: auto; }
 dialog::backdrop { background: rgba(0,0,0,.35); }
@@ -208,3 +210,24 @@ body.edit-tools-show.edit-pos-right .main { padding-right: calc(12px + var(--edi
   .layout.with-sidebar .sidebar { display:block; }
   .main { padding-bottom: 96px; }
 }
+.menu-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.35);
+  z-index: 6;
+  display: flex;
+  justify-content: flex-end;
+}
+.menu-panel {
+  width: min(320px, 88vw);
+  height: 100%;
+  background: rgba(20,20,20,.94);
+  color: #fff;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.menu-head { display:flex; justify-content: space-between; align-items:center; }
+.menu-list { display:flex; flex-direction: column; gap: 8px; }
+.menu-list button { text-align: left; }
