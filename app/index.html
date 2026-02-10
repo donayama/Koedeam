@@ -14,11 +14,7 @@
   <header class="topbar">
     <a class="brand" href="../">Koedeam</a>
     <div class="top-actions">
-      <button id="btnSidebar" type="button" class="desktop-only btn-icon"><span class="icon">▤</span>Sidebar</button>
-      <button id="btnEditTools" type="button" class="btn-icon"><span class="icon">✎</span>Edit</button>
-      <button id="btnFocus" type="button" class="btn-icon"><span class="icon">◎</span>Focus</button>
-      <button id="btnSettings" type="button" class="btn-icon"><span class="icon">⚙</span>Settings</button>
-      <button id="btnHelp" type="button" class="btn-icon"><span class="icon">?</span>Help</button>
+      <button id="btnMenu" type="button" class="btn-icon"><span class="icon">☰</span>Menu</button>
     </div>
   </header>
 
@@ -51,11 +47,23 @@
   <nav class="bottombar" aria-label="tools">
     <button id="btnMic" type="button" class="btn-icon"><span class="icon">🎤</span>Mic</button>
     <button id="btnFind" type="button" class="btn-icon"><span class="icon">🔎</span>Find</button>
-    <button id="btnReplace" type="button" class="btn-icon"><span class="icon">♻</span>Replace</button>
-    <button id="btnTemplates" type="button" class="btn-icon"><span class="icon">📄</span>Templates</button>
-    <button id="btnHistory" type="button" class="btn-icon"><span class="icon">🕒</span>History</button>
+    <button id="btnEditTools" type="button" class="btn-icon"><span class="icon">✎</span>Edit</button>
     <button id="btnShare" type="button" class="btn-icon"><span class="icon">⇪</span>Share</button>
   </nav>
+
+  <dialog id="dlgMenu">
+    <h2>メニュー</h2>
+    <div class="dialog-actions wrap">
+      <button id="btnReplace" type="button" class="btn-icon"><span class="icon">♻</span>Replace</button>
+      <button id="btnTemplates" type="button" class="btn-icon"><span class="icon">📄</span>Templates</button>
+      <button id="btnHistory" type="button" class="btn-icon"><span class="icon">🕒</span>History</button>
+      <button id="btnFocus" type="button" class="btn-icon"><span class="icon">◎</span>Focus</button>
+      <button id="btnSidebar" type="button" class="btn-icon"><span class="icon">▤</span>Sidebar</button>
+      <button id="btnSettings" type="button" class="btn-icon"><span class="icon">⚙</span>Settings</button>
+      <button id="btnHelp" type="button" class="btn-icon"><span class="icon">?</span>Help</button>
+    </div>
+    <div class="dialog-footer"><button id="btnCloseMenu" type="button">Close</button></div>
+  </dialog>
 
   <dialog id="dlgFindReplace">
     <h2>検索 / 置換</h2>

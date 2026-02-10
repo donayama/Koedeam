@@ -103,6 +103,8 @@
       state.settings.focusDefault = next;
       saveSettings();
     };
+    el.btnMenu.addEventListener("click", () => el.dlgMenu.showModal());
+    el.btnCloseMenu.addEventListener("click", () => el.dlgMenu.close());
     el.btnFocus.addEventListener("click", toggleFocus);
     el.btnExitFocus.addEventListener("click", toggleFocus);
     el.btnEditTools.addEventListener("click", () => {
@@ -827,7 +829,7 @@
 
   function closeOpenDialog() {
     let closed = false;
-    [el.dlgHelp, el.dlgFindReplace, el.dlgHistory, el.dlgShare, el.dlgSettings].forEach((d) => {
+    [el.dlgHelp, el.dlgFindReplace, el.dlgHistory, el.dlgShare, el.dlgSettings, el.dlgMenu].forEach((d) => {
       if (d.open) {
         d.close();
         closed = true;
@@ -1304,6 +1306,7 @@
       btnEditTools: document.getElementById("btnEditTools"),
       btnFocus: document.getElementById("btnFocus"),
       btnExitFocus: document.getElementById("btnExitFocus"),
+      btnMenu: document.getElementById("btnMenu"),
       btnSettings: document.getElementById("btnSettings"),
       btnHelp: document.getElementById("btnHelp"),
       btnMic: document.getElementById("btnMic"),
@@ -1403,3 +1406,5 @@
     };
   }
 })();
+      dlgMenu: document.getElementById("dlgMenu"),
+      btnCloseMenu: document.getElementById("btnCloseMenu"),
