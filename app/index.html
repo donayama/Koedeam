@@ -129,10 +129,7 @@
       <button id="btnNativeShare" type="button" class="btn-icon"><span class="icon">⇪</span>共有</button>
       <button id="btnCopy" type="button">COPY</button>
       <div id="shareShortcutList" class="shortcut-inline-list"></div>
-    </div>
-    <h3>共有ショートカット</h3>
-    <div class="dialog-actions">
-      <button id="btnOpenSettingsShare" type="button">ショートカット管理へ</button>
+      <button id="btnOpenSettingsShare" type="button" class="btn-icon"><span class="icon">⚙</span>ショートカット管理へ</button>
     </div>
     <div class="dialog-footer"><button id="btnCloseShare" type="button">Close</button></div>
   </dialog>
@@ -200,6 +197,7 @@
         <label><input type="checkbox" data-toolbar="history" />History</label>
         <label><input type="checkbox" data-toolbar="edit" />Edit</label>
         <label><input type="checkbox" data-toolbar="share" />Share</label>
+        <div id="toolbarOrderList" class="dialog-list dialog-body"></div>
       </fieldset>
     </section>
     <section id="panelSettingsTemplates" class="tab-panel settings-section">
@@ -216,7 +214,6 @@
       </form>
     </section>
     <section id="panelSettingsShare" class="tab-panel settings-section">
-      <h3>共有ショートカット</h3>
       <div id="settingsShareList" class="dialog-list dialog-body"></div>
       <form id="shareShortcutForm" class="template-form">
         <input id="shortcutId" type="hidden" />

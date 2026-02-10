@@ -38,6 +38,7 @@
       edit: true,
       share: true
     },
+    toolbarOrder: ["mic", "find", "replace", "templates", "history", "edit", "share"],
     apiKeys: {
       openai: "",
       other: ""
@@ -294,6 +295,15 @@
         saveSettings();
       });
     });
+    if (el.toolbarOrderList) {
+      el.toolbarOrderList.addEventListener("click", (evt) => {
+        const btn = evt.target.closest("button[data-move]");
+        if (!btn) return;
+        const tool = btn.dataset.tool;
+        const dir = btn.dataset.move;
+        moveToolbarItem(tool, dir === "up" ? -1 : 1);
+      });
+    }
     el.apiKeyOpenAI.addEventListener("change", () => saveApiKeys());
     el.apiKeyOther.addEventListener("change", () => saveApiKeys());
     el.btnCloseSettings.addEventListener("click", () => el.dlgSettings.close());
@@ -1012,6 +1022,8 @@
   function applyToolbarVisibility() {
     const t = { ...DEFAULT_SETTINGS.toolbar, ...(state.settings.toolbar || {}) };
     state.settings.toolbar = t;
+    const order = (state.settings.toolbarOrder || DEFAULT_SETTINGS.toolbarOrder).filter((k) => k in t);
+    state.settings.toolbarOrder = order;
     el.toolbarChecks.forEach((check) => {
       check.checked = !!t[check.dataset.toolbar];
     });
@@ -1019,6 +1031,51 @@
       const key = btn.dataset.tool;
       btn.classList.toggle("toolbar-hidden", !t[key]);
     });
+    if (el.toolbarOrderList) renderToolbarOrder();
+    if (el.bottombar) {
+      order.forEach((key) => {
+        const btn = el.toolbarButtons.find((b) => b.dataset.tool === key);
+        if (btn) el.bottombar.append(btn);
+      });
+    }
+  }
+
+  function renderToolbarOrder() {
+    const order = state.settings.toolbarOrder || DEFAULT_SETTINGS.toolbarOrder;
+    const labels = {
+      mic: "Mic",
+      find: "Find",
+      replace: "Replace",
+      templates: "Templates",
+      history: "History",
+      edit: "Edit",
+      share: "Share"
+    };
+    el.toolbarOrderList.innerHTML = "";
+    order.forEach((tool, idx) => {
+      const row = document.createElement("div");
+      row.className = "dialog-item";
+      row.innerHTML = `
+        <div class="dialog-item-head"><strong>${labels[tool] || tool}</strong></div>
+        <div class="dialog-actions">
+          <button type="button" data-move="up" data-tool="${tool}" ${idx === 0 ? "disabled" : ""}>↑</button>
+          <button type="button" data-move="down" data-tool="${tool}" ${idx === order.length - 1 ? "disabled" : ""}>↓</button>
+        </div>`;
+      el.toolbarOrderList.append(row);
+    });
+  }
+
+  function moveToolbarItem(tool, delta) {
+    const order = state.settings.toolbarOrder || DEFAULT_SETTINGS.toolbarOrder;
+    const idx = order.indexOf(tool);
+    if (idx === -1) return;
+    const next = idx + delta;
+    if (next < 0 || next >= order.length) return;
+    order.splice(idx, 1);
+    order.splice(next, 0, tool);
+    state.settings.toolbarOrder = order;
+    applyToolbarVisibility();
+    saveSettings();
   }
 
   function getFontFamily(key) {
@@ -1200,6 +1257,7 @@
         fontFace: parsed.fontFace || fallback.fontFace,
         editPanelPosition: parsed.editPanelPosition || fallback.editPanelPosition,
         toolbar: { ...fallback.toolbar, ...(parsed.toolbar || {}) },
+        toolbarOrder: Array.isArray(parsed.toolbarOrder) ? parsed.toolbarOrder : fallback.toolbarOrder,
         sidebarTab: parsed.sidebarTab || fallback.sidebarTab,
         apiKeys: { ...fallback.apiKeys, ...(parsed.apiKeys || {}) }
       };
@@ -1567,6 +1625,8 @@
       editPanelPosRadios: Array.from(document.querySelectorAll("input[name='editPanelPos']")),
       toolbarChecks: Array.from(document.querySelectorAll("input[data-toolbar]")),
       toolbarButtons: Array.from(document.querySelectorAll(".toolbar-item")),
+      toolbarOrderList: document.getElementById("toolbarOrderList"),
+      bottombar: document.querySelector(".bottombar"),
       apiKeyOpenAI: document.getElementById("apiKeyOpenAI"),
       apiKeyOther: document.getElementById("apiKeyOther"),
       btnCloseSettings: document.getElementById("btnCloseSettings"),
