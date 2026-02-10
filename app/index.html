@@ -20,7 +20,11 @@
 
   <div class="layout">
     <main class="main" aria-label="editor area">
-      <textarea id="editor" placeholder="話して、書いて、整えて、共有。"></textarea>
+      <div class="editor-wrap">
+        <div id="caretLine" class="caret-line hidden"></div>
+        <div id="caretDot" class="caret-dot hidden"></div>
+        <textarea id="editor" placeholder="話して、書いて、整えて、共有。"></textarea>
+      </div>
       <div class="status-row">
         <span id="saveStatus">Ready</span>
         <span id="appMessage" aria-live="polite"></span>

@@ -23,6 +23,7 @@ button, input, textarea { font: inherit; }
 .top-actions { display:flex; gap:8px; }
 .layout { display: grid; grid-template-columns: 1fr; }
 .main { padding: 10px 12px 82px; }
+.editor-wrap { position: relative; }
 #editor {
   width: 100%;
   min-height: calc(100vh - 182px);
@@ -32,6 +33,25 @@ button, input, textarea { font: inherit; }
   border: 1px solid var(--line);
   line-height: 1.6;
   font-size: 16px;
+}
+.caret-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1.6em;
+  background: rgba(10, 160, 180, 0.12);
+  border-top: 1px solid rgba(10, 160, 180, 0.3);
+  border-bottom: 1px solid rgba(10, 160, 180, 0.2);
+  pointer-events: none;
+  border-radius: 8px;
+}
+.caret-dot {
+  position: absolute;
+  width: 2px;
+  height: 1.2em;
+  background: rgba(10, 220, 220, 0.9);
+  border-radius: 2px;
+  pointer-events: none;
 }
 .status-row { display:flex; justify-content:space-between; gap:8px; margin-top:8px; font-size: 12px; opacity:.8; }
 .sidebar { display: none; border-left: 1px solid var(--line); padding: 12px; background: var(--panel); }

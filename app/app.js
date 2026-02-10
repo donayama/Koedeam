@@ -108,6 +108,18 @@
         safeSet(STORAGE_KEYS.currentDraft, state.draft);
         el.saveStatus.textContent = "Saved";
       }, 800);
+      updateCaretUI();
+    });
+    el.editor.addEventListener("click", updateCaretUI);
+    el.editor.addEventListener("keyup", updateCaretUI);
+    el.editor.addEventListener("scroll", updateCaretUI);
+    el.editor.addEventListener("focus", updateCaretUI);
+    el.editor.addEventListener("blur", () => {
+      el.caretLine.classList.add("hidden");
+      el.caretDot.classList.add("hidden");
+    });
+    document.addEventListener("selectionchange", () => {
+      if (document.activeElement === el.editor) updateCaretUI();
     });
 
     const toggleFocus = () => {
@@ -118,30 +130,38 @@
     };
     el.btnMenu.addEventListener("click", () => openMenu());
     el.btnCloseMenu.addEventListener("click", () => closeMenu());
-    el.btnFocus.addEventListener("click", () => {
-      closeMenuIfOpen();
-      toggleFocus();
-    });
+    if (el.btnFocus) {
+      el.btnFocus.addEventListener("click", () => {
+        closeMenuIfOpen();
+        toggleFocus();
+      });
+    }
     el.btnExitFocus.addEventListener("click", toggleFocus);
     el.btnEditTools.addEventListener("click", () => {
       const next = !state.editToolsVisible;
       setEditToolsVisible(next);
     });
-    el.btnSettings.addEventListener("click", () => {
-      closeMenuIfOpen();
-      openSettings("appearance");
-    });
-    el.btnSidebar.addEventListener("click", () => {
-      closeMenuIfOpen();
-      state.settings.ui.sidebar = !state.settings.ui.sidebar;
-      applySidebar();
-      saveSettings();
-    });
+    if (el.btnSettings) {
+      el.btnSettings.addEventListener("click", () => {
+        closeMenuIfOpen();
+        openSettings("appearance");
+      });
+    }
+    if (el.btnSidebar) {
+      el.btnSidebar.addEventListener("click", () => {
+        closeMenuIfOpen();
+        state.settings.ui.sidebar = !state.settings.ui.sidebar;
+        applySidebar();
+        saveSettings();
+      });
+    }
 
-    el.btnHelp.addEventListener("click", () => {
-      closeMenuIfOpen();
-      el.dlgHelp.showModal();
-    });
+    if (el.btnHelp) {
+      el.btnHelp.addEventListener("click", () => {
+        closeMenuIfOpen();
+        el.dlgHelp.showModal();
+      });
+    }
     el.btnCloseHelp.addEventListener("click", () => el.dlgHelp.close());
 
     el.btnFind.addEventListener("click", () => {
@@ -1346,6 +1366,48 @@
     mirror.remove();
   }
 
+  function updateCaretUI() {
+    const coords = getCaretCoordinates();
+    if (!coords) return;
+    const { top, left, lineHeight } = coords;
+    el.caretLine.classList.remove("hidden");
+    el.caretDot.classList.remove("hidden");
+    el.caretLine.style.top = `${top}px`;
+    el.caretLine.style.height = `${lineHeight}px`;
+    el.caretDot.style.top = `${top + Math.max(2, lineHeight * 0.15)}px`;
+    el.caretDot.style.left = `${left}px`;
+    el.caretDot.style.height = `${Math.max(2, lineHeight * 0.7)}px`;
+  }
+
+  function getCaretCoordinates() {
+    const ta = el.editor;
+    if (!ta) return null;
+    const pos = ta.selectionStart;
+    const text = ta.value.slice(0, pos);
+    const cs = window.getComputedStyle(ta);
+    const mirror = document.createElement("div");
+    mirror.style.position = "absolute";
+    mirror.style.visibility = "hidden";
+    mirror.style.whiteSpace = "pre-wrap";
+    mirror.style.wordWrap = "break-word";
+    mirror.style.fontFamily = cs.fontFamily;
+    mirror.style.fontSize = cs.fontSize;
+    mirror.style.lineHeight = cs.lineHeight;
+    mirror.style.padding = cs.padding;
+    mirror.style.border = cs.border;
+    mirror.style.width = `${ta.clientWidth}px`;
+    mirror.textContent = text;
+    const marker = document.createElement("span");
+    marker.textContent = "▮";
+    mirror.append(marker);
+    document.body.append(mirror);
+    const markerTop = marker.offsetTop - ta.scrollTop;
+    const markerLeft = marker.offsetLeft - ta.scrollLeft;
+    const lineHeight = parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.6 || 24;
+    mirror.remove();
+    return { top: markerTop, left: markerLeft, lineHeight };
+  }
+
   function getLineBounds(text, pos) {
     const start = text.lastIndexOf("\n", Math.max(0, pos - 1)) + 1;
     const endIndex = text.indexOf("\n", pos);
@@ -1485,6 +1547,9 @@
       btnComma: document.getElementById("btnComma"),
       btnPeriod: document.getElementById("btnPeriod"),
       btnNewline: document.getElementById("btnNewline"),
+
+      caretLine: document.getElementById("caretLine"),
+      caretDot: document.getElementById("caretDot"),
 
       menuOverlay: document.getElementById("menuOverlay"),
       menuPanel: document.getElementById("menuPanel"),
