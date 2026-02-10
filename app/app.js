@@ -150,20 +150,22 @@
       });
     }
     if (el.btnSidebar) {
-    el.btnSidebar.addEventListener("click", () => {
-      closeMenuIfOpen();
-      state.settings.ui.sidebar = !state.settings.ui.sidebar;
-      applySidebar();
-      saveSettings();
-    });
-    el.sideTabs.forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const tab = btn.dataset.tab;
-        applySidebarTab(tab);
-        state.settings.sidebarTab = tab;
+      el.btnSidebar.addEventListener("click", () => {
+        closeMenuIfOpen();
+        state.settings.ui.sidebar = !state.settings.ui.sidebar;
+        applySidebar();
         saveSettings();
       });
-    });
+    }
+    if (el.sideTabs && el.sideTabs.length) {
+      el.sideTabs.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const tab = btn.dataset.tab;
+          applySidebarTab(tab);
+          state.settings.sidebarTab = tab;
+          saveSettings();
+        });
+      });
     }
 
     if (el.btnHelp) {
