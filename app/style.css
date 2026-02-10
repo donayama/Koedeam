@@ -127,7 +127,8 @@ select {
 .nav-row { display:grid; grid-template-columns: 1fr 64px 1fr; gap: 6px; align-items:center; }
 .nav-pad { height: 44px; font-size: 16px; }
 .nav-wide { height: 44px; display:flex; align-items:center; justify-content:space-between; gap: 6px; }
-.icon { font-size: 12px; opacity: .9; }
+.icon { font-size: 12px; opacity: .9; margin-right: 6px; display: inline-flex; align-items: center; }
+.btn-icon { display: inline-flex; align-items: center; gap: 6px; }
 .chip {
   display:inline-flex;
   align-items:center;
