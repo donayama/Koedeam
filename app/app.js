@@ -167,6 +167,16 @@
         });
       });
     }
+    if (el.sidebar) {
+      el.sidebar.addEventListener("click", (evt) => {
+        const tabBtn = evt.target.closest(".tab-btn");
+        if (!tabBtn) return;
+        const tab = tabBtn.dataset.tab;
+        applySidebarTab(tab);
+        state.settings.sidebarTab = tab;
+        saveSettings();
+      });
+    }
 
     if (el.btnHelp) {
       el.btnHelp.addEventListener("click", () => {
