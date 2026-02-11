@@ -159,6 +159,11 @@ select {
 .dialog-list { display:flex; flex-direction:column; gap: 8px; max-height: 240px; overflow:auto; padding-right: 2px; }
 .dialog-item { border: 1px solid var(--line); border-radius: 10px; padding: 8px; background: var(--panel); }
 .dialog-item-head { display:flex; justify-content:space-between; gap: 8px; }
+.compact-item { padding: 6px 8px; }
+.compact-head { align-items: center; gap: 6px; }
+.compact-actions { display: inline-flex; gap: 4px; }
+.compact-actions .icon-only { width: 28px; height: 28px; padding: 0; }
+.compact-preview { margin: 4px 0 0; font-size: 12px; opacity: .8; }
 .shortcut-grid { display:flex; flex-wrap: wrap; gap: 8px; }
 .shortcut-grid .dialog-item { flex: 1 1 44%; min-width: 120px; }
 .shortcut-inline { align-items: center; }

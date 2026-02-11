@@ -497,16 +497,17 @@
     }
     for (const t of state.templates) {
       const row = document.createElement("div");
-      row.className = "dialog-item";
+      row.className = "dialog-item compact-item";
       row.innerHTML = `
-        <div class="dialog-item-head"><strong>${escapeHtml(t.name)}</strong><small>${new Date(t.updatedAt).toLocaleString()}</small></div>
-        <p>${escapeHtml(preview(t.text))}</p>
-        <div class="dialog-actions">
-          <button data-act="insert" data-id="${t.id}" type="button">末尾挿入</button>
-          <button data-act="replace" data-id="${t.id}" type="button">本文置換</button>
-          <button data-act="edit" data-id="${t.id}" type="button">編集</button>
-          <button data-act="delete" data-id="${t.id}" type="button">削除</button>
-        </div>`;
+        <div class="dialog-item-head compact-head">
+          <div class="compact-actions">
+            <button data-act="edit" data-id="${t.id}" type="button" class="icon-only" aria-label="編集"><span class="icon">✎</span></button>
+            <button data-act="delete" data-id="${t.id}" type="button" class="icon-only" aria-label="削除"><span class="icon">🗑</span></button>
+          </div>
+          <strong>${escapeHtml(t.name)}</strong>
+          <small>${new Date(t.updatedAt).toLocaleDateString()}</small>
+        </div>
+        <p class="compact-preview">${escapeHtml(preview(t.text))}</p>`;
       row.addEventListener("click", (e) => handleTemplateAction(e));
       el.templateList.append(row);
     }
@@ -519,19 +520,11 @@
     const item = state.templates.find((t) => t.id === id);
     if (!item) return;
     const act = target.dataset.act;
-    if (act === "insert") {
-      el.editor.value = `${el.editor.value}${el.editor.value.endsWith("\n") || !el.editor.value ? "" : "\n"}${item.text}`;
-      triggerInput();
-      toast("テンプレを末尾に挿入");
-    } else if (act === "replace") {
-      if (confirm("本文をテンプレで置き換えますか？")) {
-        el.editor.value = item.text;
-        triggerInput();
-      }
-    } else if (act === "edit") {
+    if (act === "edit") {
       el.templateId.value = item.id;
       el.templateName.value = item.name;
       el.templateText.value = item.text;
+      openSettings("templates");
     } else if (act === "delete") {
       state.templates = state.templates.filter((t) => t.id !== id);
       persistTemplates();
