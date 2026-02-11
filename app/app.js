@@ -31,18 +31,16 @@
     editPanelPosition: "bottom",
     sidebarTab: "templates",
     toolbar: {
-      copy: true,
-      cut: true,
-      paste: true,
       mic: true,
+      voiceMode: true,
       replace: true,
       templates: false,
       history: false,
       edit: true,
       share: true
     },
-    toolbarOrder: ["copy", "cut", "paste", "mic", "replace", "templates", "history", "edit", "share"],
-    toolbarPriority: ["replace", "copy", "paste", "mic", "edit", "share", "cut", "history", "templates"],
+    toolbarOrder: ["mic", "voiceMode", "replace", "templates", "history", "edit", "share"],
+    toolbarPriority: ["replace", "mic", "voiceMode", "edit", "share", "history", "templates"],
     apiKeys: {
       openai: "",
       other: ""
@@ -97,6 +95,10 @@
       saveSettings();
     }
     if (state.settings.voiceInsertMode === "replace") {
+      state.settings.voiceInsertMode = "cursor";
+      saveSettings();
+    }
+    if (!["off", "cursor", "append"].includes(state.settings.voiceInsertMode)) {
       state.settings.voiceInsertMode = "cursor";
       saveSettings();
     }
@@ -372,17 +374,36 @@
     el.btnCopySel.addEventListener("click", copySelection);
     el.btnCutSel.addEventListener("click", cutSelection);
     el.btnPasteSel.addEventListener("click", pasteClipboard);
-    el.btnToolbarCopy.addEventListener("click", copyEditorOrSelection);
-    el.btnToolbarCut.addEventListener("click", cutSelection);
-    el.btnToolbarPaste.addEventListener("click", pasteClipboard);
     el.btnBackspace.addEventListener("click", () => deleteByDirection(-1));
     el.btnDelete.addEventListener("click", () => deleteByDirection(1));
+    if (el.btnVoiceMode) {
+      el.btnVoiceMode.addEventListener("click", () => {
+        const modes = ["off", "cursor", "append"];
+        const idx = modes.indexOf(state.settings.voiceInsertMode);
+        const next = modes[(idx + 1) % modes.length] || "cursor";
+        state.settings.voiceInsertMode = next;
+        applyVoiceModeUI();
+        if (state.speaking) {
+          if (next === "off") {
+            state.recognition?.stop();
+          } else {
+            applyInputState(next === "append" ? "VOICE_APPEND" : "VOICE_LOCKED");
+          }
+        }
+        saveSettings();
+      });
+    }
     el.voiceModeRadios.forEach((radio) => {
       radio.addEventListener("change", () => {
         if (!radio.checked) return;
         state.settings.voiceInsertMode = radio.value;
+        applyVoiceModeUI();
         if (state.speaking) {
-          applyInputState(radio.value === "append" ? "VOICE_APPEND" : "VOICE_LOCKED");
+          if (radio.value === "off") {
+            state.recognition?.stop();
+          } else {
+            applyInputState(radio.value === "append" ? "VOICE_APPEND" : "VOICE_LOCKED");
+          }
         }
         saveSettings();
       });
@@ -609,10 +630,8 @@
   }
 
   function triggerToolbarTool(tool) {
-    if (tool === "copy") el.btnToolbarCopy.click();
-    else if (tool === "cut") el.btnToolbarCut.click();
-    else if (tool === "paste") el.btnToolbarPaste.click();
-    else if (tool === "mic") el.btnMic.click();
+    if (tool === "mic") el.btnMic.click();
+    else if (tool === "voiceMode") el.btnVoiceMode.click();
     else if (tool === "replace") el.btnReplace.click();
     else if (tool === "templates") el.btnTemplates.click();
     else if (tool === "history") el.btnHistory.click();
@@ -1303,6 +1322,10 @@
         recognition.stop();
         return;
       }
+      if (state.settings.voiceInsertMode === "off") {
+        toast("音声モードがOFFです。ツールバーの音声モードを切り替えてください。");
+        return;
+      }
       try {
         recognition.start();
         state.speaking = true;
@@ -1316,6 +1339,7 @@
 
   function insertByVoiceMode(text) {
     const mode = state.settings.voiceInsertMode;
+    if (mode === "off") return;
     if (mode === "append") {
       const ta = el.editor;
       const hadFocus = document.activeElement === ta;
@@ -1516,6 +1540,14 @@
     el.voiceModeRadios.forEach((radio) => {
       radio.checked = radio.value === state.settings.voiceInsertMode;
     });
+    if (el.btnVoiceMode) {
+      const labelMap = {
+        off: "音声:OFF",
+        cursor: "音声:カーソル",
+        append: "音声:文末"
+      };
+      el.btnVoiceMode.innerHTML = `<span class="icon">🎛</span>${labelMap[state.settings.voiceInsertMode] || "音声:カーソル"}`;
+    }
   }
 
   function applyTypography() {
@@ -1586,10 +1618,8 @@
   function renderOverflowMenuItems() {
     if (!el.overflowMenuItems) return;
     const labels = {
-      copy: "Copy",
-      cut: "Cut",
-      paste: "Paste",
       mic: "音声入力",
+      voiceMode: "音声モード",
       replace: "検索・置換",
       templates: "テンプレ",
       history: "保存・履歴",
@@ -1597,10 +1627,8 @@
       share: "共有"
     };
     const icons = {
-      copy: "⎘",
-      cut: "✂",
-      paste: "⎘",
       mic: "🎤",
+      voiceMode: "🎛",
       replace: "🔎",
       templates: "📄",
       history: "🕒",
@@ -1622,10 +1650,8 @@
   function renderToolbarOrder() {
     const order = state.settings.toolbarOrder || DEFAULT_SETTINGS.toolbarOrder;
     const labels = {
-      copy: "Copy",
-      cut: "Cut",
-      paste: "Paste",
       mic: "音声入力",
+      voiceMode: "音声モード",
       replace: "検索・置換",
       templates: "テンプレ",
       history: "保存・履歴",
@@ -2327,9 +2353,7 @@
       btnSettings: document.getElementById("btnSettings"),
       btnHelp: document.getElementById("btnHelp"),
       btnMic: document.getElementById("btnMic"),
-      btnToolbarCopy: document.getElementById("btnToolbarCopy"),
-      btnToolbarCut: document.getElementById("btnToolbarCut"),
-      btnToolbarPaste: document.getElementById("btnToolbarPaste"),
+      btnVoiceMode: document.getElementById("btnVoiceMode"),
       btnReplace: document.getElementById("btnReplace"),
       btnTemplates: document.getElementById("btnTemplates"),
       btnHistory: document.getElementById("btnHistory"),

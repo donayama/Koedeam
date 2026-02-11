@@ -73,10 +73,8 @@
   </div>
 
   <nav class="bottombar" aria-label="Tool Bar">
-    <button id="btnToolbarCopy" type="button" class="btn-icon toolbar-item" data-tool="copy"><span class="icon">⎘</span>Copy</button>
-    <button id="btnToolbarCut" type="button" class="btn-icon toolbar-item" data-tool="cut"><span class="icon">✂</span>Cut</button>
-    <button id="btnToolbarPaste" type="button" class="btn-icon toolbar-item" data-tool="paste"><span class="icon">⎘</span>Paste</button>
     <button id="btnMic" type="button" class="btn-icon toolbar-item" data-tool="mic"><span class="icon">🎤</span>音声入力</button>
+    <button id="btnVoiceMode" type="button" class="btn-icon toolbar-item" data-tool="voiceMode"><span class="icon">🎛</span>音声:カーソル</button>
     <button id="btnReplace" type="button" class="btn-icon toolbar-item" data-tool="replace"><span class="icon">🔎</span>検索・置換</button>
     <button id="btnTemplates" type="button" class="btn-icon toolbar-item" data-tool="templates"><span class="icon">📄</span>テンプレ</button>
     <button id="btnHistory" type="button" class="btn-icon toolbar-item" data-tool="history"><span class="icon">🕒</span>保存・履歴</button>
@@ -213,6 +211,7 @@
       <fieldset class="segment">
         <legend>音声挿入モード</legend>
         <div class="option-row">
+          <label class="option-chip"><input type="radio" name="voiceMode" value="off" />OFF</label>
           <label class="option-chip"><input type="radio" name="voiceMode" value="append" />末尾</label>
           <label class="option-chip"><input type="radio" name="voiceMode" value="cursor" />カーソル</label>
         </div>
@@ -282,32 +281,34 @@
           <div class="edit-row row-1">
             <button id="btnSelectParaPrev" type="button" class="nav-wide"><span class="icon">⤒</span>前段落</button>
             <button id="btnMoveUp" type="button" class="nav-pad"><span class="icon">▲</span></button>
-            <button id="btnCopySel" type="button" class="icon-only" aria-label="Copy"><span class="icon">⎘</span></button>
-            <button id="btnCutSel" type="button" class="icon-only" aria-label="Cut"><span class="icon">✂</span></button>
-            <button id="btnPasteSel" type="button" class="icon-only" aria-label="Paste"><span class="icon">⎘</span></button>
-            <button id="btnDelete" type="button" class="icon-only" aria-label="Delete"><span class="icon">⌦</span></button>
+            <button id="btnDocStart" type="button"><span class="icon">⏮</span>文頭</button>
+            <button id="btnDeleteToLineStart" type="button"><span class="icon">⌫|</span>行頭まで削除</button>
           </div>
           <div class="edit-row row-2">
             <button id="btnLineStart" type="button" class="nav-wide icon-only" aria-label="行頭"><span class="icon">|◀</span></button>
             <button id="btnMoveLeft" type="button" class="nav-pad"><span class="icon">◀</span></button>
             <button id="btnMoveRight" type="button" class="nav-pad"><span class="icon">▶</span></button>
             <button id="btnLineEnd" type="button" class="nav-wide icon-only" aria-label="行末"><span class="icon">▶|</span></button>
-            <button id="btnBackspace" type="button" class="icon-only" aria-label="Backspace"><span class="icon">⌫</span></button>
           </div>
           <div class="edit-row row-3">
             <button id="btnSelectParaNext" type="button" class="nav-wide"><span class="icon">⤓</span>次段落</button>
             <button id="btnMoveDown" type="button" class="nav-pad"><span class="icon">▼</span></button>
-            <button id="btnComma" type="button">、</button>
-            <button id="btnPeriod" type="button">。</button>
-            <button id="btnNewline" type="button" class="icon-only" aria-label="改行"><span class="icon">↵</span></button>
-            <button id="btnPuncMode" type="button" class="chip">JP</button>
-          </div>
-        </div>
-        <div class="edit-tools-row cursor-aux">
-          <button id="btnDocStart" type="button"><span class="icon">⏮</span>文頭</button>
           <button id="btnDocEnd" type="button"><span class="icon">⏭</span>文末</button>
-          <button id="btnDeleteToLineStart" type="button"><span class="icon">⌫|</span>行頭まで削除</button>
           <button id="btnDeleteToLineEnd" type="button"><span class="icon">|⌦</span>行末まで削除</button>
+        </div>
+      </div>
+      <div class="edit-group">
+        <div class="edit-group-head">EditToolbar</div>
+        <div class="edit-toolbar-grid">
+          <button id="btnCopySel" type="button" class="icon-only" aria-label="Copy"><span class="icon">⎘</span></button>
+          <button id="btnCutSel" type="button" class="icon-only" aria-label="Cut"><span class="icon">✂</span></button>
+          <button id="btnPasteSel" type="button" class="icon-only" aria-label="Paste"><span class="icon">⎘</span></button>
+          <button id="btnDelete" type="button" class="icon-only" aria-label="Delete"><span class="icon">⌦</span></button>
+          <button id="btnBackspace" type="button" class="icon-only" aria-label="Backspace"><span class="icon">⌫</span></button>
+          <button id="btnComma" type="button">、</button>
+          <button id="btnPeriod" type="button">。</button>
+          <button id="btnNewline" type="button" class="icon-only" aria-label="改行"><span class="icon">↵</span></button>
+          <button id="btnPuncMode" type="button" class="chip">JP</button>
         </div>
       </div>
       <div class="edit-group">
