@@ -54,6 +54,7 @@
 - `MOBILE`: `Main Editor + 1パネル` の排他表示
 - `TABLET/DESKTOP`: `Side Bar` 併用可。ただし文書操作優先時は編集抑止
 - `Tool Bar`: 1行固定。溢れた機能は `Overflow Menu` へ退避
+- `Search Panel`: `Dialog Overlay` として表示し、`Side Bar` と同時表示しない
 - iOS入力ズーム回避: `input/textarea/select` は 16px以上を保証
 - Android戻る操作: 開いている `Dialog/Overlay/Side Bar/Edit Panel` を先に閉じてから離脱
 

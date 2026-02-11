@@ -43,33 +43,9 @@
         <button id="btnCloseSidebar" type="button" class="btn-icon"><span class="icon">✕</span>Close</button>
       </div>
       <div class="side-tabs" role="tablist" aria-label="sidebar tabs">
-        <button type="button" class="tab-btn" data-tab="replace" aria-controls="panelReplace">検索・置換</button>
         <button type="button" class="tab-btn" data-tab="templates" aria-controls="panelTemplates">テンプレ</button>
         <button type="button" class="tab-btn" data-tab="history" aria-controls="panelHistory">保存・履歴</button>
       </div>
-      <section id="panelReplace" class="tab-panel" role="tabpanel">
-        <label>検索語
-          <input id="findQuery" type="text" />
-        </label>
-        <div id="findRecent" class="chip-list"></div>
-        <fieldset class="segment">
-          <legend>検索オプション</legend>
-          <label><input id="optCase" type="checkbox" />大文字/小文字を区別</label>
-          <label><input id="optRegex" type="checkbox" />正規表現</label>
-        </fieldset>
-        <label>置換語
-          <input id="replaceQuery" type="text" />
-        </label>
-        <p id="findStatus">0件</p>
-        <div class="dialog-actions wrap">
-          <button id="btnFindPrev" type="button">前へ</button>
-          <button id="btnFindNext" type="button">次へ</button>
-          <button id="btnReplaceOne" type="button">置換</button>
-          <button id="btnReplaceNext" type="button">次を置換して次へ</button>
-          <button id="btnReplaceAll" type="button">全置換</button>
-          <button id="btnReplaceInSelection" type="button">選択範囲のみ全置換</button>
-        </div>
-      </section>
       <section id="panelTemplates" class="tab-panel" role="tabpanel">
         <div id="sidebarTemplates" class="sidebar-list"></div>
       </section>
@@ -140,6 +116,32 @@
       <button id="btnOpenSettingsShare" type="button" class="btn-icon"><span class="icon">⚙</span>ショートカット管理へ</button>
     </div>
     <div class="dialog-footer"><button id="btnCloseShare" type="button">Close</button></div>
+  </dialog>
+
+  <dialog id="dlgSearch">
+    <h2>検索・置換</h2>
+    <label>検索語
+      <input id="findQuery" type="text" />
+    </label>
+    <div id="findRecent" class="chip-list"></div>
+    <fieldset class="segment">
+      <legend>検索オプション</legend>
+      <label><input id="optCase" type="checkbox" />大文字/小文字を区別</label>
+      <label><input id="optRegex" type="checkbox" />正規表現</label>
+    </fieldset>
+    <label>置換語
+      <input id="replaceQuery" type="text" />
+    </label>
+    <p id="findStatus">0件</p>
+    <div class="dialog-actions wrap">
+      <button id="btnFindPrev" type="button">前へ</button>
+      <button id="btnFindNext" type="button">次へ</button>
+      <button id="btnReplaceOne" type="button">置換</button>
+      <button id="btnReplaceNext" type="button">次を置換して次へ</button>
+      <button id="btnReplaceAll" type="button">全置換</button>
+      <button id="btnReplaceInSelection" type="button">選択範囲のみ全置換</button>
+    </div>
+    <div class="dialog-footer"><button id="btnCloseSearch" type="button">Close</button></div>
   </dialog>
 
   <dialog id="dlgSnapshot">

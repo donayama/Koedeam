@@ -208,6 +208,7 @@
       el.btnHelp.addEventListener("click", () => {
         closeMenuIfOpen();
         pushUiHistory();
+        closeDialogsExcept("help");
         if (state.settings.ui.sidebar) {
           state.settings.ui.sidebar = false;
           applySidebar();
@@ -224,7 +225,7 @@
 
     el.btnReplace.addEventListener("click", () => {
       closeMenuIfOpen();
-      openSidebarPanel("replace");
+      openFindReplace(false);
     });
     el.findQuery.addEventListener("input", refreshMatches);
     el.findQuery.addEventListener("blur", () => recordSearch(el.findQuery.value));
@@ -296,6 +297,12 @@
     if (el.dlgSnapshot) {
       el.dlgSnapshot.addEventListener("close", () => applyPrimary("EDIT"));
     }
+    if (el.btnCloseSearch) {
+      el.btnCloseSearch.addEventListener("click", () => el.dlgSearch.close());
+    }
+    if (el.dlgSearch) {
+      el.dlgSearch.addEventListener("close", () => applyPrimary("EDIT"));
+    }
     if (el.docList) {
       el.docList.addEventListener("click", (evt) => handleDocumentAction(evt));
     }
@@ -310,6 +317,7 @@
     el.btnShare.addEventListener("click", () => {
       renderShareShortcuts();
       pushUiHistory();
+      closeDialogsExcept("share");
       if (state.settings.ui.sidebar) {
         state.settings.ui.sidebar = false;
         applySidebar();
@@ -469,23 +477,45 @@
   }
 
   function openFindReplace(focusReplace) {
+    pushUiHistory();
+    closeDialogsExcept("search");
+    if (state.settings.ui.sidebar) {
+      state.settings.ui.sidebar = false;
+      applySidebar();
+      saveSettings();
+    }
     setEditToolsVisible(false);
     applyPrimary("SEARCH");
-    openSidebarPanel("replace");
+    enforceKeyboardPolicy();
     renderFindRecent();
     applySearchOptionsUI();
     refreshMatches();
+    if (el.dlgSearch && !el.dlgSearch.open) el.dlgSearch.showModal();
     (focusReplace ? el.replaceQuery : el.findQuery).focus();
   }
 
   function setupDialogDismiss() {
-    [el.dlgHelp, el.dlgShare, el.dlgSettings, el.dlgSnapshot].forEach((dialog) => {
+    [el.dlgHelp, el.dlgShare, el.dlgSettings, el.dlgSnapshot, el.dlgSearch].forEach((dialog) => {
       if (!dialog) return;
       dialog.addEventListener("click", (evt) => {
         if (evt.target !== dialog) return;
         const ok = confirm("閉じますか？未保存の変更がある場合は失われる可能性があります。");
         if (ok) dialog.close();
       });
+    });
+  }
+
+  function closeDialogsExcept(kind) {
+    const map = {
+      help: el.dlgHelp,
+      share: el.dlgShare,
+      settings: el.dlgSettings,
+      snapshot: el.dlgSnapshot,
+      search: el.dlgSearch
+    };
+    Object.entries(map).forEach(([key, dialog]) => {
+      if (!dialog || key === kind) return;
+      if (dialog.open) dialog.close();
     });
   }
 
@@ -504,7 +534,7 @@
         return;
       }
       closeMenu();
-      if (act === "replace") openSidebarPanel("replace");
+      if (act === "replace") openFindReplace(false);
       else if (act === "templates") openSidebarPanel("templates");
       else if (act === "history") { openSnapshotPanel(); }
       else if (act === "sidebar") { toggleSidebar(); }
@@ -1168,8 +1198,8 @@
   }
 
   function refreshSideTabElements() {
-    el.sideTabs = Array.from(document.querySelectorAll(".side-tabs .tab-btn"));
-    el.tabPanels = Array.from(document.querySelectorAll(".tab-panel"));
+    el.sideTabs = Array.from(document.querySelectorAll("#sidebar .side-tabs .tab-btn[data-tab]"));
+    el.tabPanels = Array.from(document.querySelectorAll("#sidebar .tab-panel"));
   }
 
   function bindSideTabs() {
@@ -1331,7 +1361,7 @@
 
   function closeOpenDialog() {
     let closed = false;
-    [el.dlgHelp, el.dlgShare, el.dlgSettings, el.dlgSnapshot].forEach((d) => {
+    [el.dlgHelp, el.dlgShare, el.dlgSettings, el.dlgSnapshot, el.dlgSearch].forEach((d) => {
       if (!d) return;
       if (d.open) {
         d.close();
@@ -1638,6 +1668,7 @@
 
   function openSettings(section) {
     pushUiHistory();
+    closeDialogsExcept("settings");
     if (state.settings.ui.sidebar) {
       state.settings.ui.sidebar = false;
       applySidebar();
@@ -1671,6 +1702,7 @@
 
   function openSnapshotPanel() {
     pushUiHistory();
+    closeDialogsExcept("snapshot");
     if (state.settings.ui.sidebar) {
       state.settings.ui.sidebar = false;
       applySidebar();
@@ -2269,8 +2301,8 @@
       statusLayout: document.getElementById("statusLayout"),
       sidebar: document.getElementById("sidebar"),
       sidebarTemplates: document.getElementById("sidebarTemplates"),
-      sideTabs: Array.from(document.querySelectorAll(".side-tabs .tab-btn")),
-      tabPanels: Array.from(document.querySelectorAll(".tab-panel")),
+      sideTabs: Array.from(document.querySelectorAll("#sidebar .side-tabs .tab-btn[data-tab]")),
+      tabPanels: Array.from(document.querySelectorAll("#sidebar .tab-panel")),
       btnCloseSidebar: document.getElementById("btnCloseSidebar"),
 
       btnSidebar: document.getElementById("btnSidebar"),
@@ -2297,6 +2329,8 @@
       optCase: document.getElementById("optCase"),
       optRegex: document.getElementById("optRegex"),
       replaceQuery: document.getElementById("replaceQuery"),
+      dlgSearch: document.getElementById("dlgSearch"),
+      btnCloseSearch: document.getElementById("btnCloseSearch"),
       findStatus: document.getElementById("findStatus"),
       btnFindPrev: document.getElementById("btnFindPrev"),
       btnFindNext: document.getElementById("btnFindNext"),
