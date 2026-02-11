@@ -277,11 +277,35 @@ select {
 .nav-pad { height: 48px; font-size: 16px; min-width: 72px; }
 .nav-wide { height: 44px; display:flex; align-items:center; justify-content:space-between; gap: 6px; }
 .edit-grid { display: grid; gap: 8px; }
-.edit-row { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; }
+.edit-row { display: grid; gap: 6px; }
+.edit-row.row-1 {
+  grid-template-columns:
+    minmax(44px, 2fr)
+    minmax(60px, 6fr)
+    minmax(44px, 2fr)
+    minmax(44px, 2fr)
+    minmax(44px, 2fr)
+    minmax(44px, 2fr);
+}
+.edit-row.row-2 {
+  grid-template-columns:
+    minmax(44px, 3fr)
+    minmax(44px, 5fr)
+    minmax(44px, 5fr)
+    minmax(44px, 3fr)
+    minmax(44px, 2fr);
+}
+.edit-row.row-3 {
+  grid-template-columns:
+    minmax(44px, 2fr)
+    minmax(60px, 6fr)
+    minmax(44px, 2fr)
+    minmax(44px, 2fr)
+    minmax(44px, 2fr)
+    minmax(44px, 2fr);
+}
 .edit-row button { height: 44px; }
 .nav-wide-2 { justify-content: center; }
-.span-2 { grid-column: span 2; }
-.span-3 { grid-column: span 3; }
 .icon-only { justify-content: center; text-align: center; }
 .icon-only .icon { margin-right: 0; font-size: 15px; }
 .icon-label { font-size: 11px; margin-left: 4px; display: inline-block; }
