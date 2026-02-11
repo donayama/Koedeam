@@ -14,7 +14,7 @@
   <header class="topbar">
     <a class="brand" href="../"><img src="../assets/icon.svg" alt="" class="brand-icon" />Koedeam</a>
     <div class="top-actions">
-      <button id="btnMenu" type="button" class="btn-icon"><span class="icon">☰</span>Menu</button>
+      <button id="btnMenu" type="button" class="btn-icon"><span class="icon">☰</span>メニュー</button>
     </div>
   </header>
 
@@ -33,13 +33,13 @@
 
     <aside id="sidebar" class="sidebar" aria-label="sidebar">
       <div class="side-head">
-        <strong>Sidebar</strong>
+        <strong>サイドバー</strong>
         <button id="btnCloseSidebar" type="button" class="btn-icon"><span class="icon">✕</span>Close</button>
       </div>
       <div class="side-tabs" role="tablist" aria-label="sidebar tabs">
-        <button type="button" class="tab-btn" data-tab="replace" aria-controls="panelReplace">Replace</button>
-        <button type="button" class="tab-btn" data-tab="templates" aria-controls="panelTemplates">Templates</button>
-        <button type="button" class="tab-btn" data-tab="history" aria-controls="panelHistory">History</button>
+        <button type="button" class="tab-btn" data-tab="replace" aria-controls="panelReplace">検索・置換</button>
+        <button type="button" class="tab-btn" data-tab="templates" aria-controls="panelTemplates">テンプレ</button>
+        <button type="button" class="tab-btn" data-tab="history" aria-controls="panelHistory">保存・履歴</button>
       </div>
       <section id="panelReplace" class="tab-panel" role="tabpanel">
         <label>検索語
@@ -88,28 +88,27 @@
   </div>
 
   <nav class="bottombar" aria-label="tools">
-    <button id="btnMic" type="button" class="btn-icon toolbar-item" data-tool="mic"><span class="icon">🎤</span>Mic</button>
-    <button id="btnFind" type="button" class="btn-icon toolbar-item" data-tool="find"><span class="icon">🔎</span>Find</button>
-    <button id="btnReplace" type="button" class="btn-icon toolbar-item" data-tool="replace"><span class="icon">♻</span>Replace</button>
-    <button id="btnTemplates" type="button" class="btn-icon toolbar-item" data-tool="templates"><span class="icon">📄</span>Templates</button>
-    <button id="btnHistory" type="button" class="btn-icon toolbar-item" data-tool="history"><span class="icon">🕒</span>History</button>
-    <button id="btnEditTools" type="button" class="btn-icon toolbar-item" data-tool="edit"><span class="icon">✎</span>Edit</button>
-    <button id="btnShare" type="button" class="btn-icon toolbar-item" data-tool="share"><span class="icon">⇪</span>Share</button>
+    <button id="btnMic" type="button" class="btn-icon toolbar-item" data-tool="mic"><span class="icon">🎤</span>音声入力</button>
+    <button id="btnReplace" type="button" class="btn-icon toolbar-item" data-tool="replace"><span class="icon">🔎</span>検索・置換</button>
+    <button id="btnTemplates" type="button" class="btn-icon toolbar-item" data-tool="templates"><span class="icon">📄</span>テンプレ</button>
+    <button id="btnHistory" type="button" class="btn-icon toolbar-item" data-tool="history"><span class="icon">🕒</span>保存・履歴</button>
+    <button id="btnEditTools" type="button" class="btn-icon toolbar-item" data-tool="edit"><span class="icon">✎</span>編集</button>
+    <button id="btnShare" type="button" class="btn-icon toolbar-item" data-tool="share"><span class="icon">⇪</span>共有</button>
   </nav>
 
   <div id="menuOverlay" class="menu-overlay hidden" aria-hidden="true">
     <aside id="menuPanel" class="menu-panel" aria-label="menu">
       <div class="menu-head">
-        <strong>Menu</strong>
+        <strong>メニュー</strong>
         <button id="btnCloseMenu" type="button" class="btn-icon"><span class="icon">✕</span>Close</button>
       </div>
       <div class="menu-list">
-        <button type="button" class="btn-icon" data-menu="replace"><span class="icon">♻</span>Replace</button>
-        <button type="button" class="btn-icon" data-menu="templates"><span class="icon">📄</span>Templates</button>
-        <button type="button" class="btn-icon" data-menu="history"><span class="icon">🕒</span>History</button>
-        <button type="button" class="btn-icon" data-menu="sidebar"><span class="icon">▤</span>Sidebar</button>
-        <button type="button" class="btn-icon" data-menu="settings"><span class="icon">⚙</span>Settings</button>
-        <button type="button" class="btn-icon" data-menu="help"><span class="icon">?</span>Help</button>
+        <button type="button" class="btn-icon" data-menu="replace"><span class="icon">🔎</span>検索・置換</button>
+        <button type="button" class="btn-icon" data-menu="templates"><span class="icon">📄</span>テンプレ</button>
+        <button type="button" class="btn-icon" data-menu="history"><span class="icon">🕒</span>保存・履歴</button>
+        <button type="button" class="btn-icon" data-menu="sidebar"><span class="icon">▤</span>サイドバー</button>
+        <button type="button" class="btn-icon" data-menu="settings"><span class="icon">⚙</span>設定</button>
+        <button type="button" class="btn-icon" data-menu="help"><span class="icon">?</span>ヘルプ</button>
       </div>
     </aside>
   </div>
@@ -188,13 +187,12 @@
       </fieldset>
       <fieldset class="segment">
         <legend>ツールバー表示</legend>
-        <label><input type="checkbox" data-toolbar="mic" />Mic</label>
-        <label><input type="checkbox" data-toolbar="find" />Find</label>
-        <label><input type="checkbox" data-toolbar="replace" />Replace</label>
-        <label><input type="checkbox" data-toolbar="templates" />Templates</label>
-        <label><input type="checkbox" data-toolbar="history" />History</label>
-        <label><input type="checkbox" data-toolbar="edit" />Edit</label>
-        <label><input type="checkbox" data-toolbar="share" />Share</label>
+        <label><input type="checkbox" data-toolbar="mic" />音声入力</label>
+        <label><input type="checkbox" data-toolbar="replace" />検索・置換</label>
+        <label><input type="checkbox" data-toolbar="templates" />テンプレ</label>
+        <label><input type="checkbox" data-toolbar="history" />保存・履歴</label>
+        <label><input type="checkbox" data-toolbar="edit" />編集</label>
+        <label><input type="checkbox" data-toolbar="share" />共有</label>
         <div id="toolbarOrderList" class="dialog-list dialog-body"></div>
       </fieldset>
     </section>

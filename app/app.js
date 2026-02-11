@@ -30,14 +30,13 @@
     sidebarTab: "replace",
     toolbar: {
       mic: true,
-      find: true,
-      replace: false,
+      replace: true,
       templates: false,
       history: false,
       edit: true,
       share: true
     },
-    toolbarOrder: ["mic", "find", "replace", "templates", "history", "edit", "share"],
+    toolbarOrder: ["mic", "replace", "templates", "history", "edit", "share"],
     apiKeys: {
       openai: "",
       other: ""
@@ -157,10 +156,6 @@
     }
     el.btnCloseHelp.addEventListener("click", () => el.dlgHelp.close());
 
-    el.btnFind.addEventListener("click", () => {
-      closeMenuIfOpen();
-      openSidebarPanel("replace");
-    });
     el.btnReplace.addEventListener("click", () => {
       closeMenuIfOpen();
       openSidebarPanel("replace");
@@ -715,15 +710,15 @@
       shareRow.dataset.id = s.id;
       shareRow.textContent = s.name;
       const settingsRow = document.createElement("div");
-      settingsRow.className = "dialog-item";
+      settingsRow.className = "dialog-item compact-item";
       settingsRow.innerHTML = `
-        <div class="dialog-item-head"><strong>${escapeHtml(s.name)}</strong></div>
-        <small>${escapeHtml(s.urlTemplate)}</small>
-        <div class="dialog-actions">
-          <button data-act="open" data-id="${s.id}" type="button">起動</button>
-          <button data-act="edit" data-id="${s.id}" type="button">編集</button>
-          <button data-act="delete" data-id="${s.id}" type="button">削除</button>
-        </div>`;
+        <div class="dialog-item-head compact-head">
+          <button data-act="open" data-id="${s.id}" type="button" class="icon-only" aria-label="起動"><span class="icon">⇪</span></button>
+          <strong>${escapeHtml(s.name)}</strong>
+          <button data-act="edit" data-id="${s.id}" type="button" class="icon-only" aria-label="編集"><span class="icon">✎</span></button>
+          <button data-act="delete" data-id="${s.id}" type="button" class="icon-only compact-delete" aria-label="削除"><span class="icon">🗑</span></button>
+        </div>
+        <small class="compact-preview">${escapeHtml(s.urlTemplate)}</small>`;
       shareRow.addEventListener("click", (evt) => handleShareShortcutAction(evt));
       settingsRow.addEventListener("click", (evt) => handleShareShortcutAction(evt));
       el.shareShortcutList.append(shareRow);
@@ -754,6 +749,8 @@
       el.shortcutName.value = item.name;
       el.shortcutUrl.value = item.urlTemplate;
     } else if (act === "delete") {
+      const ok = confirm("このショートカットを削除します。よろしいですか？");
+      if (!ok) return;
       state.settings.shareShortcuts = state.settings.shareShortcuts.filter((s) => s.id !== item.id);
       saveSettings();
       renderShareShortcuts();
@@ -1009,6 +1006,7 @@
 
   function applyToolbarVisibility() {
     const t = { ...DEFAULT_SETTINGS.toolbar, ...(state.settings.toolbar || {}) };
+    if ("find" in t) delete t.find;
     state.settings.toolbar = t;
     const order = (state.settings.toolbarOrder || DEFAULT_SETTINGS.toolbarOrder).filter((k) => k in t);
     state.settings.toolbarOrder = order;
@@ -1032,12 +1030,12 @@
     const order = state.settings.toolbarOrder || DEFAULT_SETTINGS.toolbarOrder;
     const labels = {
       mic: "Mic",
-      find: "Find",
-      replace: "Replace",
-      templates: "Templates",
-      history: "History",
-      edit: "Edit",
-      share: "Share"
+      replace: "検索・置換",
+      templates: "テンプレ",
+      history: "保存・履歴",
+      edit: "編集",
+      share: "共有",
+      mic: "音声入力"
     };
     el.toolbarOrderList.innerHTML = "";
     order.forEach((tool, idx) => {
@@ -1605,7 +1603,6 @@
       btnSettings: document.getElementById("btnSettings"),
       btnHelp: document.getElementById("btnHelp"),
       btnMic: document.getElementById("btnMic"),
-      btnFind: document.getElementById("btnFind"),
       btnReplace: document.getElementById("btnReplace"),
       btnTemplates: document.getElementById("btnTemplates"),
       btnHistory: document.getElementById("btnHistory"),
