@@ -860,6 +860,7 @@
     el.settingsTabs.forEach((btn) => {
       btn.addEventListener("click", () => {
         const tab = btn.dataset.tab;
+        if (!tab) return;
         applySettingsTab(tab);
       });
     });
@@ -1139,8 +1140,8 @@
   function applyPunctuationUI() {
     const jp = state.settings.punctuationMode !== "en";
     el.btnPuncMode.textContent = jp ? "JP" : "EN";
-    el.btnComma.querySelector(".icon").textContent = jp ? "、" : ",";
-    el.btnPeriod.querySelector(".icon").textContent = jp ? "。" : ".";
+    el.btnComma.textContent = jp ? "、" : ",";
+    el.btnPeriod.textContent = jp ? "。" : ".";
   }
 
   function insertPunctuation(kind) {
@@ -1639,7 +1640,7 @@
       settingsTemplates: document.getElementById("panelSettingsTemplates"),
       settingsShare: document.getElementById("panelSettingsShare"),
       settingsApi: document.getElementById("panelSettingsApi"),
-      settingsTabs: Array.from(document.querySelectorAll("#dlgSettings .settings-tabs .tab-btn")),
+      settingsTabs: Array.from(document.querySelectorAll("#dlgSettings .settings-tabs .tab-btn[data-tab]")),
       settingsPanels: Array.from(document.querySelectorAll("#dlgSettings .tab-panel")),
       fontSizeRange: document.getElementById("fontSizeRange"),
       fontSizeValue: document.getElementById("fontSizeValue"),

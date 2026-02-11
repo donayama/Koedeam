@@ -55,6 +55,15 @@ button, input, textarea { font: inherit; }
 }
 .status-row { display:flex; justify-content:space-between; gap:8px; margin-top:8px; font-size: 12px; opacity:.8; }
 .sidebar { display: none; border-left: 1px solid var(--line); padding: 12px; background: var(--panel); }
+.sidebar label { margin: 6px 0; }
+.sidebar input,
+.sidebar select { padding: 6px; }
+.sidebar .dialog-actions { gap: 6px; }
+.sidebar .dialog-actions button { padding: 8px 6px; }
+.sidebar .dialog-list { gap: 6px; }
+.sidebar h2 { margin: 2px 0 6px; }
+.side-tabs { gap: 4px; margin-bottom: 6px; }
+.tab-btn { padding: 6px; font-size: 12px; }
 .side-head { display:flex; justify-content:space-between; align-items:center; gap: 8px; margin-bottom: 8px; }
 .sidebar h2 { font-size: 14px; margin: 4px 0; }
 .side-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 8px; }
@@ -156,7 +165,8 @@ select {
 .shortcut-inline-list { display:flex; flex-wrap: wrap; gap: 6px; }
 .shortcut-inline-list button { padding: 8px 10px; border-radius: 12px; min-height: 48px; }
 .shortcut-inline-list button { line-height: 1.2; white-space: normal; }
-.settings-tabs { margin-bottom: 10px; }
+.settings-tabs { margin-bottom: 10px; grid-template-columns: repeat(5, 1fr); }
+.settings-close { text-align: center; }
 .share-mode { display:flex; gap: 8px; margin-bottom: 8px; }
 .share-mode button.active { border-color: #0aa; }
 .edit-tools {
@@ -212,6 +222,9 @@ select {
 .edit-row.row-2 { grid-template-columns: 1.2fr 1fr .8fr .8fr 1fr 1.2fr .8fr; }
 .edit-row.row-3 { grid-template-columns: 1.3fr 1fr 2.2fr 1fr; }
 .nav-wide-2 { justify-content: center; }
+.icon-only { justify-content: center; text-align: center; }
+.icon-only .icon { margin-right: 0; font-size: 15px; }
+.edit-row .nav-wide { white-space: nowrap; }
 .icon { font-size: 12px; opacity: .9; margin-right: 6px; display: inline-flex; align-items: center; }
 .btn-icon { display: inline-flex; align-items: center; gap: 6px; }
 .chip {
