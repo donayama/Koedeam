@@ -67,7 +67,9 @@ button, input, textarea { font: inherit; }
 .editor-wrap { position: relative; }
 #editor {
   width: 100%;
-  min-height: calc(100vh - 182px);
+  min-height: calc(
+    100vh - 182px - var(--edit-inset-top, 0px) - var(--edit-inset-bottom, 0px)
+  );
   resize: vertical;
   padding: 12px;
   border-radius: 12px;
@@ -638,7 +640,9 @@ body.keyboard-open .status-indicator .chip { opacity: .85; }
     padding-left: calc(8px + var(--edit-inset-left, 0px));
   }
   #editor {
-    min-height: calc(100vh - 160px);
+    min-height: calc(
+      100vh - 160px - var(--edit-inset-top, 0px) - var(--edit-inset-bottom, 0px)
+    );
     padding: 10px;
     font-size: 15px;
   }
