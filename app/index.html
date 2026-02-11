@@ -94,6 +94,9 @@
   </div>
 
   <nav class="bottombar" aria-label="Tool Bar">
+    <button id="btnToolbarCopy" type="button" class="btn-icon toolbar-item" data-tool="copy"><span class="icon">⎘</span>Copy</button>
+    <button id="btnToolbarCut" type="button" class="btn-icon toolbar-item" data-tool="cut"><span class="icon">✂</span>Cut</button>
+    <button id="btnToolbarPaste" type="button" class="btn-icon toolbar-item" data-tool="paste"><span class="icon">⎘</span>Paste</button>
     <button id="btnMic" type="button" class="btn-icon toolbar-item" data-tool="mic"><span class="icon">🎤</span>音声入力</button>
     <button id="btnReplace" type="button" class="btn-icon toolbar-item" data-tool="replace"><span class="icon">🔎</span>検索・置換</button>
     <button id="btnTemplates" type="button" class="btn-icon toolbar-item" data-tool="templates"><span class="icon">📄</span>テンプレ</button>
@@ -272,6 +275,12 @@
             <button id="btnNewline" type="button" class="icon-only" aria-label="改行"><span class="icon">↵</span></button>
             <button id="btnPuncMode" type="button" class="chip">JP</button>
           </div>
+        </div>
+        <div class="edit-tools-row cursor-aux">
+          <button id="btnDocStart" type="button"><span class="icon">⏮</span>文頭</button>
+          <button id="btnDocEnd" type="button"><span class="icon">⏭</span>文末</button>
+          <button id="btnDeleteToLineStart" type="button"><span class="icon">⌫|</span>行頭まで削除</button>
+          <button id="btnDeleteToLineEnd" type="button"><span class="icon">|⌦</span>行末まで削除</button>
         </div>
       </div>
       <div class="edit-group">

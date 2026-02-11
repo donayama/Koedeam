@@ -31,6 +31,9 @@
     editPanelPosition: "bottom",
     sidebarTab: "replace",
     toolbar: {
+      copy: true,
+      cut: true,
+      paste: true,
       mic: true,
       replace: true,
       templates: false,
@@ -38,8 +41,8 @@
       edit: true,
       share: true
     },
-    toolbarOrder: ["mic", "replace", "templates", "history", "edit", "share"],
-    toolbarPriority: ["mic", "replace", "edit", "share", "history", "templates"],
+    toolbarOrder: ["copy", "cut", "paste", "mic", "replace", "templates", "history", "edit", "share"],
+    toolbarPriority: ["replace", "copy", "paste", "mic", "edit", "share", "cut", "history", "templates"],
     apiKeys: {
       openai: "",
       other: ""
@@ -274,6 +277,10 @@
     });
     el.btnLineStart.addEventListener("click", () => moveToLineEdge("start"));
     el.btnLineEnd.addEventListener("click", () => moveToLineEdge("end"));
+    el.btnDocStart.addEventListener("click", () => moveToDocumentEdge("start"));
+    el.btnDocEnd.addEventListener("click", () => moveToDocumentEdge("end"));
+    el.btnDeleteToLineStart.addEventListener("click", () => deleteToLineEdge("start"));
+    el.btnDeleteToLineEnd.addEventListener("click", () => deleteToLineEdge("end"));
     el.btnMoveUp.addEventListener("click", () => moveCursorLine(-1));
     el.btnMoveDown.addEventListener("click", () => moveCursorLine(1));
     el.btnMoveLeft.addEventListener("click", () => moveCursorChar(-1));
@@ -285,6 +292,9 @@
     el.btnCopySel.addEventListener("click", copySelection);
     el.btnCutSel.addEventListener("click", cutSelection);
     el.btnPasteSel.addEventListener("click", pasteClipboard);
+    el.btnToolbarCopy.addEventListener("click", copyEditorOrSelection);
+    el.btnToolbarCut.addEventListener("click", cutSelection);
+    el.btnToolbarPaste.addEventListener("click", pasteClipboard);
     el.btnBackspace.addEventListener("click", () => deleteByDirection(-1));
     el.btnDelete.addEventListener("click", () => deleteByDirection(1));
     el.voiceModeRadios.forEach((radio) => {
@@ -448,7 +458,10 @@
   }
 
   function triggerToolbarTool(tool) {
-    if (tool === "mic") el.btnMic.click();
+    if (tool === "copy") el.btnToolbarCopy.click();
+    else if (tool === "cut") el.btnToolbarCut.click();
+    else if (tool === "paste") el.btnToolbarPaste.click();
+    else if (tool === "mic") el.btnMic.click();
     else if (tool === "replace") el.btnReplace.click();
     else if (tool === "templates") el.btnTemplates.click();
     else if (tool === "history") el.btnHistory.click();
@@ -1274,6 +1287,9 @@
   function renderOverflowMenuItems() {
     if (!el.overflowMenuItems) return;
     const labels = {
+      copy: "Copy",
+      cut: "Cut",
+      paste: "Paste",
       mic: "音声入力",
       replace: "検索・置換",
       templates: "テンプレ",
@@ -1282,6 +1298,9 @@
       share: "共有"
     };
     const icons = {
+      copy: "⎘",
+      cut: "✂",
+      paste: "⎘",
       mic: "🎤",
       replace: "🔎",
       templates: "📄",
@@ -1304,6 +1323,9 @@
   function renderToolbarOrder() {
     const order = state.settings.toolbarOrder || DEFAULT_SETTINGS.toolbarOrder;
     const labels = {
+      copy: "Copy",
+      cut: "Cut",
+      paste: "Paste",
       mic: "音声入力",
       replace: "検索・置換",
       templates: "テンプレ",
@@ -1759,6 +1781,60 @@
     el.editor.setSelectionRange(next, next);
   }
 
+  function moveToDocumentEdge(edge) {
+    const next = edge === "start" ? 0 : el.editor.value.length;
+    el.editor.focus();
+    el.editor.setSelectionRange(next, next);
+    ensureCaretVisible();
+  }
+
+  function deleteToLineEdge(edge) {
+    const text = el.editor.value;
+    const { selectionStart, selectionEnd } = el.editor;
+    if (selectionStart !== selectionEnd) {
+      el.editor.setRangeText("", selectionStart, selectionEnd, "start");
+      triggerInput();
+      return;
+    }
+    const { start, end } = getLineBounds(text, selectionStart);
+    if (edge === "start" && selectionStart > start) {
+      el.editor.setRangeText("", start, selectionStart, "start");
+      triggerInput();
+    } else if (edge === "end" && selectionStart < end) {
+      el.editor.setRangeText("", selectionStart, end, "start");
+      triggerInput();
+    }
+  }
+
+  async function copyEditorOrSelection() {
+    const { selectionStart, selectionEnd } = el.editor;
+    if (selectionStart !== selectionEnd) {
+      await copySelection();
+      return;
+    }
+    const text = el.editor.value;
+    if (!text) {
+      toast("コピー対象がありません");
+      return;
+    }
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        toast("Copyしました");
+        return;
+      }
+    } catch {
+      // fallback
+    }
+    const temp = document.createElement("textarea");
+    temp.value = text;
+    document.body.append(temp);
+    temp.select();
+    const ok = document.execCommand("copy");
+    temp.remove();
+    toast(ok ? "Copyしました" : "Copyできませんでした");
+  }
+
   function moveCursorLine(dir) {
     const text = el.editor.value;
     const pos = el.editor.selectionStart;
@@ -1919,6 +1995,9 @@
       btnSettings: document.getElementById("btnSettings"),
       btnHelp: document.getElementById("btnHelp"),
       btnMic: document.getElementById("btnMic"),
+      btnToolbarCopy: document.getElementById("btnToolbarCopy"),
+      btnToolbarCut: document.getElementById("btnToolbarCut"),
+      btnToolbarPaste: document.getElementById("btnToolbarPaste"),
       btnReplace: document.getElementById("btnReplace"),
       btnTemplates: document.getElementById("btnTemplates"),
       btnHistory: document.getElementById("btnHistory"),
@@ -2000,6 +2079,10 @@
       btnSelectAll: document.getElementById("btnSelectAll"),
       btnLineStart: document.getElementById("btnLineStart"),
       btnLineEnd: document.getElementById("btnLineEnd"),
+      btnDocStart: document.getElementById("btnDocStart"),
+      btnDocEnd: document.getElementById("btnDocEnd"),
+      btnDeleteToLineStart: document.getElementById("btnDeleteToLineStart"),
+      btnDeleteToLineEnd: document.getElementById("btnDeleteToLineEnd"),
       btnMoveUp: document.getElementById("btnMoveUp"),
       btnMoveDown: document.getElementById("btnMoveDown"),
       btnMoveLeft: document.getElementById("btnMoveLeft"),
