@@ -1,4 +1,4 @@
-const CACHE_NAME = "koedeam-app-v110";
+const CACHE_NAME = "koedeam-app-v111";
 const ASSETS = [
   "./",
   "./index.html",
@@ -48,3 +48,4 @@ self.addEventListener("message", (event) => {
     self.skipWaiting();
   }
 });
+

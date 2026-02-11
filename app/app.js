@@ -1,5 +1,5 @@
 (() => {
-  const APP_VERSION = "1.1.0";
+  const APP_VERSION = "1.1.1";
   const VERSION_URL = "./version.json";
   const STORAGE_KEYS = {
     version: "koedeam.version",
