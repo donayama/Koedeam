@@ -253,10 +253,28 @@ select {
 .compact-preview { margin: 4px 0 0; font-size: 12px; opacity: .8; }
 .shortcut-grid { display:flex; flex-wrap: wrap; gap: 8px; }
 .shortcut-grid .dialog-item { flex: 1 1 44%; min-width: 120px; }
-.shortcut-inline { align-items: center; }
-.shortcut-inline-list { display:flex; flex-wrap: wrap; gap: 6px; }
-.shortcut-inline-list button { padding: 8px 10px; border-radius: 12px; min-height: 48px; }
-.shortcut-inline-list button { line-height: 1.2; white-space: normal; }
+.shortcut-inline {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  align-items: stretch;
+}
+.shortcut-inline > button { width: 100%; min-height: 48px; }
+.shortcut-inline-list {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.shortcut-inline-list button {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 12px;
+  min-height: 48px;
+  line-height: 1.2;
+  white-space: normal;
+}
+.shortcut-inline #btnOpenSettingsShare { grid-column: 1 / -1; }
 .settings-bar {
   position: sticky;
   top: 0;

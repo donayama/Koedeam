@@ -1133,6 +1133,7 @@
     for (const s of state.settings.shareShortcuts.slice(0, 5)) {
       const shareRow = document.createElement("button");
       shareRow.type = "button";
+      shareRow.className = "share-shortcut-btn";
       shareRow.dataset.act = "open";
       shareRow.dataset.id = s.id;
       shareRow.textContent = s.name;
