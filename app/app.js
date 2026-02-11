@@ -114,6 +114,7 @@
     setupSpeech();
     setupServiceWorker();
     setupVersionPolling();
+    setupViewportWatcher();
   }
 
   function bindEvents() {
@@ -1100,7 +1101,29 @@
     if (mode === "MOBILE" && state.settings.ui.sidebar && state.editToolsVisible) {
       setEditToolsVisible(false);
     }
+    if (mode === "MOBILE" && state.settings.ui.sidebar && state.primary === "EDIT") {
+      applyPrimary("MANAGE");
+    }
     updateStatusIndicator();
+  }
+
+  function setupViewportWatcher() {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const apply = () => {
+      const delta = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
+      const keyboardOpen = delta > 80;
+      document.documentElement.style.setProperty("--kb-offset", `${delta}px`);
+      document.body.classList.toggle("keyboard-open", keyboardOpen);
+      if (keyboardOpen && state.layoutMode === "MOBILE" && state.editToolsVisible) {
+        setEditToolsVisible(false);
+      }
+    };
+    vv.addEventListener("resize", apply);
+    vv.addEventListener("scroll", apply);
+    window.addEventListener("focusin", apply);
+    window.addEventListener("focusout", () => setTimeout(apply, 80));
+    apply();
   }
 
   function isMobileLayout() {
@@ -1124,7 +1147,7 @@
   function updateStatusIndicator() {
     if (!el.statusPrimary) return;
     el.statusPrimary.textContent = state.primary;
-    el.statusInput.textContent = state.input.replace("_", ":");
+    el.statusInput.textContent = state.input.replaceAll("_", ":");
     el.statusSystem.textContent = state.system;
     el.statusLayout.textContent = state.layoutMode;
     el.statusInput.classList.toggle("input-locked", state.input === "VOICE_LOCKED");
