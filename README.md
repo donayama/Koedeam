@@ -115,6 +115,8 @@ python -m http.server 8000
 1. `MOBILE` 幅で `Tool Bar` が2段化しない
 2. `MOBILE` で `Edit Panel` と `Side Bar` が同時展開しない
 3. `VOICE_LOCKED` 時に編集入力が反映されない
-4. IME変換中にショートカットが誤発火しない
-5. `Update Banner` が `version.json` 差分で表示される
-6. iOSで入力タップ時に自動ズームしない
+4. `Snapshot Panel` 表示中に背後編集を開始できない
+5. `SEARCH` 表示時に `Edit Panel` が同時展開しない
+6. IME変換中にショートカットが誤発火しない
+7. `Update Banner` が `version.json` 差分で表示される
+8. iOSで入力タップ時に自動ズームしない

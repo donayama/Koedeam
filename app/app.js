@@ -208,6 +208,12 @@
       el.btnHelp.addEventListener("click", () => {
         closeMenuIfOpen();
         pushUiHistory();
+        if (state.settings.ui.sidebar) {
+          state.settings.ui.sidebar = false;
+          applySidebar();
+          saveSettings();
+        }
+        setEditToolsVisible(false);
         applyPrimary("CONFIG");
         enforceKeyboardPolicy();
         el.dlgHelp.showModal();
@@ -304,6 +310,12 @@
     el.btnShare.addEventListener("click", () => {
       renderShareShortcuts();
       pushUiHistory();
+      if (state.settings.ui.sidebar) {
+        state.settings.ui.sidebar = false;
+        applySidebar();
+        saveSettings();
+      }
+      setEditToolsVisible(false);
       applyPrimary("MANAGE");
       enforceKeyboardPolicy();
       el.dlgShare.showModal();
@@ -457,6 +469,7 @@
   }
 
   function openFindReplace(focusReplace) {
+    setEditToolsVisible(false);
     applyPrimary("SEARCH");
     openSidebarPanel("replace");
     renderFindRecent();
@@ -1625,6 +1638,12 @@
 
   function openSettings(section) {
     pushUiHistory();
+    if (state.settings.ui.sidebar) {
+      state.settings.ui.sidebar = false;
+      applySidebar();
+      saveSettings();
+    }
+    setEditToolsVisible(false);
     applyPrimary("CONFIG");
     enforceKeyboardPolicy();
     el.dlgSettings.showModal();
@@ -1652,6 +1671,12 @@
 
   function openSnapshotPanel() {
     pushUiHistory();
+    if (state.settings.ui.sidebar) {
+      state.settings.ui.sidebar = false;
+      applySidebar();
+      saveSettings();
+    }
+    setEditToolsVisible(false);
     renderHistory();
     applyPrimary("MANAGE");
     enforceKeyboardPolicy();
@@ -1660,6 +1685,7 @@
 
   function openSidebarPanel(tab) {
     pushUiHistory();
+    if (tab === "replace") setEditToolsVisible(false);
     applyPrimary(tab === "replace" ? "SEARCH" : "MANAGE");
     if (isMobileLayout()) setEditToolsVisible(false);
     state.settings.ui.sidebar = true;
