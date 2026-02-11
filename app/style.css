@@ -160,8 +160,12 @@ select {
 .dialog-list { display:flex; flex-direction:column; gap: 8px; max-height: 240px; overflow:auto; padding-right: 2px; }
 .dialog-item { border: 1px solid var(--line); border-radius: 10px; padding: 8px; background: var(--panel); }
 .dialog-item-head { display:flex; justify-content:space-between; gap: 8px; }
+.toolbar-row { align-items: center; }
+.toolbar-check { display:flex; align-items:center; gap: 8px; }
+.toolbar-check input { margin: 0; }
 .compact-item { padding: 6px 8px; }
 .compact-head { display:flex; align-items: center; gap: 6px; }
+.compact-head .icon-only { white-space: nowrap; }
 .compact-head strong { flex: 1; text-align: left; }
 .compact-delete { margin-left: auto; }
 .compact-head .icon-only { width: 28px; height: 28px; padding: 0; }
@@ -247,6 +251,8 @@ select {
 .nav-wide-2 { justify-content: center; }
 .icon-only { justify-content: center; text-align: center; }
 .icon-only .icon { margin-right: 0; font-size: 15px; }
+.icon-label { font-size: 11px; margin-left: 4px; display: inline-block; }
+.compact-head .icon-only { padding: 4px 6px; min-width: 50px; }
 .edit-row .nav-wide { white-space: nowrap; }
 .icon { font-size: 12px; opacity: .9; margin-right: 6px; display: inline-flex; align-items: center; }
 .btn-icon { display: inline-flex; align-items: center; gap: 6px; }

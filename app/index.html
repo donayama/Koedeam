@@ -135,7 +135,7 @@
         <button type="button" class="tab-btn" data-tab="appearance" aria-controls="panelSettingsAppearance">表示</button>
         <button type="button" class="tab-btn" data-tab="templates" aria-controls="panelSettingsTemplates">テンプレート</button>
         <button type="button" class="tab-btn" data-tab="share" aria-controls="panelSettingsShare">共有ショートカット</button>
-        <button type="button" class="tab-btn" data-tab="api" aria-controls="panelSettingsApi">API</button>
+        <button type="button" class="tab-btn" data-tab="api" aria-controls="panelSettingsApi">その他</button>
         <button id="btnCloseSettings" type="button" class="tab-btn settings-close">Close</button>
       </div>
     </div>
@@ -187,12 +187,6 @@
       </fieldset>
       <fieldset class="segment">
         <legend>ツールバー表示</legend>
-        <label><input type="checkbox" data-toolbar="mic" />音声入力</label>
-        <label><input type="checkbox" data-toolbar="replace" />検索・置換</label>
-        <label><input type="checkbox" data-toolbar="templates" />テンプレ</label>
-        <label><input type="checkbox" data-toolbar="history" />保存・履歴</label>
-        <label><input type="checkbox" data-toolbar="edit" />編集</label>
-        <label><input type="checkbox" data-toolbar="share" />共有</label>
         <div id="toolbarOrderList" class="dialog-list dialog-body"></div>
       </fieldset>
     </section>
@@ -215,6 +209,7 @@
         <input id="shortcutId" type="hidden" />
         <label>名前<input id="shortcutName" type="text" required /></label>
         <label>URLテンプレート<input id="shortcutUrl" type="text" placeholder="mailto:?subject={title}&body={text}" required /></label>
+        <p class="hint">凡例：{text} = 本文/選択、{title} = 先頭行、{prompt} = {text} と同義</p>
         <div class="dialog-actions">
           <button type="submit">保存</button>
           <button id="btnShortcutReset" type="button">クリア</button>
@@ -230,11 +225,11 @@
         <input id="apiKeyOther" type="password" placeholder="任意" />
       </label>
       <p class="hint">キーは端末内のみ保存され、外部送信は行いません。</p>
-    </section>
-    <section class="settings-section">
-      <h3>初期化</h3>
-      <button id="btnResetApp" type="button">設定と下書きを初期化</button>
-      <p class="hint">この操作は取り消せません。localStorage内のデータを削除します。</p>
+      <div class="settings-section">
+        <h3>初期化</h3>
+        <button id="btnResetApp" type="button">設定と下書きを初期化</button>
+        <p class="hint">この操作は取り消せません。localStorage内のデータを削除します。</p>
+      </div>
     </section>
   </dialog>
 

@@ -269,14 +269,6 @@
         saveSettings();
       });
     });
-    el.toolbarChecks.forEach((check) => {
-      check.addEventListener("change", () => {
-        state.settings.toolbar = state.settings.toolbar || {};
-        state.settings.toolbar[check.dataset.toolbar] = check.checked;
-        applyToolbarVisibility();
-        saveSettings();
-      });
-    });
     if (el.toolbarOrderList) {
       el.toolbarOrderList.addEventListener("click", (evt) => {
         const btn = evt.target.closest("button[data-move]");
@@ -284,6 +276,15 @@
         const tool = btn.dataset.tool;
         const dir = btn.dataset.move;
         moveToolbarItem(tool, dir === "up" ? -1 : 1);
+      });
+      el.toolbarOrderList.addEventListener("change", (evt) => {
+        const input = evt.target;
+        if (!(input instanceof HTMLInputElement)) return;
+        if (!input.dataset.tool) return;
+        state.settings.toolbar = state.settings.toolbar || {};
+        state.settings.toolbar[input.dataset.tool] = input.checked;
+        applyToolbarVisibility();
+        saveSettings();
       });
     }
     el.apiKeyOpenAI.addEventListener("change", () => saveApiKeys());
@@ -713,10 +714,10 @@
       settingsRow.className = "dialog-item compact-item";
       settingsRow.innerHTML = `
         <div class="dialog-item-head compact-head">
-          <button data-act="open" data-id="${s.id}" type="button" class="icon-only" aria-label="起動"><span class="icon">⇪</span></button>
+          <button data-act="open" data-id="${s.id}" type="button" class="icon-only" aria-label="起動"><span class="icon">⇪</span><span class="icon-label">起動</span></button>
           <strong>${escapeHtml(s.name)}</strong>
-          <button data-act="edit" data-id="${s.id}" type="button" class="icon-only" aria-label="編集"><span class="icon">✎</span></button>
-          <button data-act="delete" data-id="${s.id}" type="button" class="icon-only compact-delete" aria-label="削除"><span class="icon">🗑</span></button>
+          <button data-act="edit" data-id="${s.id}" type="button" class="icon-only" aria-label="編集"><span class="icon">✎</span><span class="icon-label">編集</span></button>
+          <button data-act="delete" data-id="${s.id}" type="button" class="icon-only compact-delete" aria-label="削除"><span class="icon">🗑</span><span class="icon-label">削除</span></button>
         </div>
         <small class="compact-preview">${escapeHtml(s.urlTemplate)}</small>`;
       shareRow.addEventListener("click", (evt) => handleShareShortcutAction(evt));
@@ -1010,9 +1011,6 @@
     state.settings.toolbar = t;
     const order = (state.settings.toolbarOrder || DEFAULT_SETTINGS.toolbarOrder).filter((k) => k in t);
     state.settings.toolbarOrder = order;
-    el.toolbarChecks.forEach((check) => {
-      check.checked = !!t[check.dataset.toolbar];
-    });
     el.toolbarButtons.forEach((btn) => {
       const key = btn.dataset.tool;
       btn.classList.toggle("toolbar-hidden", !t[key]);
@@ -1029,20 +1027,24 @@
   function renderToolbarOrder() {
     const order = state.settings.toolbarOrder || DEFAULT_SETTINGS.toolbarOrder;
     const labels = {
-      mic: "Mic",
+      mic: "音声入力",
       replace: "検索・置換",
       templates: "テンプレ",
       history: "保存・履歴",
       edit: "編集",
-      share: "共有",
-      mic: "音声入力"
+      share: "共有"
     };
     el.toolbarOrderList.innerHTML = "";
     order.forEach((tool, idx) => {
       const row = document.createElement("div");
       row.className = "dialog-item";
       row.innerHTML = `
-        <div class="dialog-item-head"><strong>${labels[tool] || tool}</strong></div>
+        <div class="dialog-item-head toolbar-row">
+          <label class="toolbar-check">
+            <input type="checkbox" data-tool="${tool}" ${state.settings.toolbar?.[tool] ? "checked" : ""} />
+            <strong>${labels[tool] || tool}</strong>
+          </label>
+        </div>
         <div class="dialog-actions">
           <button type="button" data-move="up" data-tool="${tool}" ${idx === 0 ? "disabled" : ""}>↑</button>
           <button type="button" data-move="down" data-tool="${tool}" ${idx === order.length - 1 ? "disabled" : ""}>↓</button>
@@ -1635,7 +1637,6 @@
       fontSizeValue: document.getElementById("fontSizeValue"),
       fontFaceRadios: Array.from(document.querySelectorAll("input[name='fontFace']")),
       editPanelPosRadios: Array.from(document.querySelectorAll("input[name='editPanelPos']")),
-      toolbarChecks: Array.from(document.querySelectorAll("input[data-toolbar]")),
       toolbarButtons: Array.from(document.querySelectorAll(".toolbar-item")),
       btnResetApp: document.getElementById("btnResetApp"),
       toolbarOrderList: document.getElementById("toolbarOrderList"),
