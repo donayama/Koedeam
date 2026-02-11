@@ -29,7 +29,7 @@
     fontSize: 16,
     fontFace: "sans-jp",
     editPanelPosition: "bottom",
-    sidebarTab: "replace",
+    sidebarTab: "templates",
     toolbar: {
       copy: true,
       cut: true,
@@ -92,6 +92,10 @@
     state.recentDrafts = safeGetArray(STORAGE_KEYS.recentDrafts, []);
     state.templates = safeGetArray(STORAGE_KEYS.templates, DEFAULT_TEMPLATES);
     state.settings = safeGetObject(STORAGE_KEYS.settings, DEFAULT_SETTINGS);
+    if (state.settings.sidebarTab === "replace") {
+      state.settings.sidebarTab = "templates";
+      saveSettings();
+    }
     if (state.settings.voiceInsertMode === "replace") {
       state.settings.voiceInsertMode = "cursor";
       saveSettings();
@@ -477,6 +481,10 @@
   }
 
   function openFindReplace(focusReplace) {
+    if (isDialogLayerOpen() || el.dlgSnapshot?.open) {
+      toast("現在のパネルを閉じてから検索を開いてください");
+      return;
+    }
     pushUiHistory();
     closeDialogsExcept("search");
     if (state.settings.ui.sidebar) {
@@ -517,6 +525,10 @@
       if (!dialog || key === kind) return;
       if (dialog.open) dialog.close();
     });
+  }
+
+  function isDialogLayerOpen() {
+    return !!(el.dlgHelp?.open || el.dlgShare?.open || el.dlgSettings?.open);
   }
 
   function setupMenuOverlay() {
@@ -1171,7 +1183,7 @@
     if (state.settings.ui.sidebar) {
       refreshSideTabElements();
       bindSideTabs();
-      applySidebarTab(state.settings.sidebarTab || "replace");
+      applySidebarTab(state.settings.sidebarTab || "templates");
     }
     enforceKeyboardPolicy();
   }
@@ -1701,6 +1713,10 @@
   }
 
   function openSnapshotPanel() {
+    if (isDialogLayerOpen()) {
+      toast("現在のダイアログを閉じてから履歴を開いてください");
+      return;
+    }
     pushUiHistory();
     closeDialogsExcept("snapshot");
     if (state.settings.ui.sidebar) {
@@ -1923,7 +1939,7 @@
         toolbar: { ...fallback.toolbar, ...(parsed.toolbar || {}) },
         toolbarOrder: Array.isArray(parsed.toolbarOrder) ? parsed.toolbarOrder : fallback.toolbarOrder,
         toolbarPriority: Array.isArray(parsed.toolbarPriority) ? parsed.toolbarPriority : fallback.toolbarPriority,
-        sidebarTab: parsed.sidebarTab || fallback.sidebarTab,
+        sidebarTab: (parsed.sidebarTab === "replace" ? "templates" : (parsed.sidebarTab || fallback.sidebarTab)),
         apiKeys: { ...fallback.apiKeys, ...(parsed.apiKeys || {}) }
       };
     } catch {
