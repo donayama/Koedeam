@@ -148,6 +148,38 @@ select {
 .radio-sample { display: grid; grid-template-columns: 18px 1fr; gap: 6px 10px; align-items: center; margin: 8px 0; }
 .radio-sample .label { font-weight: 600; }
 .radio-sample .sample { grid-column: 2 / -1; opacity: .85; font-size: 13px; }
+.font-face-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.font-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: transparent;
+  font-size: 12px;
+}
+.font-chip input { margin: 0; }
+.font-row {
+  display: grid;
+  grid-template-columns: 44px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+}
+.font-label { font-size: 12px; opacity: .8; }
+.option-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.option-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: transparent;
+  font-size: 12px;
+}
+.option-chip input { margin: 0; }
 .font-sans-jp { font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", system-ui, sans-serif; }
 .font-serif-jp { font-family: "Yu Mincho", "Hiragino Mincho ProN", "MS PMincho", serif; }
 .font-sans-en { font-family: "Segoe UI", Arial, sans-serif; }
@@ -163,6 +195,8 @@ select {
 .toolbar-row { align-items: center; }
 .toolbar-check { display:flex; align-items:center; gap: 8px; }
 .toolbar-check input { margin: 0; }
+.toolbar-item-row { display:flex; align-items:center; justify-content:space-between; gap: 8px; }
+.toolbar-move { display:flex; gap: 6px; }
 .compact-item { padding: 6px 8px; }
 .compact-head { display:flex; align-items: center; gap: 6px; }
 .compact-head .icon-only { white-space: nowrap; }

@@ -78,6 +78,10 @@
     state.recentDrafts = safeGetArray(STORAGE_KEYS.recentDrafts, []);
     state.templates = safeGetArray(STORAGE_KEYS.templates, DEFAULT_TEMPLATES);
     state.settings = safeGetObject(STORAGE_KEYS.settings, DEFAULT_SETTINGS);
+    if (state.settings.voiceInsertMode === "replace") {
+      state.settings.voiceInsertMode = "cursor";
+      saveSettings();
+    }
 
     el.editor.value = state.draft;
     applySidebar();
@@ -921,9 +925,6 @@
     const mode = state.settings.voiceInsertMode;
     if (mode === "append") {
       el.editor.value = `${el.editor.value}${el.editor.value ? "\n" : ""}${text}`;
-    } else if (mode === "replace") {
-      const { selectionStart, selectionEnd } = el.editor;
-      el.editor.setRangeText(text, selectionStart, selectionEnd, "end");
     } else {
       const { selectionStart, selectionEnd } = el.editor;
       el.editor.setRangeText(text, selectionStart, selectionEnd, "end");
@@ -1037,15 +1038,13 @@
     el.toolbarOrderList.innerHTML = "";
     order.forEach((tool, idx) => {
       const row = document.createElement("div");
-      row.className = "dialog-item";
+      row.className = "dialog-item toolbar-item-row";
       row.innerHTML = `
-        <div class="dialog-item-head toolbar-row">
-          <label class="toolbar-check">
-            <input type="checkbox" data-tool="${tool}" ${state.settings.toolbar?.[tool] ? "checked" : ""} />
-            <strong>${labels[tool] || tool}</strong>
-          </label>
-        </div>
-        <div class="dialog-actions">
+        <label class="toolbar-check">
+          <input type="checkbox" data-tool="${tool}" ${state.settings.toolbar?.[tool] ? "checked" : ""} />
+          <strong>${labels[tool] || tool}</strong>
+        </label>
+        <div class="toolbar-move">
           <button type="button" data-move="up" data-tool="${tool}" ${idx === 0 ? "disabled" : ""}>↑</button>
           <button type="button" data-move="down" data-tool="${tool}" ${idx === order.length - 1 ? "disabled" : ""}>↓</button>
         </div>`;
