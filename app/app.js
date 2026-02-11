@@ -489,10 +489,12 @@
     window.addEventListener("resize", () => {
       applyLayoutState();
       updateOverflowToolbar();
+      requestAnimationFrame(updateEditPanelSize);
     });
     window.addEventListener("orientationchange", () => {
       applyLayoutState();
       updateOverflowToolbar();
+      requestAnimationFrame(updateEditPanelSize);
     });
 
     document.addEventListener("keydown", (evt) => {
@@ -1873,12 +1875,24 @@
   }
 
   function updateEditPanelSize() {
+    const root = document.documentElement;
+    root.style.setProperty("--edit-inset-top", "0px");
+    root.style.setProperty("--edit-inset-right", "0px");
+    root.style.setProperty("--edit-inset-bottom", "0px");
+    root.style.setProperty("--edit-inset-left", "0px");
     if (!state.editToolsVisible) return;
     const pos = state.settings.editPanelPosition || "bottom";
+    const gap = 12;
     const size = (pos === "left" || pos === "right")
       ? el.editToolsPanel.offsetWidth
       : el.editToolsPanel.offsetHeight;
-    if (size) document.documentElement.style.setProperty("--edit-panel-size", `${Math.max(size, 120)}px`);
+    if (!size) return;
+    const inset = `${Math.max(size + gap, 120)}px`;
+    document.documentElement.style.setProperty("--edit-panel-size", inset);
+    if (pos === "top") root.style.setProperty("--edit-inset-top", inset);
+    if (pos === "right") root.style.setProperty("--edit-inset-right", inset);
+    if (pos === "bottom") root.style.setProperty("--edit-inset-bottom", inset);
+    if (pos === "left") root.style.setProperty("--edit-inset-left", inset);
   }
 
   function loadApiKeys() {
