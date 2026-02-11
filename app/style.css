@@ -28,6 +28,9 @@ body {
   color: var(--fg);
 }
 button, input, textarea { font: inherit; }
+button, .btn-icon, .nav-pad, .nav-wide, .chip, .tab-btn {
+  touch-action: manipulation;
+}
 .topbar {
   position: sticky;
   top: 0;
@@ -66,7 +69,6 @@ button, input, textarea { font: inherit; }
 .brand-icon { width: 18px; height: 18px; display: inline-block; }
 .top-actions { display:flex; gap:8px; flex-shrink: 0; }
 .top-actions .btn-icon { white-space: nowrap; }
-.header-switch { min-width: 64px; justify-content: center; }
 .layout { display: grid; grid-template-columns: 1fr; }
 .main { padding: 10px 12px 82px; }
 .main {
@@ -409,10 +411,6 @@ select {
   display: block;
 }
 @media (max-width: 520px) {
-  .header-switch { min-width: 40px; padding: 6px 8px; }
-  .header-switch .icon { margin-right: 0; }
-  .header-switch { font-size: 0; }
-  .header-switch .icon { font-size: 14px; }
   .edit-tools.pos-bottom .edit-tools-block,
   .edit-tools.pos-top .edit-tools-block {
     grid-template-columns: 1fr;

@@ -204,11 +204,15 @@
       const next = !state.editToolsVisible;
       setEditToolsVisible(next);
     });
-    el.editToolsPanel.addEventListener("pointerdown", (evt) => {
-      if (!shouldSuppressSoftKeyboard()) return;
+    el.editToolsPanel.addEventListener("mousedown", (evt) => {
       if (!evt.target.closest("button")) return;
-      if (document.activeElement === el.editor) el.editor.blur();
+      // Keep editor focus during desktop pointer operations to reduce flicker.
+      evt.preventDefault();
     });
+    document.addEventListener("dblclick", (evt) => {
+      if (!evt.target.closest("button, .btn-icon, .nav-pad, .nav-wide, .chip, .tab-btn")) return;
+      evt.preventDefault();
+    }, { passive: false });
     if (el.btnSettings) {
       el.btnSettings.addEventListener("click", () => {
         closeMenuIfOpen();
@@ -297,22 +301,10 @@
       closeMenuIfOpen();
       openSnapshotPanel();
     });
-    if (el.btnHeaderDocuments) {
-      el.btnHeaderDocuments.addEventListener("click", () => {
-        closeMenuIfOpen();
-        openDocumentListPanel();
-      });
-    }
     if (el.btnBrandDocuments) {
       el.btnBrandDocuments.addEventListener("click", () => {
         closeMenuIfOpen();
         openDocumentListPanel();
-      });
-    }
-    if (el.btnHeaderSnapshot) {
-      el.btnHeaderSnapshot.addEventListener("click", () => {
-        closeMenuIfOpen();
-        openSnapshotPanel();
       });
     }
     if (el.btnOpenDocuments) {
@@ -1574,7 +1566,6 @@
 
   function applySoftKeyboardSuppression() {
     if (shouldSuppressSoftKeyboard()) {
-      if (document.activeElement === el.editor) el.editor.blur();
       el.editor.setAttribute("inputmode", "none");
       return;
     }
@@ -1590,9 +1581,12 @@
   }
 
   function focusEditorForEditAction() {
-    // On mobile, avoid opening software keyboard when operating EditPanel buttons.
-    if (state.layoutMode === "MOBILE" && state.editToolsVisible) return;
-    el.editor.focus({ preventScroll: true });
+    if (document.activeElement === el.editor) return;
+    try {
+      el.editor.focus({ preventScroll: true });
+    } catch (_) {
+      el.editor.focus();
+    }
   }
 
   function enforceKeyboardPolicy() {
@@ -1971,6 +1965,10 @@
   function setEditToolsVisible(on) {
     state.editToolsVisible = !!on;
     if (state.editToolsVisible) {
+      if (isMobileLayout() && document.activeElement === el.editor) {
+        // Close software keyboard once when opening EditPanel on mobile.
+        el.editor.blur();
+      }
       pushUiHistory();
       applyPrimary("EDIT");
       if (isMobileLayout() && state.settings.ui.sidebar) {
@@ -2524,9 +2522,7 @@
       btnSidebar: document.getElementById("btnSidebar"),
       btnEditTools: document.getElementById("btnEditTools"),
       btnMenu: document.getElementById("btnMenu"),
-      btnHeaderDocuments: document.getElementById("btnHeaderDocuments"),
       btnBrandDocuments: document.getElementById("btnBrandDocuments"),
-      btnHeaderSnapshot: document.getElementById("btnHeaderSnapshot"),
       btnSettings: document.getElementById("btnSettings"),
       btnHelp: document.getElementById("btnHelp"),
       btnMic: document.getElementById("btnMic"),
