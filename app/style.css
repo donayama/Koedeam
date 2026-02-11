@@ -19,7 +19,8 @@ button, input, textarea { font: inherit; }
   backdrop-filter: blur(6px);
   background: rgba(20,20,20,.02);
 }
-.brand { text-decoration: none; color: inherit; font-weight: 700; }
+.brand { text-decoration: none; color: inherit; font-weight: 700; display:inline-flex; align-items:center; gap: 6px; }
+.brand-icon { width: 18px; height: 18px; display: inline-block; }
 .top-actions { display:flex; gap:8px; }
 .layout { display: grid; grid-template-columns: 1fr; }
 .main { padding: 10px 12px 82px; }
