@@ -472,8 +472,8 @@ select {
     display: grid;
     grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
     grid-template-areas:
-      "cursor toolbar"
-      "cursor range";
+      "cursor range"
+      "toolbar toolbar";
     gap: 8px;
   }
   .edit-tools.pos-left,
@@ -527,14 +527,14 @@ select {
 .nav-cluster { display:flex; flex-direction: column; gap: 6px; }
 .nav-row { display:grid; grid-template-columns: 1fr 64px 1fr; gap: 6px; align-items:center; }
 .nav-pad { height: 40px; font-size: 14px; min-width: 44px; }
-.nav-wide { height: 44px; display:flex; align-items:center; justify-content:space-between; gap: 6px; }
+.nav-wide { height: 42px; display:flex; align-items:center; justify-content:space-between; gap: 4px; padding-inline: 4px; }
 .edit-grid { display: grid; gap: 8px; }
 .edit-row { display: grid; gap: 6px; }
 .edit-row.row-1 {
   grid-template-columns:
-    minmax(44px, 2.0fr)
-    minmax(36px, 1.0fr)
-    minmax(44px, 2.0fr);
+    minmax(38px, 1.6fr)
+    minmax(34px, 0.9fr)
+    minmax(38px, 1.6fr);
 }
 .edit-row.row-2 {
   grid-template-columns:
@@ -545,9 +545,9 @@ select {
 }
 .edit-row.row-3 {
   grid-template-columns:
-    minmax(44px, 2.0fr)
-    minmax(36px, 1.0fr)
-    minmax(44px, 2.0fr);
+    minmax(38px, 1.6fr)
+    minmax(34px, 0.9fr)
+    minmax(38px, 1.6fr);
 }
 .edit-row button { height: 44px; }
 .nav-wide-2 { justify-content: center; }
@@ -562,8 +562,8 @@ select {
 .edit-row #btnSelectParaNext,
 .edit-row #btnDocStart,
 .edit-row #btnDocEnd {
-  font-size: 12px;
-  padding-inline: 6px;
+  font-size: 11px;
+  padding-inline: 4px;
   white-space: nowrap;
 }
 .edit-tools.pos-left .nav-wide,
@@ -576,8 +576,8 @@ select {
   .layout-tablet .edit-tools.pos-top .edit-tools-block {
     grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
     grid-template-areas:
-      "cursor toolbar"
-      "cursor range";
+      "cursor range"
+      "toolbar toolbar";
   }
   .layout-tablet .edit-tools.pos-bottom .edit-group:nth-child(1),
   .layout-tablet .edit-tools.pos-top .edit-group:nth-child(1) { grid-area: cursor; }
@@ -601,8 +601,8 @@ select {
     display: grid;
     grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
     grid-template-areas:
-      "cursor toolbar"
-      "cursor range";
+      "cursor range"
+      "toolbar toolbar";
     gap: 8px;
   }
   .layout-tablet .edit-tools.pos-left .edit-group:nth-child(1),
@@ -727,7 +727,7 @@ body.keyboard-open .status-indicator .chip { opacity: .85; }
   .edit-tools { margin: 6px; padding: 8px; }
   .edit-tools-row button { min-width: 64px; height: 36px; font-size: 12px; }
   .nav-pad { height: 42px; font-size: 14px; min-width: 64px; }
-  .nav-wide { height: 38px; font-size: 12px; }
+  .nav-wide { height: 38px; font-size: 11px; padding-inline: 4px; }
   .edit-row button { height: 38px; font-size: 12px; }
   .shortcut-inline-list button { min-height: 40px; font-size: 12px; }
   .edit-tools.pos-left,
