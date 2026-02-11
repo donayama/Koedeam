@@ -1013,7 +1013,20 @@
   function insertByVoiceMode(text) {
     const mode = state.settings.voiceInsertMode;
     if (mode === "append") {
-      el.editor.value = `${el.editor.value}${el.editor.value ? "\n" : ""}${text}`;
+      const ta = el.editor;
+      const hadFocus = document.activeElement === ta;
+      const prevStart = ta.selectionStart;
+      const prevEnd = ta.selectionEnd;
+      const prevScrollTop = ta.scrollTop;
+      const prevScrollLeft = ta.scrollLeft;
+      const insertAt = ta.value.length;
+      const sep = ta.value && !ta.value.endsWith("\n") ? "\n" : "";
+      ta.setRangeText(`${sep}${text}`, insertAt, insertAt, "preserve");
+      if (hadFocus) {
+        ta.setSelectionRange(prevStart, prevEnd);
+        ta.scrollTop = prevScrollTop;
+        ta.scrollLeft = prevScrollLeft;
+      }
     } else {
       const { selectionStart, selectionEnd } = el.editor;
       el.editor.setRangeText(text, selectionStart, selectionEnd, "end");
