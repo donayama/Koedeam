@@ -259,6 +259,8 @@
     el.btnCopySel.addEventListener("click", copySelection);
     el.btnCutSel.addEventListener("click", cutSelection);
     el.btnPasteSel.addEventListener("click", pasteClipboard);
+    el.btnBackspace.addEventListener("click", () => deleteByDirection(-1));
+    el.btnDelete.addEventListener("click", () => deleteByDirection(1));
     el.voiceModeRadios.forEach((radio) => {
       radio.addEventListener("change", () => {
         if (!radio.checked) return;
@@ -697,6 +699,25 @@
       toast("Pasteしました");
     } catch {
       toast("Paste非対応です");
+    }
+  }
+
+  function deleteByDirection(direction) {
+    const ta = el.editor;
+    const { selectionStart, selectionEnd, value } = ta;
+    if (selectionStart !== selectionEnd) {
+      ta.setRangeText("", selectionStart, selectionEnd, "start");
+      triggerInput();
+      return;
+    }
+    if (direction < 0 && selectionStart > 0) {
+      ta.setRangeText("", selectionStart - 1, selectionStart, "start");
+      triggerInput();
+      return;
+    }
+    if (direction > 0 && selectionStart < value.length) {
+      ta.setRangeText("", selectionStart, selectionStart + 1, "start");
+      triggerInput();
     }
   }
 
@@ -1714,6 +1735,8 @@
       btnCopySel: document.getElementById("btnCopySel"),
       btnCutSel: document.getElementById("btnCutSel"),
       btnPasteSel: document.getElementById("btnPasteSel"),
+      btnBackspace: document.getElementById("btnBackspace"),
+      btnDelete: document.getElementById("btnDelete"),
 
       caretLine: document.getElementById("caretLine"),
       caretDot: document.getElementById("caretDot"),

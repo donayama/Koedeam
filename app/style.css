@@ -203,8 +203,15 @@ select {
 .edit-group-head { font-size: 12px; opacity: .8; margin-bottom: 6px; }
 .nav-cluster { display:flex; flex-direction: column; gap: 6px; }
 .nav-row { display:grid; grid-template-columns: 1fr 64px 1fr; gap: 6px; align-items:center; }
-.nav-pad { height: 44px; font-size: 16px; }
+.nav-pad { height: 44px; font-size: 16px; min-width: 64px; }
 .nav-wide { height: 44px; display:flex; align-items:center; justify-content:space-between; gap: 6px; }
+.edit-grid { display: grid; gap: 8px; }
+.edit-row { display: grid; gap: 6px; }
+.edit-row button { height: 44px; }
+.edit-row.row-1 { grid-template-columns: 1.3fr 1fr 1fr 1fr 1fr 1fr; }
+.edit-row.row-2 { grid-template-columns: 1.2fr 1fr .8fr .8fr 1fr 1.2fr .8fr; }
+.edit-row.row-3 { grid-template-columns: 1.3fr 1fr 2.2fr 1fr; }
+.nav-wide-2 { justify-content: center; }
 .icon { font-size: 12px; opacity: .9; margin-right: 6px; display: inline-flex; align-items: center; }
 .btn-icon { display: inline-flex; align-items: center; gap: 6px; }
 .chip {
@@ -281,6 +288,41 @@ body.with-sidebar .edit-tools.pos-top { right: var(--sidebar-width); }
     color: #fff;
     overflow: auto;
   }
+}
+.compact-only { display: none; }
+@media (max-width: 520px) {
+  :root { --edit-panel-size: 120px; }
+  .topbar { padding: 6px 8px; }
+  .top-actions { gap: 6px; }
+  .main { padding: 6px 8px 70px; }
+  #editor {
+    min-height: calc(100vh - 160px);
+    padding: 10px;
+    font-size: 15px;
+  }
+  .status-row { font-size: 11px; }
+  .bottombar { gap: 4px; padding: 6px; }
+  button { padding: 8px 6px; border-radius: 10px; }
+  .bottombar button { flex: 1 1 30%; font-size: 12px; min-height: 38px; }
+  .sidebar { padding: 8px; }
+  .side-tabs { gap: 4px; }
+  .tab-btn { padding: 6px; font-size: 12px; }
+  .sidebar h2 { font-size: 13px; }
+  .dialog-list { max-height: 180px; }
+  .dialog-item { padding: 6px; }
+  .edit-tools { margin: 6px; padding: 8px; }
+  .edit-tools-row button { min-width: 64px; height: 36px; font-size: 12px; }
+  .nav-pad { height: 38px; font-size: 14px; min-width: 58px; }
+  .nav-wide { height: 38px; font-size: 12px; }
+  .edit-row button { height: 38px; font-size: 12px; }
+  .shortcut-inline-list button { min-height: 40px; font-size: 12px; }
+  .edit-tools.pos-left,
+  .edit-tools.pos-right { width: min(260px, 86vw); }
+}
+@media (max-height: 700px) {
+  .sidebar { padding-bottom: 16px; }
+  .dialog { max-height: 80vh; }
+  .dialog-footer { position: static; }
 }
 .menu-overlay {
   position: fixed;

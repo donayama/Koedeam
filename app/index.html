@@ -251,33 +251,31 @@
     <div class="edit-tools-block">
       <div class="edit-group">
         <div class="edit-group-head">カーソル</div>
-        <div class="nav-cluster">
-          <div class="nav-row">
-            <button id="btnLineStart" type="button" class="nav-wide"><span class="icon">|◀</span>行頭</button>
-            <button id="btnMoveUp" type="button" class="nav-pad"><span class="icon">▲</span></button>
-            <button id="btnLineEnd" type="button" class="nav-wide">行末<span class="icon">▶|</span></button>
-          </div>
-          <div class="nav-row">
-            <button id="btnMoveLeft" type="button" class="nav-pad"><span class="icon">◀</span></button>
-            <button id="btnMoveRight" type="button" class="nav-pad"><span class="icon">▶</span></button>
-          </div>
-          <div class="nav-row">
+        <div class="edit-grid">
+          <div class="edit-row row-1">
             <button id="btnSelectParaPrev" type="button" class="nav-wide"><span class="icon">⤒</span>前段落</button>
+            <button id="btnMoveUp" type="button" class="nav-pad"><span class="icon">▲</span></button>
+            <button id="btnCopySel" type="button"><span class="icon">⎘</span>COPY</button>
+            <button id="btnCutSel" type="button"><span class="icon">✂</span>CUT</button>
+            <button id="btnPasteSel" type="button"><span class="icon">⎘</span>PASTE</button>
+            <button id="btnDelete" type="button"><span class="icon">⌦</span>DEL</button>
+          </div>
+          <div class="edit-row row-2">
+            <button id="btnLineStart" type="button" class="nav-wide"><span class="icon">|◀</span>行頭</button>
+            <button id="btnMoveLeft" type="button" class="nav-pad"><span class="icon">◀</span></button>
+            <button id="btnComma" type="button"><span class="icon">,</span>、</button>
+            <button id="btnPeriod" type="button"><span class="icon">.</span>。</button>
+            <button id="btnMoveRight" type="button" class="nav-pad"><span class="icon">▶</span></button>
+            <button id="btnLineEnd" type="button" class="nav-wide">行末<span class="icon">▶|</span></button>
+            <button id="btnBackspace" type="button"><span class="icon">⌫</span>BS</button>
+          </div>
+          <div class="edit-row row-3">
+            <button id="btnSelectParaNext" type="button" class="nav-wide"><span class="icon">⤓</span>次段落</button>
             <button id="btnMoveDown" type="button" class="nav-pad"><span class="icon">▼</span></button>
-            <button id="btnSelectParaNext" type="button" class="nav-wide">次段落<span class="icon">⤓</span></button>
+            <button id="btnNewline" type="button" class="nav-wide nav-wide-2"><span class="icon">↵</span>改行</button>
+            <button id="btnPuncMode" type="button" class="chip">JP</button>
           </div>
         </div>
-      <div class="edit-tools-row">
-        <button id="btnPuncMode" type="button" class="chip">JP</button>
-        <button id="btnComma" type="button"><span class="icon">,</span>カンマ</button>
-        <button id="btnPeriod" type="button"><span class="icon">.</span>ピリオド</button>
-        <button id="btnNewline" type="button"><span class="icon">↵</span>改行</button>
-      </div>
-      <div class="edit-tools-row">
-        <button id="btnCopySel" type="button"><span class="icon">⎘</span>Copy</button>
-        <button id="btnCutSel" type="button"><span class="icon">✂</span>Cut</button>
-        <button id="btnPasteSel" type="button"><span class="icon">⎘</span>Paste</button>
-      </div>
       </div>
       <div class="edit-group">
         <div class="edit-group-head">範囲選択</div>
