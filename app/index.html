@@ -288,7 +288,7 @@
         <div class="edit-group-head">カーソル</div>
         <div class="edit-grid">
           <div class="edit-row row-1">
-            <button id="btnSelectParaPrev" type="button" class="nav-wide"><span class="icon">⤒</span>前段落</button>
+            <button id="btnSelectParaPrev" type="button" class="nav-wide"><span class="icon">⤒</span>段落</button>
             <button id="btnMoveUp" type="button" class="nav-pad"><span class="icon">▲</span></button>
             <button id="btnDocStart" type="button"><span class="icon">⏮</span>文頭</button>
           </div>
@@ -299,7 +299,7 @@
             <button id="btnLineEnd" type="button" class="nav-wide icon-only" aria-label="行末"><span class="icon">▶|</span></button>
           </div>
           <div class="edit-row row-3">
-            <button id="btnSelectParaNext" type="button" class="nav-wide"><span class="icon">⤓</span>次段落</button>
+            <button id="btnSelectParaNext" type="button" class="nav-wide"><span class="icon">⤓</span>段落</button>
             <button id="btnMoveDown" type="button" class="nav-pad"><span class="icon">▼</span></button>
             <button id="btnDocEnd" type="button"><span class="icon">⏭</span>文末</button>
           </div>
@@ -311,8 +311,8 @@
           <button id="btnPasteSel" type="button" class="icon-only" aria-label="Paste"><span class="icon">⎘</span></button>
           <button id="btnDelete" type="button" class="icon-only" aria-label="Delete"><span class="icon">⌦</span></button>
           <button id="btnBackspace" type="button" class="icon-only" aria-label="Backspace"><span class="icon">⌫</span></button>
-          <button id="btnDeleteToLineStart" type="button"><span class="icon">⌫|</span>行頭まで削除</button>
-          <button id="btnDeleteToLineEnd" type="button"><span class="icon">|⌦</span>行末まで削除</button>
+          <button id="btnDeleteToLineStart" type="button" class="line-delete"><span class="icon">⌫|</span>行頭まで削除</button>
+          <button id="btnDeleteToLineEnd" type="button" class="line-delete"><span class="icon">|⌦</span>行末まで削除</button>
           <button id="btnComma" type="button">、</button>
           <button id="btnPeriod" type="button">。</button>
           <button id="btnNewline" type="button" class="icon-only" aria-label="改行"><span class="icon">↵</span></button>
@@ -322,14 +322,14 @@
       <div class="edit-group">
         <div class="edit-group-head">範囲選択</div>
         <div class="edit-tools-row">
-          <button id="btnSelectLine" type="button"><span class="icon">▭</span>行選択</button>
-          <button id="btnSelectBlock" type="button"><span class="icon">▦</span>ブロック</button>
+          <button id="btnSelectLine" type="button"><span class="icon">▭</span>行</button>
           <button id="btnSelectPara" type="button"><span class="icon">≡</span>段落</button>
-          <button id="btnSelectAll" type="button"><span class="icon">▣</span>全選択</button>
+          <button id="btnSelectAll" type="button"><span class="icon">▣</span>全文</button>
         </div>
         <div class="edit-tools-row">
           <button id="btnExpandUp" type="button"><span class="icon">⇑</span>上に拡張</button>
           <button id="btnExpandDown" type="button"><span class="icon">⇓</span>下に拡張</button>
+          <button id="btnShrinkUp" type="button"><span class="icon">⇠</span>上を縮小</button>
           <button id="btnShrinkDown" type="button"><span class="icon">⇢</span>下を縮小</button>
         </div>
       </div>

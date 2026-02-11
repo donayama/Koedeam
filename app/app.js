@@ -361,12 +361,13 @@
     el.btnShortcutReset.addEventListener("click", resetShareShortcutForm);
 
     el.btnSelectLine.addEventListener("click", selectLine);
-    el.btnSelectBlock.addEventListener("click", selectBlock);
+    if (el.btnSelectBlock) el.btnSelectBlock.addEventListener("click", selectBlock);
     el.btnSelectPara.addEventListener("click", selectBlock);
     el.btnSelectParaPrev.addEventListener("click", () => moveParagraph(-1));
     el.btnSelectParaNext.addEventListener("click", () => moveParagraph(1));
     el.btnExpandUp.addEventListener("click", () => expandSelection(-1));
     el.btnExpandDown.addEventListener("click", () => expandSelection(1));
+    if (el.btnShrinkUp) el.btnShrinkUp.addEventListener("click", () => shrinkSelection(-1));
     el.btnShrinkDown.addEventListener("click", () => shrinkSelection(1));
     el.btnSelectAll.addEventListener("click", () => {
       el.editor.focus();
@@ -2483,6 +2484,7 @@
       btnSelectParaNext: document.getElementById("btnSelectParaNext"),
       btnExpandUp: document.getElementById("btnExpandUp"),
       btnExpandDown: document.getElementById("btnExpandDown"),
+      btnShrinkUp: document.getElementById("btnShrinkUp"),
       btnShrinkDown: document.getElementById("btnShrinkDown"),
       btnSelectAll: document.getElementById("btnSelectAll"),
       btnLineStart: document.getElementById("btnLineStart"),
