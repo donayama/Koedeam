@@ -510,11 +510,7 @@
       el.btnForceReload.addEventListener("click", forceReload);
     }
 
-    el.btnUpdateApp.addEventListener("click", () => {
-      if (state.waitingWorker) {
-        state.waitingWorker.postMessage({ type: "SKIP_WAITING" });
-      }
-    });
+    el.btnUpdateApp.addEventListener("click", handleUpdateNow);
     el.btnUpdateLater.addEventListener("click", () => {
       state.dismissedUpdate = true;
       el.updateToast.classList.add("hidden");
@@ -1463,6 +1459,31 @@
     applySystemState("UPDATE_AVAILABLE");
     if (state.dismissedUpdate) return;
     el.updateToast.classList.remove("hidden");
+  }
+
+  async function handleUpdateNow() {
+    if (state.waitingWorker) {
+      state.waitingWorker.postMessage({ type: "SKIP_WAITING" });
+      return;
+    }
+    try {
+      if ("serviceWorker" in navigator) {
+        const reg = await navigator.serviceWorker.getRegistration();
+        if (reg) {
+          await reg.update();
+          if (reg.waiting) {
+            showUpdate(reg.waiting);
+            reg.waiting.postMessage({ type: "SKIP_WAITING" });
+            return;
+          }
+        }
+      }
+    } catch {
+      // fallback to reload
+    }
+    const url = new URL(window.location.href);
+    url.searchParams.set("refresh", `${Date.now()}`);
+    window.location.href = url.toString();
   }
 
   function closeOpenDialog() {
