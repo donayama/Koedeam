@@ -112,6 +112,17 @@ python -m http.server 8000
 
 `http://localhost:8000/` を開いて確認します。
 
+### 非実機チェック（Playwright / Python）
+
+実機でしか完全再現できない項目のうち、次をローカルで疑似確認できます。
+
+- キーボード表示時の下部UI退避（`--kb-offset` 反映）
+- 強制リロード前提（Service Worker API / Cache API 利用可否）
+
+```bash
+python scripts/local_ui_checks.py --url http://localhost:8000/app/
+```
+
 ## 検証チェックリスト
 
 1. `MOBILE` 幅で `Tool Bar` が2段化しない
