@@ -1,5 +1,5 @@
 (() => {
-  const APP_VERSION = "1.1.1";
+  const APP_VERSION = "1.1.3";
   const VERSION_URL = "./version.json";
   const STORAGE_KEYS = {
     version: "koedeam.version",
@@ -204,6 +204,11 @@
       const next = !state.editToolsVisible;
       setEditToolsVisible(next);
     });
+    el.editToolsPanel.addEventListener("pointerdown", (evt) => {
+      if (!shouldSuppressSoftKeyboard()) return;
+      if (!evt.target.closest("button")) return;
+      if (document.activeElement === el.editor) el.editor.blur();
+    });
     if (el.btnSettings) {
       el.btnSettings.addEventListener("click", () => {
         closeMenuIfOpen();
@@ -407,7 +412,7 @@
     if (el.btnShrinkUp) el.btnShrinkUp.addEventListener("click", () => shrinkSelection(-1));
     el.btnShrinkDown.addEventListener("click", () => shrinkSelection(1));
     el.btnSelectAll.addEventListener("click", () => {
-      el.editor.focus();
+      focusEditorForEditAction();
       el.editor.select();
     });
     el.btnLineStart.addEventListener("click", () => moveToLineEdge("start"));
@@ -620,11 +625,10 @@
         return;
       }
       closeMenu();
-      if (act === "replace") openFindReplace(false);
-      else if (act === "templates") openSidebarPanel("templates");
-      else if (act === "documents") openDocumentListPanel();
-      else if (act === "history") { openSnapshotPanel(); }
-      else if (act === "sidebar") { toggleSidebar(); }
+      if (act === "replace" || act === "templates" || act === "history" || act === "edit" || act === "share" || act === "mic") {
+        triggerToolbarTool(act);
+      } else if (act === "documents") openDocumentListPanel();
+      else if (act === "snapshot") openSnapshotPanel();
       else if (act === "settings") openSettings("appearance");
       else if (act === "help") {
         applyPrimary("CONFIG");
@@ -1537,6 +1541,7 @@
     if (mode === "MOBILE" && state.settings.ui.sidebar && state.primary === "EDIT") {
       applyPrimary("MANAGE");
     }
+    applySoftKeyboardSuppression();
     updateStatusIndicator();
   }
 
@@ -1563,15 +1568,37 @@
     return state.layoutMode === "MOBILE";
   }
 
+  function shouldSuppressSoftKeyboard() {
+    return state.layoutMode === "MOBILE" && state.editToolsVisible;
+  }
+
+  function applySoftKeyboardSuppression() {
+    if (shouldSuppressSoftKeyboard()) {
+      if (document.activeElement === el.editor) el.editor.blur();
+      el.editor.setAttribute("inputmode", "none");
+      return;
+    }
+    if (el.editor.getAttribute("inputmode") === "none") {
+      el.editor.removeAttribute("inputmode");
+    }
+  }
+
   function canType() {
     if (state.input === "VOICE_LOCKED") return false;
     if (state.primary === "SEARCH" || state.primary === "MANAGE" || state.primary === "CONFIG") return false;
     return true;
   }
 
+  function focusEditorForEditAction() {
+    // On mobile, avoid opening software keyboard when operating EditPanel buttons.
+    if (state.layoutMode === "MOBILE" && state.editToolsVisible) return;
+    el.editor.focus({ preventScroll: true });
+  }
+
   function enforceKeyboardPolicy() {
     const editable = canType();
     el.editor.readOnly = !editable;
+    applySoftKeyboardSuppression();
     if (!editable && document.activeElement === el.editor) {
       el.editor.blur();
     }
@@ -1728,8 +1755,13 @@
       edit: "✎",
       share: "⇪"
     };
+    const allowed = Object.keys(DEFAULT_SETTINGS.toolbar);
+    const toolbarState = getEffectiveToolbarSettings();
+    const order = (state.settings.toolbarOrder || DEFAULT_SETTINGS.toolbarOrder)
+      .filter((k) => allowed.includes(k));
+    const menuTools = order.filter((tool) => toolbarState[tool] && tool !== "voiceMode");
     el.overflowMenuItems.innerHTML = "";
-    state.overflowedTools.forEach((tool) => {
+    menuTools.forEach((tool) => {
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "btn-icon";
@@ -1738,6 +1770,7 @@
       btn.innerHTML = `<span class="icon">${icons[tool] || "•"}</span>${labels[tool] || tool}`;
       el.overflowMenuItems.append(btn);
     });
+    el.overflowMenuItems.classList.toggle("hidden", menuTools.length === 0);
   }
 
   function renderToolbarOrder() {
@@ -1947,6 +1980,7 @@
     }
     el.editToolsPanel.classList.toggle("show", state.editToolsVisible);
     document.body.classList.toggle("edit-tools-show", state.editToolsVisible);
+    applySoftKeyboardSuppression();
     applyEditPanelPosition();
     requestAnimationFrame(updateEditPanelSize);
   }
@@ -2200,7 +2234,7 @@
     const text = el.editor.value;
     const pos = el.editor.selectionStart;
     const { start, end } = getLineBounds(text, pos);
-    el.editor.focus();
+    focusEditorForEditAction();
     el.editor.setSelectionRange(start, end);
   }
 
@@ -2208,7 +2242,7 @@
     const text = el.editor.value;
     const pos = el.editor.selectionStart;
     const { start, end } = getBlockBounds(text, pos);
-    el.editor.focus();
+    focusEditorForEditAction();
     el.editor.setSelectionRange(start, end);
   }
 
@@ -2220,14 +2254,14 @@
       const before = text.slice(0, Math.max(0, start - 2));
       const prevStartBoundary = before.lastIndexOf("\n\n");
       const nextPos = prevStartBoundary === -1 ? 0 : prevStartBoundary + 2;
-      el.editor.focus();
+      focusEditorForEditAction();
       el.editor.setSelectionRange(nextPos, nextPos);
       ensureCaretVisible();
     } else {
       const after = text.slice(Math.min(text.length, end + 2));
       const nextBoundary = after.indexOf("\n\n");
       const nextPos = nextBoundary === -1 ? text.length : end + 2 + nextBoundary + 2;
-      el.editor.focus();
+      focusEditorForEditAction();
       el.editor.setSelectionRange(nextPos, nextPos);
       ensureCaretVisible();
     }
@@ -2244,13 +2278,13 @@
       const { start } = getLineBounds(text, selectionStart);
       const prevStart = text.lastIndexOf("\n", Math.max(0, start - 2));
       const nextStart = prevStart === -1 ? 0 : prevStart + 1;
-      el.editor.focus();
+      focusEditorForEditAction();
       el.editor.setSelectionRange(nextStart, selectionEnd);
     } else {
       const { end } = getLineBounds(text, selectionEnd);
       const nextEnd = text.indexOf("\n", end + 1);
       const next = nextEnd === -1 ? text.length : nextEnd;
-      el.editor.focus();
+      focusEditorForEditAction();
       el.editor.setSelectionRange(selectionStart, next);
     }
   }
@@ -2267,7 +2301,7 @@
     } else {
       el.editor.setSelectionRange(selectionStart, nextEnd);
     }
-    el.editor.focus();
+    focusEditorForEditAction();
   }
 
   function moveToLineEdge(edge) {
@@ -2275,13 +2309,13 @@
     const pos = el.editor.selectionStart;
     const { start, end } = getLineBounds(text, pos);
     const next = edge === "start" ? start : end;
-    el.editor.focus();
+    focusEditorForEditAction();
     el.editor.setSelectionRange(next, next);
   }
 
   function moveToDocumentEdge(edge) {
     const next = edge === "start" ? 0 : el.editor.value.length;
-    el.editor.focus();
+    focusEditorForEditAction();
     el.editor.setSelectionRange(next, next);
     ensureCaretVisible();
   }
@@ -2345,14 +2379,14 @@
       const lineEnd = text.indexOf("\n", lineStart);
       const limit = lineEnd === -1 ? text.length : lineEnd;
       const next = Math.min(lineStart + column, limit);
-      el.editor.focus();
+      focusEditorForEditAction();
       el.editor.setSelectionRange(next, next);
     } else {
       const nextStart = end < text.length ? end + 1 : text.length;
       const nextEnd = text.indexOf("\n", nextStart);
       const limit = nextEnd === -1 ? text.length : nextEnd;
       const next = Math.min(nextStart + column, limit);
-      el.editor.focus();
+      focusEditorForEditAction();
       el.editor.setSelectionRange(next, next);
     }
   }
@@ -2360,7 +2394,7 @@
   function moveCursorChar(step) {
     const pos = el.editor.selectionStart;
     const next = Math.max(0, Math.min(el.editor.value.length, pos + step));
-    el.editor.focus();
+    focusEditorForEditAction();
     el.editor.setSelectionRange(next, next);
   }
 

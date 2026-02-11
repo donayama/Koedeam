@@ -54,6 +54,7 @@
 - `MOBILE`: `Main Editor + 1パネル` の排他表示
 - `TABLET/DESKTOP`: `Side Bar` 併用可。ただし文書操作優先時は編集抑止
 - `Tool Bar`: 1行固定。溢れた機能は `Overflow Menu` へ退避
+- `Hamburger Menu`: `Tool Bar` 機能を集約表示（`音声モード` は除外）
 - `Search Panel`: `Dialog Overlay` として表示し、`Side Bar` と同時表示しない
 - `Dialog > Snapshot > Search` の優先順で表示し、上位表示中は下位を開かない
 - iOS入力ズーム回避: `input/textarea/select` は 16px以上を保証
@@ -85,8 +86,9 @@
 
 - `Edit Panel` は配置（上/右/下/左）を設定可能
 - 広い画面では `カーソル` と `範囲選択` を左右分割
-- 狭い画面では `カーソル` -> `範囲選択` -> `編集` を縦積み
+- 狭い画面では `カーソル` -> `編集` -> `範囲選択` を縦積み
 - `Edit Toolbar` で `Copy/Cut/Paste/Delete/Backspace/句読点/改行/行頭まで削除/行末まで削除` を提供
+- `MOBILE` で `Edit Panel` 操作中はエディタへフォーカスしない（ソフトウェアキーボード干渉を抑制）
 
 ## Help導線
 

@@ -64,7 +64,7 @@ button, input, textarea { font: inherit; }
   cursor: pointer;
 }
 .brand-icon { width: 18px; height: 18px; display: inline-block; }
-.top-actions { display:flex; gap:8px; }
+.top-actions { display:flex; gap:8px; flex-shrink: 0; }
 .top-actions .btn-icon { white-space: nowrap; }
 .header-switch { min-width: 64px; justify-content: center; }
 .layout { display: grid; grid-template-columns: 1fr; }
@@ -700,6 +700,8 @@ body.keyboard-open .status-indicator .chip { opacity: .85; }
   .status-indicator .chip { font-size: 10px; padding: 4px 6px; }
   .layout-mobile #statusPrimary,
   .layout-mobile #statusLayout { display: none; }
+  .top-actions .btn-icon .label { display: none; }
+  .top-actions .btn-icon { min-width: 36px; padding-inline: 8px; justify-content: center; }
   .top-actions { gap: 6px; }
   .main {
     padding-top: calc(6px + var(--edit-inset-top, 0px));
