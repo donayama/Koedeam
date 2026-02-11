@@ -295,6 +295,9 @@
     el.apiKeyOther.addEventListener("change", () => saveApiKeys());
     el.btnCloseSettings.addEventListener("click", () => el.dlgSettings.close());
     el.btnResetApp.addEventListener("click", resetApp);
+    if (el.btnForceReload) {
+      el.btnForceReload.addEventListener("click", forceReload);
+    }
 
     el.btnUpdateApp.addEventListener("click", () => {
       if (state.waitingWorker) {
@@ -1220,6 +1223,24 @@
     toast("初期化しました");
   }
 
+  async function forceReload() {
+    const ok = confirm("Service Worker とキャッシュを解除して再読み込みします。よろしいですか？");
+    if (!ok) return;
+    try {
+      if ("serviceWorker" in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map((r) => r.unregister()));
+      }
+      if ("caches" in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map((k) => caches.delete(k)));
+      }
+    } catch {
+      // ignore
+    }
+    window.location.reload(true);
+  }
+
   function saveSettings() {
     safeSet(STORAGE_KEYS.settings, state.settings);
   }
@@ -1638,6 +1659,7 @@
       editPanelPosRadios: Array.from(document.querySelectorAll("input[name='editPanelPos']")),
       toolbarButtons: Array.from(document.querySelectorAll(".toolbar-item")),
       btnResetApp: document.getElementById("btnResetApp"),
+      btnForceReload: document.getElementById("btnForceReload"),
       toolbarOrderList: document.getElementById("toolbarOrderList"),
       bottombar: document.querySelector(".bottombar"),
       apiKeyOpenAI: document.getElementById("apiKeyOpenAI"),
