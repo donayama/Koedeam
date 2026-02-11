@@ -54,6 +54,8 @@ button, input, textarea { font: inherit; }
 .brand { text-decoration: none; color: inherit; font-weight: 700; display:inline-flex; align-items:center; gap: 6px; }
 .brand-icon { width: 18px; height: 18px; display: inline-block; }
 .top-actions { display:flex; gap:8px; }
+.top-actions .btn-icon { white-space: nowrap; }
+.header-switch { min-width: 64px; justify-content: center; }
 .layout { display: grid; grid-template-columns: 1fr; }
 .main { padding: 10px 12px 82px; }
 .editor-wrap { position: relative; }
@@ -316,6 +318,10 @@ select {
   display: block;
 }
 @media (max-width: 520px) {
+  .header-switch { min-width: 40px; padding: 6px 8px; }
+  .header-switch .icon { margin-right: 0; }
+  .header-switch { font-size: 0; }
+  .header-switch .icon { font-size: 14px; }
   .edit-tools.pos-bottom .edit-tools-block,
   .edit-tools.pos-top .edit-tools-block {
     grid-template-columns: 1fr;

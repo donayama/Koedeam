@@ -20,6 +20,8 @@
       <span id="statusLayout" class="chip">MOBILE</span>
     </div>
     <div class="top-actions">
+      <button id="btnHeaderDocuments" type="button" class="btn-icon header-switch"><span class="icon">🗂</span>文書</button>
+      <button id="btnHeaderSnapshot" type="button" class="btn-icon header-switch"><span class="icon">🕒</span>履歴</button>
       <button id="btnMenu" type="button" class="btn-icon"><span class="icon">☰</span>メニュー</button>
     </div>
   </header>
@@ -51,11 +53,10 @@
       </section>
       <section id="panelHistory" class="tab-panel">
         <div class="dialog-actions">
-          <button id="btnNewDoc" type="button">新規ドキュメント</button>
+          <button id="btnOpenDocuments" type="button">ドキュメント一覧</button>
           <button id="btnSnapshot" type="button">スナップショット保存</button>
           <button id="btnOpenSnapshotPanel" type="button">パネル表示</button>
         </div>
-        <div id="docList" class="dialog-list dialog-body"></div>
         <label>自動スナップショット（分）
           <select id="autoSnapshotSelect">
             <option value="0">OFF</option>
@@ -92,6 +93,7 @@
       <div class="menu-list">
         <button type="button" class="btn-icon" data-menu="replace"><span class="icon">🔎</span>検索・置換</button>
         <button type="button" class="btn-icon" data-menu="templates"><span class="icon">📄</span>テンプレ</button>
+        <button type="button" class="btn-icon" data-menu="documents"><span class="icon">🗂</span>文書一覧</button>
         <button type="button" class="btn-icon" data-menu="history"><span class="icon">🕒</span>保存・履歴</button>
         <div id="overflowMenuItems" class="menu-list overflow-menu-items"></div>
         <button type="button" class="btn-icon" data-menu="sidebar"><span class="icon">▤</span>サイドバー</button>
@@ -142,13 +144,20 @@
     <div class="dialog-footer"><button id="btnCloseSearch" type="button">Close</button></div>
   </dialog>
 
+  <dialog id="dlgDocuments">
+    <h2>ドキュメント一覧</h2>
+    <div class="dialog-actions">
+      <button id="btnNewDoc" type="button">新規ドキュメント</button>
+    </div>
+    <div id="documentsList" class="dialog-list dialog-body"></div>
+    <div class="dialog-footer"><button id="btnCloseDocuments" type="button">Close</button></div>
+  </dialog>
+
   <dialog id="dlgSnapshot">
     <h2>スナップショット</h2>
     <div class="dialog-actions">
-      <button id="btnSnapshotNewDoc" type="button">新規ドキュメント</button>
       <button id="btnSnapshotSave" type="button">スナップショット保存</button>
     </div>
-    <div id="snapshotDocList" class="dialog-list dialog-body"></div>
     <label>自動スナップショット（分）
       <select id="snapshotAutoSnapshotSelect">
         <option value="0">OFF</option>
