@@ -1,4 +1,6 @@
 (() => {
+  const APP_VERSION = "1.1.0";
+  const VERSION_URL = "./version.json";
   const STORAGE_KEYS = {
     version: "koedeam.version",
     currentDraft: "koedeam.currentDraft",
@@ -37,6 +39,7 @@
       share: true
     },
     toolbarOrder: ["mic", "replace", "templates", "history", "edit", "share"],
+    toolbarPriority: ["mic", "replace", "edit", "share", "history", "templates"],
     apiKeys: {
       openai: "",
       other: ""
@@ -66,7 +69,12 @@
     dismissedUpdate: false,
     editToolsVisible: false,
     sideTabsBound: false,
-    settingsTabsBound: false
+    settingsTabsBound: false,
+    primary: "EDIT",
+    input: "VOICE_OFF",
+    system: "LOCAL",
+    layoutMode: "MOBILE",
+    overflowedTools: []
   };
 
   const el = getElements();
@@ -91,14 +99,21 @@
     applyEditPanelPosition();
     applyToolbarVisibility();
     applySidebarTab(state.settings.sidebarTab || "templates");
+    applyLayoutState();
+    applyPrimary("EDIT");
+    applyInputState("VOICE_OFF");
+    applySystemState("LOCAL");
     setupAutoSnapshot();
     bindEvents();
     renderTemplates();
     renderHistory();
     renderShareShortcuts();
     renderSidebar();
+    updateOverflowToolbar();
+    updateStatusIndicator();
     setupSpeech();
     setupServiceWorker();
+    setupVersionPolling();
   }
 
   function bindEvents() {
@@ -107,19 +122,38 @@
       if (el.menuOverlay && !el.menuOverlay.classList.contains("hidden")) closeMenu();
     };
     el.editor.addEventListener("input", () => {
+      if (!canType()) return;
       if (saveTimer) clearTimeout(saveTimer);
       el.saveStatus.textContent = "Typing...";
+      applyPrimary("EDIT");
+      applySystemState("SAVING");
       saveTimer = setTimeout(() => {
         state.draft = el.editor.value;
         safeSet(STORAGE_KEYS.currentDraft, state.draft);
         el.saveStatus.textContent = "Saved";
+        applySystemState(navigator.onLine ? "LOCAL" : "OFFLINE");
       }, 800);
       updateCaretUI();
+    });
+    el.editor.addEventListener("beforeinput", (evt) => {
+      if (!canType()) evt.preventDefault();
+    });
+    el.editor.addEventListener("paste", (evt) => {
+      if (!canType()) evt.preventDefault();
+    });
+    el.editor.addEventListener("keydown", (evt) => {
+      if (!canType() && !evt.metaKey && !evt.ctrlKey) evt.preventDefault();
     });
     el.editor.addEventListener("click", updateCaretUI);
     el.editor.addEventListener("keyup", updateCaretUI);
     el.editor.addEventListener("scroll", updateCaretUI);
     el.editor.addEventListener("focus", updateCaretUI);
+    el.editor.addEventListener("pointerdown", (evt) => {
+      if (!canType()) {
+        evt.preventDefault();
+        el.editor.blur();
+      }
+    });
     el.editor.addEventListener("blur", () => {
       el.caretLine.classList.add("hidden");
       el.caretDot.classList.add("hidden");
@@ -129,6 +163,7 @@
     });
 
     el.btnMenu.addEventListener("click", () => openMenu());
+    if (el.btnOverflow) el.btnOverflow.addEventListener("click", () => openMenu());
     el.btnCloseMenu.addEventListener("click", () => closeMenu());
     el.btnEditTools.addEventListener("click", () => {
       const next = !state.editToolsVisible;
@@ -155,10 +190,13 @@
     if (el.btnHelp) {
       el.btnHelp.addEventListener("click", () => {
         closeMenuIfOpen();
+        applyPrimary("CONFIG");
+        enforceKeyboardPolicy();
         el.dlgHelp.showModal();
       });
     }
     el.btnCloseHelp.addEventListener("click", () => el.dlgHelp.close());
+    el.dlgHelp.addEventListener("close", () => applyPrimary("EDIT"));
 
     el.btnReplace.addEventListener("click", () => {
       closeMenuIfOpen();
@@ -206,9 +244,12 @@
 
     el.btnShare.addEventListener("click", () => {
       renderShareShortcuts();
+      applyPrimary("MANAGE");
+      enforceKeyboardPolicy();
       el.dlgShare.showModal();
     });
     el.btnCloseShare.addEventListener("click", () => el.dlgShare.close());
+    el.dlgShare.addEventListener("close", () => applyPrimary("EDIT"));
     el.btnOpenSettingsShare.addEventListener("click", () => openSettings("share"));
     el.btnShareAll.addEventListener("click", () => setShareMode("all"));
     el.btnShareSelection.addEventListener("click", () => setShareMode("selection"));
@@ -249,6 +290,9 @@
       radio.addEventListener("change", () => {
         if (!radio.checked) return;
         state.settings.voiceInsertMode = radio.value;
+        if (state.speaking) {
+          applyInputState(radio.value === "append" ? "VOICE_APPEND" : "VOICE_LOCKED");
+        }
         saveSettings();
       });
     });
@@ -294,6 +338,7 @@
     el.apiKeyOpenAI.addEventListener("change", () => saveApiKeys());
     el.apiKeyOther.addEventListener("change", () => saveApiKeys());
     el.btnCloseSettings.addEventListener("click", () => el.dlgSettings.close());
+    el.dlgSettings.addEventListener("close", () => applyPrimary("EDIT"));
     el.btnResetApp.addEventListener("click", resetApp);
     if (el.btnForceReload) {
       el.btnForceReload.addEventListener("click", forceReload);
@@ -307,10 +352,19 @@
     el.btnUpdateLater.addEventListener("click", () => {
       state.dismissedUpdate = true;
       el.updateToast.classList.add("hidden");
+      applySystemState(navigator.onLine ? "LOCAL" : "OFFLINE");
     });
 
     setupDialogDismiss();
     setupMenuOverlay();
+    window.addEventListener("resize", () => {
+      applyLayoutState();
+      updateOverflowToolbar();
+    });
+    window.addEventListener("orientationchange", () => {
+      applyLayoutState();
+      updateOverflowToolbar();
+    });
 
     document.addEventListener("keydown", (evt) => {
       const ctrl = evt.ctrlKey || evt.metaKey;
@@ -322,6 +376,8 @@
         openFindReplace(true);
       } else if (ctrl && evt.key.toLowerCase() === "k") {
         evt.preventDefault();
+        applyPrimary("MANAGE");
+        enforceKeyboardPolicy();
         el.dlgShare.showModal();
       } else if (evt.key === "Escape") {
         closeMenuIfOpen();
@@ -331,6 +387,7 @@
   }
 
   function openFindReplace(focusReplace) {
+    applyPrimary("SEARCH");
     openSidebarPanel("replace");
     renderFindRecent();
     applySearchOptionsUI();
@@ -356,24 +413,46 @@
       const btn = evt.target.closest("button[data-menu]");
       if (!btn) return;
       const act = btn.dataset.menu;
+      if (act === "tool") {
+        closeMenu();
+        const tool = btn.dataset.tool;
+        triggerToolbarTool(tool);
+        return;
+      }
       closeMenu();
       if (act === "replace") openSidebarPanel("replace");
       else if (act === "templates") openSidebarPanel("templates");
       else if (act === "history") { openSidebarPanel("history"); }
       else if (act === "sidebar") { toggleSidebar(); }
       else if (act === "settings") openSettings("appearance");
-      else if (act === "help") el.dlgHelp.showModal();
+      else if (act === "help") {
+        applyPrimary("CONFIG");
+        enforceKeyboardPolicy();
+        el.dlgHelp.showModal();
+      }
     });
   }
 
   function openMenu() {
+    applyPrimary("MANAGE");
     el.menuOverlay.classList.remove("hidden");
     el.menuOverlay.setAttribute("aria-hidden", "false");
+    renderOverflowMenuItems();
   }
 
   function closeMenu() {
     el.menuOverlay.classList.add("hidden");
     el.menuOverlay.setAttribute("aria-hidden", "true");
+    if (state.primary !== "CONFIG") applyPrimary("EDIT");
+  }
+
+  function triggerToolbarTool(tool) {
+    if (tool === "mic") el.btnMic.click();
+    else if (tool === "replace") el.btnReplace.click();
+    else if (tool === "templates") el.btnTemplates.click();
+    else if (tool === "history") el.btnHistory.click();
+    else if (tool === "edit") el.btnEditTools.click();
+    else if (tool === "share") el.btnShare.click();
   }
 
   function refreshMatches() {
@@ -793,11 +872,15 @@
   function applySidebar() {
     el.layout.classList.toggle("with-sidebar", !!state.settings.ui.sidebar);
     document.body.classList.toggle("with-sidebar", !!state.settings.ui.sidebar);
+    if (state.settings.ui.sidebar && !isMobileLayout() && state.primary === "EDIT") {
+      applyPrimary("MANAGE");
+    }
     if (state.settings.ui.sidebar) {
       refreshSideTabElements();
       bindSideTabs();
       applySidebarTab(state.settings.sidebarTab || "replace");
     }
+    enforceKeyboardPolicy();
   }
 
   async function copySelection() {
@@ -906,7 +989,8 @@
     });
     recognition.addEventListener("end", () => {
       state.speaking = false;
-      el.btnMic.textContent = "Mic";
+      el.btnMic.innerHTML = '<span class="icon">🎤</span>音声入力';
+      applyInputState("VOICE_OFF");
     });
 
     el.btnMic.addEventListener("click", () => {
@@ -917,7 +1001,8 @@
       try {
         recognition.start();
         state.speaking = true;
-        el.btnMic.textContent = "Stop";
+        el.btnMic.innerHTML = '<span class="icon">■</span>停止';
+        applyInputState(state.settings.voiceInsertMode === "append" ? "VOICE_APPEND" : "VOICE_LOCKED");
       } catch {
         toast("音声入力を開始できませんでした");
       }
@@ -939,6 +1024,7 @@
     if (!("serviceWorker" in navigator)) return;
     window.addEventListener("load", async () => {
       try {
+        applySystemState(navigator.onLine ? "LOCAL" : "OFFLINE");
         const reg = await navigator.serviceWorker.register("./sw.js");
         if (reg.waiting) showUpdate(reg.waiting);
         reg.addEventListener("updatefound", () => {
@@ -953,12 +1039,16 @@
         navigator.serviceWorker.addEventListener("controllerchange", () => window.location.reload());
       } catch {
         toast("Service Worker登録に失敗");
+        applySystemState("ERROR");
       }
     });
+    window.addEventListener("online", () => applySystemState("LOCAL"));
+    window.addEventListener("offline", () => applySystemState("OFFLINE"));
   }
 
   function showUpdate(worker) {
     state.waitingWorker = worker;
+    applySystemState("UPDATE_AVAILABLE");
     if (state.dismissedUpdate) return;
     el.updateToast.classList.remove("hidden");
   }
@@ -971,7 +1061,96 @@
         closed = true;
       }
     });
+    if (closed) applyPrimary("EDIT");
     return closed;
+  }
+
+  function applyPrimary(next) {
+    state.primary = next;
+    document.body.classList.remove("primary-edit", "primary-search", "primary-manage", "primary-config");
+    document.body.classList.add(`primary-${next.toLowerCase()}`);
+    if (next !== "EDIT" && state.speaking && state.recognition) {
+      state.recognition.stop();
+    }
+    enforceKeyboardPolicy();
+    updateStatusIndicator();
+  }
+
+  function applyInputState(next) {
+    state.input = next;
+    document.body.classList.remove("voice-off", "voice-append", "voice-locked");
+    if (next === "VOICE_APPEND") document.body.classList.add("voice-append");
+    else if (next === "VOICE_LOCKED") document.body.classList.add("voice-locked");
+    else document.body.classList.add("voice-off");
+    enforceKeyboardPolicy();
+    updateStatusIndicator();
+  }
+
+  function applySystemState(next) {
+    state.system = next;
+    updateStatusIndicator();
+  }
+
+  function applyLayoutState() {
+    const w = window.innerWidth;
+    const mode = w < 760 ? "MOBILE" : (w < 1080 ? "TABLET" : "DESKTOP");
+    state.layoutMode = mode;
+    document.body.classList.remove("layout-mobile", "layout-tablet", "layout-desktop");
+    document.body.classList.add(`layout-${mode.toLowerCase()}`);
+    if (mode === "MOBILE" && state.settings.ui.sidebar && state.editToolsVisible) {
+      setEditToolsVisible(false);
+    }
+    updateStatusIndicator();
+  }
+
+  function isMobileLayout() {
+    return state.layoutMode === "MOBILE";
+  }
+
+  function canType() {
+    if (state.input === "VOICE_LOCKED") return false;
+    if (state.primary === "SEARCH" || state.primary === "MANAGE" || state.primary === "CONFIG") return false;
+    return true;
+  }
+
+  function enforceKeyboardPolicy() {
+    const editable = canType();
+    el.editor.readOnly = !editable;
+    if (!editable && document.activeElement === el.editor) {
+      el.editor.blur();
+    }
+  }
+
+  function updateStatusIndicator() {
+    if (!el.statusPrimary) return;
+    el.statusPrimary.textContent = state.primary;
+    el.statusInput.textContent = state.input.replace("_", ":");
+    el.statusSystem.textContent = state.system;
+    el.statusLayout.textContent = state.layoutMode;
+    el.statusInput.classList.toggle("input-locked", state.input === "VOICE_LOCKED");
+    el.statusSystem.classList.toggle("system-saving", state.system === "SAVING");
+    el.statusSystem.classList.toggle("system-offline", state.system === "OFFLINE");
+    el.statusSystem.classList.toggle("system-update", state.system === "UPDATE_AVAILABLE");
+  }
+
+  function setupVersionPolling() {
+    window.addEventListener("load", checkVersion);
+    window.setInterval(checkVersion, 5 * 60 * 1000);
+  }
+
+  async function checkVersion() {
+    try {
+      const r = await fetch(`${VERSION_URL}?t=${Date.now()}`, { cache: "no-store" });
+      if (!r.ok) return;
+      const json = await r.json();
+      const remote = `${json.version || ""}`.trim();
+      if (!remote || remote === APP_VERSION) return;
+      if (!el.updateToast.classList.contains("hidden")) return;
+      el.updateToast.classList.remove("hidden");
+      applySystemState("UPDATE_AVAILABLE");
+    } catch {
+      // keep silent for offline/local dev
+    }
   }
 
   function triggerInput() {
@@ -1026,6 +1205,64 @@
         if (btn) el.bottombar.append(btn);
       });
     }
+    updateOverflowToolbar();
+  }
+
+  function updateOverflowToolbar() {
+    if (!el.bottombar || !el.btnOverflow) return;
+    state.overflowedTools = [];
+    el.toolbarButtons.forEach((btn) => btn.classList.remove("overflowed"));
+    const visibleTools = el.toolbarButtons.filter((btn) => !btn.classList.contains("toolbar-hidden"));
+    if (state.layoutMode !== "MOBILE" || visibleTools.length <= 4) {
+      el.btnOverflow.classList.add("hidden");
+      renderOverflowMenuItems();
+      return;
+    }
+    const priority = state.settings.toolbarPriority || DEFAULT_SETTINGS.toolbarPriority || [];
+    const sorted = [...visibleTools].sort((a, b) => {
+      const ia = priority.indexOf(a.dataset.tool);
+      const ib = priority.indexOf(b.dataset.tool);
+      return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+    });
+    const keep = new Set(sorted.slice(0, 4).map((b) => b.dataset.tool));
+    visibleTools.forEach((btn) => {
+      if (!keep.has(btn.dataset.tool)) {
+        btn.classList.add("overflowed");
+        state.overflowedTools.push(btn.dataset.tool);
+      }
+    });
+    el.btnOverflow.classList.remove("hidden");
+    renderOverflowMenuItems();
+  }
+
+  function renderOverflowMenuItems() {
+    if (!el.overflowMenuItems) return;
+    const labels = {
+      mic: "音声入力",
+      replace: "検索・置換",
+      templates: "テンプレ",
+      history: "保存・履歴",
+      edit: "編集",
+      share: "共有"
+    };
+    const icons = {
+      mic: "🎤",
+      replace: "🔎",
+      templates: "📄",
+      history: "🕒",
+      edit: "✎",
+      share: "⇪"
+    };
+    el.overflowMenuItems.innerHTML = "";
+    state.overflowedTools.forEach((tool) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "btn-icon";
+      btn.dataset.menu = "tool";
+      btn.dataset.tool = tool;
+      btn.innerHTML = `<span class="icon">${icons[tool] || "•"}</span>${labels[tool] || tool}`;
+      el.overflowMenuItems.append(btn);
+    });
   }
 
   function renderToolbarOrder() {
@@ -1085,6 +1322,8 @@
   }
 
   function openSettings(section) {
+    applyPrimary("CONFIG");
+    enforceKeyboardPolicy();
     el.dlgSettings.showModal();
     applyTypography();
     applyToolbarVisibility();
@@ -1109,6 +1348,8 @@
   }
 
   function openSidebarPanel(tab) {
+    applyPrimary(tab === "replace" ? "SEARCH" : "MANAGE");
+    if (isMobileLayout()) setEditToolsVisible(false);
     state.settings.ui.sidebar = true;
     applySidebar();
     applySidebarTab(tab);
@@ -1121,6 +1362,8 @@
 
   function toggleSidebar() {
     state.settings.ui.sidebar = !state.settings.ui.sidebar;
+    applyPrimary(state.settings.ui.sidebar ? "MANAGE" : "EDIT");
+    if (state.settings.ui.sidebar && isMobileLayout()) setEditToolsVisible(false);
     applySidebar();
     saveSettings();
   }
@@ -1152,6 +1395,13 @@
 
   function setEditToolsVisible(on) {
     state.editToolsVisible = !!on;
+    if (state.editToolsVisible) {
+      applyPrimary("EDIT");
+      if (isMobileLayout() && state.settings.ui.sidebar) {
+        state.settings.ui.sidebar = false;
+        applySidebar();
+      }
+    }
     el.editToolsPanel.classList.toggle("show", state.editToolsVisible);
     document.body.classList.toggle("edit-tools-show", state.editToolsVisible);
     applyEditPanelPosition();
@@ -1220,6 +1470,9 @@
     renderHistory();
     renderShareShortcuts();
     renderSidebar();
+    applyPrimary("EDIT");
+    applyInputState("VOICE_OFF");
+    applySystemState(navigator.onLine ? "LOCAL" : "OFFLINE");
     toast("初期化しました");
   }
 
@@ -1295,6 +1548,7 @@
         editPanelPosition: parsed.editPanelPosition || fallback.editPanelPosition,
         toolbar: { ...fallback.toolbar, ...(parsed.toolbar || {}) },
         toolbarOrder: Array.isArray(parsed.toolbarOrder) ? parsed.toolbarOrder : fallback.toolbarOrder,
+        toolbarPriority: Array.isArray(parsed.toolbarPriority) ? parsed.toolbarPriority : fallback.toolbarPriority,
         sidebarTab: parsed.sidebarTab || fallback.sidebarTab,
         apiKeys: { ...fallback.apiKeys, ...(parsed.apiKeys || {}) }
       };
@@ -1613,6 +1867,10 @@
       editor: document.getElementById("editor"),
       saveStatus: document.getElementById("saveStatus"),
       appMessage: document.getElementById("appMessage"),
+      statusPrimary: document.getElementById("statusPrimary"),
+      statusInput: document.getElementById("statusInput"),
+      statusSystem: document.getElementById("statusSystem"),
+      statusLayout: document.getElementById("statusLayout"),
       sidebar: document.getElementById("sidebar"),
       sidebarTemplates: document.getElementById("sidebarTemplates"),
       sideTabs: Array.from(document.querySelectorAll(".side-tabs .tab-btn")),
@@ -1629,6 +1887,7 @@
       btnTemplates: document.getElementById("btnTemplates"),
       btnHistory: document.getElementById("btnHistory"),
       btnShare: document.getElementById("btnShare"),
+      btnOverflow: document.getElementById("btnOverflow"),
 
       dlgHelp: document.getElementById("dlgHelp"),
       btnCloseHelp: document.getElementById("btnCloseHelp"),
@@ -1724,6 +1983,7 @@
 
       menuOverlay: document.getElementById("menuOverlay"),
       menuPanel: document.getElementById("menuPanel"),
+      overflowMenuItems: document.getElementById("overflowMenuItems"),
       btnCloseMenu: document.getElementById("btnCloseMenu"),
 
       updateToast: document.getElementById("updateToast"),

@@ -11,8 +11,14 @@
   <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
-  <header class="topbar">
+  <header class="topbar" aria-label="App Header">
     <a class="brand" href="../"><img src="../assets/icon.svg" alt="" class="brand-icon" />Koedeam</a>
+    <div id="statusIndicator" class="status-indicator" aria-live="polite">
+      <span id="statusPrimary" class="chip">EDIT</span>
+      <span id="statusInput" class="chip">VOICE:OFF</span>
+      <span id="statusSystem" class="chip">LOCAL</span>
+      <span id="statusLayout" class="chip">MOBILE</span>
+    </div>
     <div class="top-actions">
       <button id="btnMenu" type="button" class="btn-icon"><span class="icon">☰</span>メニュー</button>
     </div>
@@ -87,13 +93,14 @@
     </aside>
   </div>
 
-  <nav class="bottombar" aria-label="tools">
+  <nav class="bottombar" aria-label="Tool Bar">
     <button id="btnMic" type="button" class="btn-icon toolbar-item" data-tool="mic"><span class="icon">🎤</span>音声入力</button>
     <button id="btnReplace" type="button" class="btn-icon toolbar-item" data-tool="replace"><span class="icon">🔎</span>検索・置換</button>
     <button id="btnTemplates" type="button" class="btn-icon toolbar-item" data-tool="templates"><span class="icon">📄</span>テンプレ</button>
     <button id="btnHistory" type="button" class="btn-icon toolbar-item" data-tool="history"><span class="icon">🕒</span>保存・履歴</button>
     <button id="btnEditTools" type="button" class="btn-icon toolbar-item" data-tool="edit"><span class="icon">✎</span>編集</button>
     <button id="btnShare" type="button" class="btn-icon toolbar-item" data-tool="share"><span class="icon">⇪</span>共有</button>
+    <button id="btnOverflow" type="button" class="btn-icon toolbar-overflow"><span class="icon">…</span>その他</button>
   </nav>
 
   <div id="menuOverlay" class="menu-overlay hidden" aria-hidden="true">
@@ -106,6 +113,7 @@
         <button type="button" class="btn-icon" data-menu="replace"><span class="icon">🔎</span>検索・置換</button>
         <button type="button" class="btn-icon" data-menu="templates"><span class="icon">📄</span>テンプレ</button>
         <button type="button" class="btn-icon" data-menu="history"><span class="icon">🕒</span>保存・履歴</button>
+        <div id="overflowMenuItems" class="menu-list overflow-menu-items"></div>
         <button type="button" class="btn-icon" data-menu="sidebar"><span class="icon">▤</span>サイドバー</button>
         <button type="button" class="btn-icon" data-menu="settings"><span class="icon">⚙</span>設定</button>
         <button type="button" class="btn-icon" data-menu="help"><span class="icon">?</span>ヘルプ</button>

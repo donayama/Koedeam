@@ -1,212 +1,83 @@
 # agent.md
 
-## Project: Koedeam（コエデアム）
+## Project
 
-### 概要
+Koedeam は Voice First の草稿エディタ。  
+No Server / Static / PWA 前提で運用する。
 
-Koedeam は「声で編む」ことを目的とした、音声入力・編集・共有に特化した軽量エディタである。
-本プロジェクトは、サーバー保存を行わず、GitHub Pages 上で動作する静的アプリとして提供される。
+## 公式UI用語
 
-目的は「文章を完成させること」ではなく、「草稿を生み、整え、外へ渡すこと」である。
+- `App Header`
+- `Status Indicator`
+- `Tool Bar`
+- `Main Editor`
+- `Voice Panel`
+- `Edit Panel`
+- `Side Bar`
+- `Search Panel`
+- `Snapshot Panel`
+- `Overflow Menu`
+- `Update Banner`
 
----
+コード・コメント・Issue・ドキュメントではこの名称を使う。
 
-## 基本思想
+## 状態モデル
 
-1. Voice First
-   音声入力を最優先の入力手段として設計する。
+`UI = Primary x Input x System x Layout`
 
-2. Draft Oriented
-   本ツールは下書き専用であり、長期保管ツールではない。
+- `Primary`: `EDIT` / `SEARCH` / `MANAGE` / `CONFIG`
+- `Input`: `VOICE_OFF` / `VOICE_APPEND` / `VOICE_LOCKED`
+- `System`: `LOCAL` / `SAVING` / `OFFLINE` / `UPDATE_AVAILABLE` / `ERROR`
+- `Layout`: `MOBILE` / `TABLET` / `DESKTOP`
 
-3. Edit to Refine
-   編集機能は“書くため”ではなく“整えるため”に存在する。
+状態遷移は `app/app.js` で集中管理する。
 
-4. No Server
-   本文・履歴・設定はすべて端末内で完結する。
+## 禁止ルール
 
-5. Lightweight Tool
-   多機能化よりも「軽さ・速さ・壊れにくさ」を優先する。
+- `VOICE_LOCKED` では編集不可（read-only + beforeinput/paste/keydown 抑止）
+- `SEARCH` 表示中に `Edit Panel` と `Side Bar` を同時展開しない
+- `MOBILE` では `Main Editor` に対して同時表示パネルを1つまでに制限
+- `Dialog` 表示中の背後操作を許可しない
 
----
+## レイヤー規約
 
-## 設計原則
+- `L1`: Main Editor
+- `L2`: Edit Panel / Voice Panel
+- `L3`: Side Bar
+- `L4`: Search/Snapshot/Dialog Overlay
+- `L5`: OS Keyboard
 
-* 依存ライブラリを極力使わない（Vanilla JS 優先）
-* 外部CDNを使わない
-* 個人データを外部送信しない
-* 壊れにくさを最優先する
-* UIは説明不要で使えることを目指す
-* 「迷わせない」導線を優先する
+キーボードは最上位災害要因として扱う。下部UIは潰さず縮退/退避する。
 
----
+## ツールバー規約
 
-## 機能判断ポリシー
+- 1行固定
+- 優先機能のみ常時表示
+- 溢れた機能は `Overflow Menu` に自動退避
 
-新機能を追加する場合、必ず以下を満たすこと：
+## 更新方式（B方式）
 
-1. 草稿生成・編集・共有のどれかを直接強化するか
-2. 複雑さを増やしすぎないか
-3. オフライン運用を阻害しないか
-4. localStorage前提で成立するか
+- `app/version.json` を `no-store` で取得
+- 差分時に `Update Banner` 表示
+- ユーザー承認で `skipWaiting -> controllerchange -> reload`
+- リリース時は `version.json` と `app/sw.js` の版を同時更新
 
-1つでも満たさない場合は、原則として実装しない。
+## データ規約
 
----
+- 本文や履歴は `localStorage` のみ
+- 壊れたJSONは `.broken` に退避してフォールバック
+- 互換破壊時は `koedeam.version` でマイグレーション
 
-## 優先順位
+## テスト観点（最低限）
 
-### 最優先
+1. `MOBILE` で `Tool Bar` が2段化しない
+2. `MOBILE` で `Edit Panel` と `Side Bar` 同時表示が起きない
+3. `VOICE_LOCKED` で編集イベントが反映されない
+4. `version.json` 差分で `Update Banner` が表示される
+5. iOSで入力時ズームが発生しない（16px以上）
 
-* 編集の安定性
-* 自動保存・復元
-* 検索・置換
-* 共有の確実性
+## 実装方針
 
-### 次点
-
-* 音声コマンド
-* UIカスタマイズ
-* テンプレ管理強化
-
-### 低優先
-
-* 高度な装飾
-* クラウド連携
-* SNS認証
-
----
-
-## コーディング方針
-
-### JavaScript
-
-* フレームワーク禁止
-* グローバル汚染を避ける
-* 状態管理は単純なオブジェクトで行う
-* 可読性を最優先
-
-### CSS
-
-* Utility化しすぎない
-* ダークモード対応
-* レイアウトはFlex/Grid中心
-
-### HTML
-
-* セマンティック重視
-* PWA/SEO/OGPを考慮
-
----
-
-## データ設計原則
-
-localStorageキー例：
-
-* koedeam.currentDraft
-* koedeam.recentDrafts
-* koedeam.templates
-* koedeam.settings
-
-ルール：
-
-* 破壊的変更時はバージョン番号を付与
-* マイグレーション処理を用意
-* 失敗時は旧データを保持
-
----
-
-## 音声入力に関する扱い
-
-* Web Speech API は「補助機能」と位置づける
-* OS音声入力を常に代替手段として想定する
-* 外部認識サービス利用の可能性は明示する
-* 秘密情報の音声入力を推奨しない
-
----
-
-## PWA・キャッシュ方針
-
-* キャッシュ破損は最大リスクと認識する
-* 更新時は必ず旧キャッシュを破棄
-* バージョン文字列を明示
-* 破損時は簡単に復旧できる設計にする
-
----
-
-## UI/UX原則
-
-* 1画面で主要操作が完結する
-* スマホ片手操作を基準にする
-* ボタンは「少なすぎず・多すぎず」
-* 迷う設定項目は作らない
-* 説明文に頼らないUIを目指す
-
----
-
-## セキュリティ・プライバシー方針
-
-* 通信ログを取得しない
-* トラッキング禁止
-* 広告コード禁止
-* 分析コード禁止
-* Cookie使用禁止
-
-ユーザーの本文は「ユーザーの所有物」である。
-
----
-
-## コントリビューション指針（将来用）
-
-PRは以下を満たすこと：
-
-* 目的が明確である
-* 仕様と整合している
-* 不要な複雑化をしていない
-* READMEを更新している
-
----
-
-## 想定ユーザー像
-
-* 音声で思考を吐き出す人
-* AIを活用する人
-* メモ魔・設計好き
-* 下書きを量産する人
-* 完成前の文章を磨きたい人
-
-「考える人の作業机」を支援する。
-
----
-
-## 禁止事項
-
-以下は原則禁止：
-
-* クラウド保存の追加
-* アカウント制の導入
-* 重量級ライブラリ導入
-* 広告埋め込み
-* トラッキング
-
----
-
-## 合言葉（設計判断に迷ったら）
-
-「これは、声で編む体験を良くしているか？」
-
-YES → 採用
-NO → 捨てる
-
----
-
-## 最終目的
-
-Koedeamは、
-
-・速い
-・軽い
-・安心できる
-・邪魔しない
-
-“道具として信頼できる存在”になることを目指す。
+- Vanilla JS / CSS / HTML を優先
+- 外部CDN・解析コード・広告コードは禁止
+- 既存構成を壊さず差分で改修する

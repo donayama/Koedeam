@@ -1,9 +1,10 @@
-const CACHE_NAME = "koedeam-app-v1";
+const CACHE_NAME = "koedeam-app-v110";
 const ASSETS = [
   "./",
   "./index.html",
   "./style.css",
   "./app.js",
+  "./version.json",
   "./manifest.webmanifest",
   "../assets/icon.svg"
 ];
