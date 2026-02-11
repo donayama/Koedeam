@@ -364,30 +364,40 @@ select {
 }
 .edit-toolbar-grid button { min-height: 40px; }
 .edit-toolbar-grid .chip { justify-content: center; }
+.line-delete-row {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.line-delete {
+  min-height: 40px;
+  white-space: nowrap;
+}
 .nav-cluster { display:flex; flex-direction: column; gap: 6px; }
 .nav-row { display:grid; grid-template-columns: 1fr 64px 1fr; gap: 6px; align-items:center; }
-.nav-pad { height: 42px; font-size: 15px; min-width: 56px; }
+.nav-pad { height: 40px; font-size: 14px; min-width: 50px; }
 .nav-wide { height: 44px; display:flex; align-items:center; justify-content:space-between; gap: 6px; }
 .edit-grid { display: grid; gap: 8px; }
 .edit-row { display: grid; gap: 6px; }
 .edit-row.row-1 {
   grid-template-columns:
-    minmax(56px, 4fr)
-    minmax(44px, 2fr)
-    minmax(56px, 4fr);
+    minmax(52px, 3fr)
+    minmax(40px, 1.5fr)
+    minmax(52px, 3fr);
 }
 .edit-row.row-2 {
   grid-template-columns:
-    minmax(44px, 3fr)
-    minmax(44px, 3fr)
-    minmax(44px, 3fr)
-    minmax(44px, 3fr);
+    minmax(42px, 2.4fr)
+    minmax(42px, 2.4fr)
+    minmax(42px, 2.4fr)
+    minmax(42px, 2.4fr);
 }
 .edit-row.row-3 {
   grid-template-columns:
-    minmax(56px, 4fr)
-    minmax(44px, 2fr)
-    minmax(56px, 4fr);
+    minmax(52px, 3fr)
+    minmax(40px, 1.5fr)
+    minmax(52px, 3fr);
 }
 .edit-row button { height: 44px; }
 .nav-wide-2 { justify-content: center; }
@@ -398,10 +408,31 @@ select {
 .edit-row .nav-wide { white-space: nowrap; }
 .edit-row #btnDocStart,
 .edit-row #btnDocEnd { white-space: nowrap; }
-.line-delete { grid-column: 1 / -1; }
+.edit-row #btnSelectParaPrev,
+.edit-row #btnSelectParaNext,
+.edit-row #btnDocStart,
+.edit-row #btnDocEnd {
+  font-size: 13px;
+}
 .edit-tools.pos-left .nav-wide,
 .edit-tools.pos-right .nav-wide {
   font-size: 12px;
+}
+
+@media (min-width: 700px) and (max-width: 1100px) {
+  .layout-tablet .edit-tools.pos-bottom .edit-tools-block,
+  .layout-tablet .edit-tools.pos-top .edit-tools-block {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "cursor range"
+      "toolbar toolbar";
+  }
+  .layout-tablet .edit-tools.pos-bottom .edit-group:nth-child(1),
+  .layout-tablet .edit-tools.pos-top .edit-group:nth-child(1) { grid-area: cursor; }
+  .layout-tablet .edit-tools.pos-bottom .edit-group:nth-child(2),
+  .layout-tablet .edit-tools.pos-top .edit-group:nth-child(2) { grid-area: toolbar; }
+  .layout-tablet .edit-tools.pos-bottom .edit-group:nth-child(3),
+  .layout-tablet .edit-tools.pos-top .edit-group:nth-child(3) { grid-area: range; }
 }
 .icon { font-size: 12px; opacity: .9; margin-right: 6px; display: inline-flex; align-items: center; }
 .btn-icon { display: inline-flex; align-items: center; gap: 6px; }
