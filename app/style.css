@@ -131,6 +131,17 @@ button, input, textarea { font: inherit; }
   white-space: nowrap;
 }
 #appMessage:empty { display: none; }
+.help-shortcuts a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: inherit;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 8px 10px;
+  min-height: 40px;
+}
 .sidebar { display: none; border-left: 1px solid var(--line); padding: 12px; background: var(--surface); }
 .sidebar label { margin: 6px 0; }
 .sidebar input,

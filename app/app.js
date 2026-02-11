@@ -88,7 +88,8 @@
     system: "LOCAL",
     layoutMode: "MOBILE",
     overflowedTools: [],
-    isComposing: false
+    isComposing: false,
+    deferredInstallPrompt: null
   };
 
   const el = getElements();
@@ -138,6 +139,7 @@
     updateStatusIndicator();
     setupSpeech();
     setupServiceWorker();
+    setupInstallPrompt();
     setupVersionPolling();
     setupViewportWatcher();
   }
@@ -234,6 +236,25 @@
         applyPrimary("CONFIG");
         enforceKeyboardPolicy();
         el.dlgHelp.showModal();
+      });
+    }
+    if (el.btnHelpInstallPwa) {
+      el.btnHelpInstallPwa.addEventListener("click", async () => {
+        if (state.deferredInstallPrompt) {
+          try {
+            state.deferredInstallPrompt.prompt();
+            const result = await state.deferredInstallPrompt.userChoice;
+            state.deferredInstallPrompt = null;
+            el.btnHelpInstallPwa.disabled = true;
+            toast(result?.outcome === "accepted" ? "インストールを開始しました" : "インストールをキャンセルしました");
+            return;
+          } catch {
+            toast("インストールを開始できませんでした");
+            return;
+          }
+        }
+        const isiOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+        toast(isiOS ? "iOSは共有メニューから「ホーム画面に追加」を実行してください" : "この環境ではインストールショートカットを利用できません");
       });
     }
     el.btnCloseHelp.addEventListener("click", () => el.dlgHelp.close());
@@ -1425,6 +1446,18 @@
     window.addEventListener("offline", () => applySystemState("OFFLINE"));
   }
 
+  function setupInstallPrompt() {
+    window.addEventListener("beforeinstallprompt", (evt) => {
+      evt.preventDefault();
+      state.deferredInstallPrompt = evt;
+      if (el.btnHelpInstallPwa) el.btnHelpInstallPwa.disabled = false;
+    });
+    window.addEventListener("appinstalled", () => {
+      state.deferredInstallPrompt = null;
+      if (el.btnHelpInstallPwa) el.btnHelpInstallPwa.disabled = true;
+    });
+  }
+
   function showUpdate(worker) {
     state.waitingWorker = worker;
     applySystemState("UPDATE_AVAILABLE");
@@ -2451,6 +2484,7 @@
 
       dlgHelp: document.getElementById("dlgHelp"),
       btnCloseHelp: document.getElementById("btnCloseHelp"),
+      btnHelpInstallPwa: document.getElementById("btnHelpInstallPwa"),
       iosInstallHint: document.getElementById("iosInstallHint"),
 
       findQuery: document.getElementById("findQuery"),
