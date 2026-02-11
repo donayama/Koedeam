@@ -241,25 +241,6 @@ select {
 }
 .hidden { display: none !important; }
 .desktop-only { display:none; }
-body.focus .topbar,
-body.focus .bottombar { display:none; }
-body.focus .main { padding: 12px; }
-body.focus #editor { min-height: calc(100vh - 32px); font-size: 19px; padding: 16px; }
-body.focus .edit-tools { display: none; }
-.focus-exit { display: none; }
-body.focus .focus-exit {
-  display: inline-flex;
-  position: fixed;
-  right: 12px;
-  bottom: 12px;
-  z-index: 6;
-  background: rgba(20,20,20,.86);
-  color: #fff;
-  border-color: rgba(255,255,255,.35);
-  padding: 8px 10px;
-  border-radius: 999px;
-  font-size: 12px;
-}
 body.edit-tools-show.edit-pos-bottom .main { padding-bottom: calc(82px + var(--edit-panel-size)); }
 body.edit-tools-show.edit-pos-top .main { padding-top: calc(12px + var(--edit-panel-size)); }
 body.edit-tools-show.edit-pos-left .main { padding-left: calc(12px + var(--edit-panel-size)); }

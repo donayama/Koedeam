@@ -16,7 +16,6 @@
   ];
 
   const DEFAULT_SETTINGS = {
-    focusDefault: false,
     voiceInsertMode: "cursor",
     autoSnapshotMinutes: 0,
     searchHistory: [],
@@ -82,7 +81,6 @@
     state.settings = safeGetObject(STORAGE_KEYS.settings, DEFAULT_SETTINGS);
 
     el.editor.value = state.draft;
-    applyFocus(state.settings.focusDefault);
     applySidebar();
     applyVoiceModeUI();
     applyPunctuationUI();
@@ -127,21 +125,8 @@
       if (document.activeElement === el.editor) updateCaretUI();
     });
 
-    const toggleFocus = () => {
-      const next = !document.body.classList.contains("focus");
-      applyFocus(next);
-      state.settings.focusDefault = next;
-      saveSettings();
-    };
     el.btnMenu.addEventListener("click", () => openMenu());
     el.btnCloseMenu.addEventListener("click", () => closeMenu());
-    if (el.btnFocus) {
-      el.btnFocus.addEventListener("click", () => {
-        closeMenuIfOpen();
-        toggleFocus();
-      });
-    }
-    el.btnExitFocus.addEventListener("click", toggleFocus);
     el.btnEditTools.addEventListener("click", () => {
       const next = !state.editToolsVisible;
       setEditToolsVisible(next);
@@ -337,9 +322,7 @@
         el.dlgShare.showModal();
       } else if (evt.key === "Escape") {
         closeMenuIfOpen();
-        if (!closeOpenDialog() && document.body.classList.contains("focus")) {
-          toggleFocus();
-        }
+        closeOpenDialog();
       }
     });
   }
@@ -374,7 +357,6 @@
       if (act === "replace") openSidebarPanel("replace");
       else if (act === "templates") openSidebarPanel("templates");
       else if (act === "history") { openSidebarPanel("history"); }
-      else if (act === "focus") { const next = !document.body.classList.contains("focus"); applyFocus(next); state.settings.focusDefault = next; saveSettings(); }
       else if (act === "sidebar") { toggleSidebar(); }
       else if (act === "settings") openSettings("appearance");
       else if (act === "help") el.dlgHelp.showModal();
@@ -811,15 +793,6 @@
     el.shortcutUrl.value = "";
   }
 
-  function applyFocus(on) {
-    document.body.classList.toggle("focus", !!on);
-    if (on) {
-      document.body.classList.remove("edit-tools-show");
-    } else if (state.editToolsVisible) {
-      document.body.classList.add("edit-tools-show");
-    }
-  }
-
   function applySidebar() {
     el.layout.classList.toggle("with-sidebar", !!state.settings.ui.sidebar);
     document.body.classList.toggle("with-sidebar", !!state.settings.ui.sidebar);
@@ -1185,8 +1158,7 @@
   function setEditToolsVisible(on) {
     state.editToolsVisible = !!on;
     el.editToolsPanel.classList.toggle("show", state.editToolsVisible);
-    const allow = state.editToolsVisible && !document.body.classList.contains("focus");
-    document.body.classList.toggle("edit-tools-show", allow);
+    document.body.classList.toggle("edit-tools-show", state.editToolsVisible);
     applyEditPanelPosition();
     requestAnimationFrame(updateEditPanelSize);
   }
@@ -1243,7 +1215,6 @@
     state.templates = structuredClone(DEFAULT_TEMPLATES);
     state.settings = structuredClone(DEFAULT_SETTINGS);
     el.editor.value = "";
-    applyFocus(state.settings.focusDefault);
     applySidebar();
     applyVoiceModeUI();
     applyPunctuationUI();
@@ -1637,8 +1608,6 @@
 
       btnSidebar: document.getElementById("btnSidebar"),
       btnEditTools: document.getElementById("btnEditTools"),
-      btnFocus: document.getElementById("btnFocus"),
-      btnExitFocus: document.getElementById("btnExitFocus"),
       btnMenu: document.getElementById("btnMenu"),
       btnSettings: document.getElementById("btnSettings"),
       btnHelp: document.getElementById("btnHelp"),
