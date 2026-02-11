@@ -64,6 +64,7 @@
 - `SpeechRecognition / webkitSpeechRecognition` 対応時のみ有効
 - 非対応時はOSの音声入力キーボードを利用
 - Web Speech APIはブラウザ実装により外部認識サービスを使う可能性あり
+- `Tool Bar` の音声モード切替で `OFF / カーソル位置 / 文末追記` を切替可能
 
 ## 共有
 
@@ -78,6 +79,22 @@
 - `Document List` で複数ドキュメントを切替
 - `Snapshot Panel` は現在ドキュメント単位で履歴を表示/復元
 - 既存の古い履歴（`docId` なし）も互換表示
+- `App Header` 左上ロゴタップで `Document List` を開く
+
+## Edit Panel
+
+- `Edit Panel` は配置（上/右/下/左）を設定可能
+- 広い画面では `カーソル` と `範囲選択` を左右分割
+- 狭い画面では `カーソル` -> `範囲選択` -> `編集` を縦積み
+- `Edit Toolbar` で `Copy/Cut/Paste/Delete/Backspace/句読点/改行/行頭まで削除/行末まで削除` を提供
+
+## Help導線
+
+- `Help` から次へ直接遷移可能
+- LP（`/`）
+- エディタ（`/app/`）
+- PWAインストール操作
+- GitHubリポジトリ（`https://github.com/donayama/Koedeam`）
 
 ## PWA導線
 
