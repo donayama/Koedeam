@@ -75,6 +75,8 @@ No Server / Static / PWA 前提で運用する。
 3. `VOICE_LOCKED` で編集イベントが反映されない
 4. `version.json` 差分で `Update Banner` が表示される
 5. iOSで入力時ズームが発生しない（16px以上）
+6. `Document List` の切替時に `currentDoc` と `Main Editor` が一致する
+7. Android戻る操作で `Dialog/Overlay/Side Bar/Edit Panel` が先に閉じる
 
 ## 実装方針
 

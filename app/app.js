@@ -53,6 +53,8 @@
       { id: uid(), name: "ChatGPT", urlTemplate: "https://chatgpt.com/?q={prompt}" },
       { id: uid(), name: "Gemini", urlTemplate: "https://gemini.google.com/app?q={prompt}" }
     ],
+    documents: [],
+    currentDocId: "",
     ui: { sidebar: false }
   };
 
@@ -77,7 +79,8 @@
     input: "VOICE_OFF",
     system: "LOCAL",
     layoutMode: "MOBILE",
-    overflowedTools: []
+    overflowedTools: [],
+    isComposing: false
   };
 
   const el = getElements();
@@ -93,12 +96,15 @@
       state.settings.voiceInsertMode = "cursor";
       saveSettings();
     }
-
+    ensureDocuments();
+    const currentDoc = getCurrentDocument();
+    state.draft = currentDoc?.text || state.draft || "";
     el.editor.value = state.draft;
     applySidebar();
     applyVoiceModeUI();
     applyPunctuationUI();
     applyTypography();
+    applyInstallHints();
     applyEditPanelPosition();
     applyToolbarVisibility();
     applySidebarTab(state.settings.sidebarTab || "templates");
@@ -133,11 +139,18 @@
       applySystemState("SAVING");
       saveTimer = setTimeout(() => {
         state.draft = el.editor.value;
+        syncCurrentDocumentFromEditor();
         safeSet(STORAGE_KEYS.currentDraft, state.draft);
         el.saveStatus.textContent = "Saved";
         applySystemState(navigator.onLine ? "LOCAL" : "OFFLINE");
       }, 800);
       updateCaretUI();
+    });
+    el.editor.addEventListener("compositionstart", () => {
+      state.isComposing = true;
+    });
+    el.editor.addEventListener("compositionend", () => {
+      state.isComposing = false;
     });
     el.editor.addEventListener("beforeinput", (evt) => {
       if (!canType()) evt.preventDefault();
@@ -194,6 +207,7 @@
     if (el.btnHelp) {
       el.btnHelp.addEventListener("click", () => {
         closeMenuIfOpen();
+        pushUiHistory();
         applyPrimary("CONFIG");
         enforceKeyboardPolicy();
         el.dlgHelp.showModal();
@@ -232,8 +246,14 @@
 
     el.btnHistory.addEventListener("click", () => {
       closeMenuIfOpen();
-      openSidebarPanel("history");
+      openSnapshotPanel();
     });
+    if (el.btnNewDoc) {
+      el.btnNewDoc.addEventListener("click", () => createDocument());
+    }
+    if (el.btnOpenSnapshotPanel) {
+      el.btnOpenSnapshotPanel.addEventListener("click", () => openSnapshotPanel());
+    }
     el.btnSnapshot.addEventListener("click", () => {
       snapshotDraft();
       renderHistory();
@@ -245,9 +265,45 @@
       saveSettings();
       setupAutoSnapshot();
     });
+    if (el.snapshotAutoSnapshotSelect) {
+      el.snapshotAutoSnapshotSelect.addEventListener("change", () => {
+        const mins = Number(el.snapshotAutoSnapshotSelect.value || 0);
+        state.settings.autoSnapshotMinutes = Number.isFinite(mins) ? mins : 0;
+        saveSettings();
+        setupAutoSnapshot();
+        renderHistory();
+      });
+    }
+    if (el.btnSnapshotSave) {
+      el.btnSnapshotSave.addEventListener("click", () => {
+        snapshotDraft();
+        renderHistory();
+        renderSidebar();
+      });
+    }
+    if (el.btnSnapshotNewDoc) {
+      el.btnSnapshotNewDoc.addEventListener("click", () => createDocument());
+    }
+    if (el.btnCloseSnapshot) {
+      el.btnCloseSnapshot.addEventListener("click", () => el.dlgSnapshot.close());
+    }
+    if (el.dlgSnapshot) {
+      el.dlgSnapshot.addEventListener("close", () => applyPrimary("EDIT"));
+    }
+    if (el.docList) {
+      el.docList.addEventListener("click", (evt) => handleDocumentAction(evt));
+    }
+    if (el.snapshotDocList) {
+      el.snapshotDocList.addEventListener("click", (evt) => handleDocumentAction(evt));
+    }
+    if (el.snapshotHistoryList) {
+      el.snapshotHistoryList.addEventListener("click", (evt) => handleHistoryAction(evt));
+      el.snapshotHistoryList.addEventListener("change", (evt) => handleHistoryAction(evt));
+    }
 
     el.btnShare.addEventListener("click", () => {
       renderShareShortcuts();
+      pushUiHistory();
       applyPrimary("MANAGE");
       enforceKeyboardPolicy();
       el.dlgShare.showModal();
@@ -368,6 +424,7 @@
 
     setupDialogDismiss();
     setupMenuOverlay();
+    setupBackNavigation();
     window.addEventListener("resize", () => {
       applyLayoutState();
       updateOverflowToolbar();
@@ -378,6 +435,7 @@
     });
 
     document.addEventListener("keydown", (evt) => {
+      if (evt.isComposing || state.isComposing) return;
       const ctrl = evt.ctrlKey || evt.metaKey;
       if (ctrl && evt.key.toLowerCase() === "f") {
         evt.preventDefault();
@@ -387,6 +445,7 @@
         openFindReplace(true);
       } else if (ctrl && evt.key.toLowerCase() === "k") {
         evt.preventDefault();
+        pushUiHistory();
         applyPrimary("MANAGE");
         enforceKeyboardPolicy();
         el.dlgShare.showModal();
@@ -407,7 +466,8 @@
   }
 
   function setupDialogDismiss() {
-    [el.dlgHelp, el.dlgShare, el.dlgSettings].forEach((dialog) => {
+    [el.dlgHelp, el.dlgShare, el.dlgSettings, el.dlgSnapshot].forEach((dialog) => {
+      if (!dialog) return;
       dialog.addEventListener("click", (evt) => {
         if (evt.target !== dialog) return;
         const ok = confirm("閉じますか？未保存の変更がある場合は失われる可能性があります。");
@@ -433,7 +493,7 @@
       closeMenu();
       if (act === "replace") openSidebarPanel("replace");
       else if (act === "templates") openSidebarPanel("templates");
-      else if (act === "history") { openSidebarPanel("history"); }
+      else if (act === "history") { openSnapshotPanel(); }
       else if (act === "sidebar") { toggleSidebar(); }
       else if (act === "settings") openSettings("appearance");
       else if (act === "help") {
@@ -444,7 +504,43 @@
     });
   }
 
+  function setupBackNavigation() {
+    if (history.state?.koedeamBase !== true) {
+      history.replaceState({ koedeamBase: true }, "");
+    }
+    window.addEventListener("popstate", () => {
+      const handled = closeTransientUi();
+      if (handled) {
+        applyPrimary("EDIT");
+      }
+    });
+  }
+
+  function pushUiHistory() {
+    history.pushState({ koedeamUi: true, at: Date.now() }, "");
+  }
+
+  function closeTransientUi() {
+    if (closeOpenDialog()) return true;
+    if (!el.menuOverlay.classList.contains("hidden")) {
+      closeMenu();
+      return true;
+    }
+    if (state.settings.ui.sidebar) {
+      state.settings.ui.sidebar = false;
+      applySidebar();
+      saveSettings();
+      return true;
+    }
+    if (state.editToolsVisible) {
+      setEditToolsVisible(false);
+      return true;
+    }
+    return false;
+  }
+
   function openMenu() {
+    pushUiHistory();
     applyPrimary("MANAGE");
     el.menuOverlay.classList.remove("hidden");
     el.menuOverlay.setAttribute("aria-hidden", "false");
@@ -634,6 +730,128 @@
     el.templateText.value = "";
   }
 
+  function ensureDocuments() {
+    const docs = Array.isArray(state.settings.documents) ? state.settings.documents : [];
+    if (docs.length) {
+      state.settings.documents = docs;
+    } else {
+      const seedText = state.draft || "";
+      state.settings.documents = [{
+        id: uid(),
+        title: firstLine(seedText) || "無題ドキュメント",
+        text: seedText,
+        updatedAt: Date.now()
+      }];
+    }
+    const exists = state.settings.documents.some((doc) => doc.id === state.settings.currentDocId);
+    if (!exists) state.settings.currentDocId = state.settings.documents[0].id;
+    saveSettings();
+    renderDocumentLists();
+  }
+
+  function getCurrentDocument() {
+    return state.settings.documents.find((doc) => doc.id === state.settings.currentDocId) || null;
+  }
+
+  function syncCurrentDocumentFromEditor() {
+    const current = getCurrentDocument();
+    if (!current) return;
+    current.text = el.editor.value;
+    current.title = firstLine(current.text) || "無題ドキュメント";
+    current.updatedAt = Date.now();
+    saveSettings();
+    renderDocumentLists();
+  }
+
+  function createDocument() {
+    const doc = {
+      id: uid(),
+      title: "無題ドキュメント",
+      text: "",
+      updatedAt: Date.now()
+    };
+    state.settings.documents.unshift(doc);
+    state.settings.currentDocId = doc.id;
+    state.draft = "";
+    el.editor.value = "";
+    saveSettings();
+    safeSet(STORAGE_KEYS.currentDraft, state.draft);
+    renderDocumentLists();
+    if (el.dlgSnapshot?.open) renderHistory();
+    toast("新規ドキュメントを作成");
+    el.editor.focus();
+    applyPrimary("EDIT");
+    enforceKeyboardPolicy();
+  }
+
+  function switchDocument(docId) {
+    const doc = state.settings.documents.find((item) => item.id === docId);
+    if (!doc) return;
+    syncCurrentDocumentFromEditor();
+    state.settings.currentDocId = doc.id;
+    state.draft = doc.text || "";
+    el.editor.value = state.draft;
+    saveSettings();
+    safeSet(STORAGE_KEYS.currentDraft, state.draft);
+    renderDocumentLists();
+    updateCaretUI();
+    toast("ドキュメントを切り替えました");
+    applyPrimary("EDIT");
+    enforceKeyboardPolicy();
+  }
+
+  function handleDocumentAction(evt) {
+    const btn = evt.target.closest("button[data-doc-act]");
+    if (!(btn instanceof HTMLButtonElement)) return;
+    const id = btn.dataset.id;
+    const act = btn.dataset.docAct;
+    if (!id || !act) return;
+    if (act === "open") {
+      switchDocument(id);
+      return;
+    }
+    if (act === "delete") {
+      if (state.settings.documents.length <= 1) {
+        toast("最後の1件は削除できません");
+        return;
+      }
+      const ok = confirm("このドキュメントを削除します。よろしいですか？");
+      if (!ok) return;
+      state.settings.documents = state.settings.documents.filter((doc) => doc.id !== id);
+      if (state.settings.currentDocId === id) {
+        state.settings.currentDocId = state.settings.documents[0]?.id || "";
+        const current = getCurrentDocument();
+        state.draft = current?.text || "";
+        el.editor.value = state.draft;
+        safeSet(STORAGE_KEYS.currentDraft, state.draft);
+      }
+      saveSettings();
+      renderDocumentLists();
+      toast("ドキュメントを削除しました");
+    }
+  }
+
+  function renderDocumentLists() {
+    if (!el.docList && !el.snapshotDocList) return;
+    const docs = state.settings.documents || [];
+    const html = docs.map((doc) => {
+      const active = doc.id === state.settings.currentDocId;
+      return `<div class="dialog-item">
+        <div class="dialog-item-head">
+          <strong>${active ? "● " : ""}${escapeHtml(doc.title || "無題ドキュメント")}</strong>
+          <small>${new Date(doc.updatedAt || Date.now()).toLocaleString()}</small>
+        </div>
+        <div class="dialog-actions">
+          <button type="button" data-doc-act="open" data-id="${doc.id}">開く</button>
+          <button type="button" data-doc-act="delete" data-id="${doc.id}">削除</button>
+        </div>
+      </div>`;
+    }).join("");
+    const empty = '<p class="dialog-item">ドキュメントはありません。</p>';
+    if (el.docList) el.docList.innerHTML = html || empty;
+    if (el.snapshotDocList) el.snapshotDocList.innerHTML = html || empty;
+  }
+
   function snapshotDraft() {
     snapshotDraftInternal(false);
   }
@@ -642,8 +860,15 @@
     const text = el.editor.value;
     if (!text.trim()) return toast("空の本文は保存しません");
     if (isAuto && text === state.lastAutoSnapshotText) return;
+    const currentDoc = getCurrentDocument();
     const title = firstLine(text);
-    const item = { id: uid(), title, text, updatedAt: Date.now() };
+    const item = {
+      id: uid(),
+      docId: currentDoc?.id || "",
+      title,
+      text,
+      updatedAt: Date.now()
+    };
     state.recentDrafts.unshift(item);
     state.recentDrafts = state.recentDrafts.slice(0, 5);
     persistRecentDrafts();
@@ -652,26 +877,33 @@
   }
 
   function renderHistory() {
-    el.historyList.innerHTML = "";
-    el.autoSnapshotSelect.value = String(state.settings.autoSnapshotMinutes || 0);
-    if (!state.recentDrafts.length) {
-      el.historyList.innerHTML = '<p class="dialog-item">履歴はありません。</p>';
+    const targets = [el.historyList, el.snapshotHistoryList].filter(Boolean);
+    targets.forEach((target) => { target.innerHTML = ""; });
+    if (el.autoSnapshotSelect) el.autoSnapshotSelect.value = String(state.settings.autoSnapshotMinutes || 0);
+    if (el.snapshotAutoSnapshotSelect) el.snapshotAutoSnapshotSelect.value = String(state.settings.autoSnapshotMinutes || 0);
+    renderDocumentLists();
+    const currentDocId = state.settings.currentDocId || "";
+    const items = state.recentDrafts.filter((h) => !h.docId || h.docId === currentDocId);
+    if (!items.length) {
+      targets.forEach((target) => { target.innerHTML = '<p class="dialog-item">履歴はありません。</p>'; });
       return;
     }
-    for (const h of state.recentDrafts) {
-      const row = document.createElement("div");
-      row.className = "dialog-item";
-      row.innerHTML = `
-        <div class="dialog-item-head"><strong>${escapeHtml(h.title)}</strong><small>${new Date(h.updatedAt).toLocaleString()}</small></div>
-        <p>${escapeHtml(preview(h.text))}</p>
-        <label>タイトル<input data-hid="${h.id}" data-act="title" value="${escapeHtmlAttr(h.title)}" /></label>
-        <div class="dialog-actions">
-          <button data-act="restore" data-id="${h.id}" type="button">復元</button>
-          <button data-act="delete" data-id="${h.id}" type="button">削除</button>
-        </div>`;
-      row.addEventListener("click", (e) => handleHistoryAction(e));
-      row.addEventListener("change", (e) => handleHistoryAction(e));
-      el.historyList.append(row);
+    for (const h of items) {
+      for (const target of targets) {
+        const row = document.createElement("div");
+        row.className = "dialog-item";
+        row.innerHTML = `
+          <div class="dialog-item-head"><strong>${escapeHtml(h.title)}</strong><small>${new Date(h.updatedAt).toLocaleString()}</small></div>
+          <p>${escapeHtml(preview(h.text))}</p>
+          <label>タイトル<input data-hid="${h.id}" data-act="title" value="${escapeHtmlAttr(h.title)}" /></label>
+          <div class="dialog-actions">
+            <button data-act="restore" data-id="${h.id}" type="button">復元</button>
+            <button data-act="delete" data-id="${h.id}" type="button">削除</button>
+          </div>`;
+        row.addEventListener("click", (e) => handleHistoryAction(e));
+        row.addEventListener("change", (e) => handleHistoryAction(e));
+        target.append(row);
+      }
     }
   }
 
@@ -682,6 +914,7 @@
       if (item) {
         item.title = target.value.trim() || firstLine(item.text);
         persistRecentDrafts();
+        renderHistory();
         renderSidebar();
       }
       return;
@@ -692,6 +925,9 @@
     const item = state.recentDrafts.find((h) => h.id === id);
     if (!item) return;
     if (act === "restore") {
+      if (item.docId && item.docId !== state.settings.currentDocId) {
+        switchDocument(item.docId);
+      }
       el.editor.value = item.text;
       triggerInput();
       toast("履歴を復元しました");
@@ -1082,7 +1318,8 @@
 
   function closeOpenDialog() {
     let closed = false;
-    [el.dlgHelp, el.dlgShare, el.dlgSettings].forEach((d) => {
+    [el.dlgHelp, el.dlgShare, el.dlgSettings, el.dlgSnapshot].forEach((d) => {
+      if (!d) return;
       if (d.open) {
         d.close();
         closed = true;
@@ -1237,6 +1474,13 @@
     el.editor.style.fontFamily = getFontFamily(state.settings.fontFace);
   }
 
+  function applyInstallHints() {
+    if (!el.iosInstallHint) return;
+    const ua = navigator.userAgent || "";
+    const isiOS = /iPhone|iPad|iPod/i.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    el.iosInstallHint.classList.toggle("hidden", !isiOS);
+  }
+
   function applyToolbarVisibility() {
     const t = { ...DEFAULT_SETTINGS.toolbar, ...(state.settings.toolbar || {}) };
     if ("find" in t) delete t.find;
@@ -1380,6 +1624,7 @@
   }
 
   function openSettings(section) {
+    pushUiHistory();
     applyPrimary("CONFIG");
     enforceKeyboardPolicy();
     el.dlgSettings.showModal();
@@ -1402,10 +1647,19 @@
   }
 
   function openHistoryPanel() {
-    openSidebarPanel("history");
+    openSnapshotPanel();
+  }
+
+  function openSnapshotPanel() {
+    pushUiHistory();
+    renderHistory();
+    applyPrimary("MANAGE");
+    enforceKeyboardPolicy();
+    if (el.dlgSnapshot && !el.dlgSnapshot.open) el.dlgSnapshot.showModal();
   }
 
   function openSidebarPanel(tab) {
+    pushUiHistory();
     applyPrimary(tab === "replace" ? "SEARCH" : "MANAGE");
     if (isMobileLayout()) setEditToolsVisible(false);
     state.settings.ui.sidebar = true;
@@ -1419,6 +1673,8 @@
   }
 
   function toggleSidebar() {
+    const opening = !state.settings.ui.sidebar;
+    if (opening) pushUiHistory();
     state.settings.ui.sidebar = !state.settings.ui.sidebar;
     applyPrimary(state.settings.ui.sidebar ? "MANAGE" : "EDIT");
     if (state.settings.ui.sidebar && isMobileLayout()) setEditToolsVisible(false);
@@ -1454,6 +1710,7 @@
   function setEditToolsVisible(on) {
     state.editToolsVisible = !!on;
     if (state.editToolsVisible) {
+      pushUiHistory();
       applyPrimary("EDIT");
       if (isMobileLayout() && state.settings.ui.sidebar) {
         state.settings.ui.sidebar = false;
@@ -1518,6 +1775,7 @@
     state.templates = structuredClone(DEFAULT_TEMPLATES);
     state.settings = structuredClone(DEFAULT_SETTINGS);
     el.editor.value = "";
+    ensureDocuments();
     applySidebar();
     applyVoiceModeUI();
     applyPunctuationUI();
@@ -2006,6 +2264,7 @@
 
       dlgHelp: document.getElementById("dlgHelp"),
       btnCloseHelp: document.getElementById("btnCloseHelp"),
+      iosInstallHint: document.getElementById("iosInstallHint"),
 
       findQuery: document.getElementById("findQuery"),
       findRecent: document.getElementById("findRecent"),
@@ -2047,9 +2306,19 @@
       btnTemplateReset: document.getElementById("btnTemplateReset"),
 
       sideHistory: document.getElementById("sideHistory"),
+      btnNewDoc: document.getElementById("btnNewDoc"),
       btnSnapshot: document.getElementById("btnSnapshot"),
+      btnOpenSnapshotPanel: document.getElementById("btnOpenSnapshotPanel"),
+      docList: document.getElementById("docList"),
       autoSnapshotSelect: document.getElementById("autoSnapshotSelect"),
       historyList: document.getElementById("historyList"),
+      dlgSnapshot: document.getElementById("dlgSnapshot"),
+      btnSnapshotNewDoc: document.getElementById("btnSnapshotNewDoc"),
+      btnSnapshotSave: document.getElementById("btnSnapshotSave"),
+      snapshotDocList: document.getElementById("snapshotDocList"),
+      snapshotAutoSnapshotSelect: document.getElementById("snapshotAutoSnapshotSelect"),
+      snapshotHistoryList: document.getElementById("snapshotHistoryList"),
+      btnCloseSnapshot: document.getElementById("btnCloseSnapshot"),
 
       dlgShare: document.getElementById("dlgShare"),
       btnOpenSettingsShare: document.getElementById("btnOpenSettingsShare"),

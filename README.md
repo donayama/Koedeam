@@ -55,6 +55,7 @@
 - `TABLET/DESKTOP`: `Side Bar` 併用可。ただし文書操作優先時は編集抑止
 - `Tool Bar`: 1行固定。溢れた機能は `Overflow Menu` へ退避
 - iOS入力ズーム回避: `input/textarea/select` は 16px以上を保証
+- Android戻る操作: 開いている `Dialog/Overlay/Side Bar/Edit Panel` を先に閉じてから離脱
 
 ## 音声入力
 
@@ -69,6 +70,12 @@
 - `{text}`: 本文または選択範囲
 - `{title}`: 先頭行
 - `{prompt}`: `{text}` と同義
+
+## ドキュメント管理
+
+- `Document List` で複数ドキュメントを切替
+- `Snapshot Panel` は現在ドキュメント単位で履歴を表示/復元
+- 既存の古い履歴（`docId` なし）も互換表示
 
 ## PWA導線
 
@@ -108,5 +115,6 @@ python -m http.server 8000
 1. `MOBILE` 幅で `Tool Bar` が2段化しない
 2. `MOBILE` で `Edit Panel` と `Side Bar` が同時展開しない
 3. `VOICE_LOCKED` 時に編集入力が反映されない
-4. `Update Banner` が `version.json` 差分で表示される
-5. iOSで入力タップ時に自動ズームしない
+4. IME変換中にショートカットが誤発火しない
+5. `Update Banner` が `version.json` 差分で表示される
+6. iOSで入力タップ時に自動ズームしない
