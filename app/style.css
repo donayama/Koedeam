@@ -51,7 +51,18 @@ button, input, textarea { font: inherit; }
   min-width: 0;
   overflow: hidden;
 }
-.brand { text-decoration: none; color: inherit; font-weight: 700; display:inline-flex; align-items:center; gap: 6px; }
+.brand {
+  text-decoration: none;
+  color: inherit;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+}
 .brand-icon { width: 18px; height: 18px; display: inline-block; }
 .top-actions { display:flex; gap:8px; }
 .top-actions .btn-icon { white-space: nowrap; }
@@ -71,7 +82,7 @@ button, input, textarea { font: inherit; }
     100vh - 182px - var(--edit-inset-top, 0px) - var(--edit-inset-bottom, 0px)
   );
   resize: vertical;
-  padding: 12px;
+  padding: 12px 12px 40px;
   border-radius: 12px;
   border: 1px solid var(--line);
   line-height: 1.6;
@@ -96,7 +107,30 @@ button, input, textarea { font: inherit; }
   border-radius: 2px;
   pointer-events: none;
 }
-.status-row { display:flex; justify-content:space-between; gap:8px; margin-top:8px; font-size: 12px; opacity:.8; }
+.status-row {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  opacity: .95;
+  pointer-events: none;
+}
+#saveStatus,
+#appMessage {
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 3px 8px;
+  max-width: 48%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#appMessage:empty { display: none; }
 .sidebar { display: none; border-left: 1px solid var(--line); padding: 12px; background: var(--surface); }
 .sidebar label { margin: 6px 0; }
 .sidebar input,
@@ -282,6 +316,10 @@ select {
   line-height: 1.2;
   white-space: normal;
 }
+.share-shortcut-btn {
+  min-height: 48px;
+  width: 100%;
+}
 .shortcut-inline #btnOpenSettingsShare { grid-column: 1 / -1; }
 .settings-bar {
   position: sticky;
@@ -415,6 +453,23 @@ select {
   .edit-tools.pos-left .range-group,
   .edit-tools.pos-right .range-group { grid-area: range; }
 }
+@media (min-width: 920px) {
+  .edit-tools.pos-bottom .edit-tools-block,
+  .edit-tools.pos-top .edit-tools-block,
+  .edit-tools.pos-left .edit-tools-block,
+  .edit-tools.pos-right .edit-tools-block {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    grid-template-areas:
+      "cursor toolbar"
+      "cursor range";
+    gap: 8px;
+  }
+  .edit-tools.pos-left,
+  .edit-tools.pos-right {
+    width: min(700px, 78vw);
+  }
+}
 .edit-tools-head { display:flex; align-items:center; gap: 8px; margin-bottom: 6px; }
 .edit-tools-row { display:flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
 .edit-tools-row button { flex: 1 1 22%; min-width: 72px; height: 40px; }
@@ -442,6 +497,7 @@ select {
   min-height: 36px;
   padding: 4px 2px;
   font-size: 11px;
+  white-space: nowrap;
 }
 .edit-toolbar-main > #btnPuncMode {
   width: 100%;
@@ -459,15 +515,15 @@ select {
 }
 .nav-cluster { display:flex; flex-direction: column; gap: 6px; }
 .nav-row { display:grid; grid-template-columns: 1fr 64px 1fr; gap: 6px; align-items:center; }
-.nav-pad { height: 40px; font-size: 14px; min-width: 50px; }
+.nav-pad { height: 40px; font-size: 14px; min-width: 44px; }
 .nav-wide { height: 44px; display:flex; align-items:center; justify-content:space-between; gap: 6px; }
 .edit-grid { display: grid; gap: 8px; }
 .edit-row { display: grid; gap: 6px; }
 .edit-row.row-1 {
   grid-template-columns:
-    minmax(46px, 2.4fr)
-    minmax(40px, 1.2fr)
-    minmax(46px, 2.4fr);
+    minmax(44px, 2.0fr)
+    minmax(36px, 1.0fr)
+    minmax(44px, 2.0fr);
 }
 .edit-row.row-2 {
   grid-template-columns:
@@ -478,9 +534,9 @@ select {
 }
 .edit-row.row-3 {
   grid-template-columns:
-    minmax(46px, 2.4fr)
-    minmax(40px, 1.2fr)
-    minmax(46px, 2.4fr);
+    minmax(44px, 2.0fr)
+    minmax(36px, 1.0fr)
+    minmax(44px, 2.0fr);
 }
 .edit-row button { height: 44px; }
 .nav-wide-2 { justify-content: center; }
@@ -497,6 +553,7 @@ select {
 .edit-row #btnDocEnd {
   font-size: 12px;
   padding-inline: 6px;
+  white-space: nowrap;
 }
 .edit-tools.pos-left .nav-wide,
 .edit-tools.pos-right .nav-wide {

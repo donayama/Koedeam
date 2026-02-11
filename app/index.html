@@ -12,7 +12,7 @@
 </head>
 <body>
   <header class="topbar" aria-label="App Header">
-    <a class="brand" href="../"><img src="../assets/icon.svg" alt="" class="brand-icon" />Koedeam</a>
+    <button id="btnBrandDocuments" type="button" class="brand" aria-label="ドキュメント一覧を開く"><img src="../assets/icon.svg" alt="" class="brand-icon" />Koedeam</button>
     <div id="statusIndicator" class="status-indicator" aria-live="polite">
       <span id="statusPrimary" class="chip">EDIT</span>
       <span id="statusInput" class="chip">VOICE:OFF</span>
@@ -32,10 +32,10 @@
         <div id="caretLine" class="caret-line hidden"></div>
         <div id="caretDot" class="caret-dot hidden"></div>
         <textarea id="editor" placeholder="話して、書いて、整えて、共有。"></textarea>
-      </div>
-      <div class="status-row">
-        <span id="saveStatus">Ready</span>
-        <span id="appMessage" aria-live="polite"></span>
+        <div class="status-row">
+          <span id="saveStatus">Ready</span>
+          <span id="appMessage" aria-live="polite"></span>
+        </div>
       </div>
     </main>
 
@@ -81,7 +81,7 @@
     <button id="btnHistory" type="button" class="btn-icon toolbar-item" data-tool="history"><span class="icon">🕒</span>保存・履歴</button>
     <button id="btnEditTools" type="button" class="btn-icon toolbar-item" data-tool="edit"><span class="icon">✎</span>編集</button>
     <button id="btnShare" type="button" class="btn-icon toolbar-item" data-tool="share"><span class="icon">⇪</span>共有</button>
-    <button id="btnOverflow" type="button" class="btn-icon toolbar-overflow"><span class="icon">…</span>その他</button>
+    <button id="btnOverflow" type="button" class="btn-icon toolbar-overflow" aria-label="その他"><span class="icon">…</span></button>
   </nav>
 
   <div id="menuOverlay" class="menu-overlay hidden" aria-hidden="true">

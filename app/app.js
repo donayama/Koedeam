@@ -8,13 +8,19 @@
     templates: "koedeam.templates",
     settings: "koedeam.settings"
   };
+  const MAX_SHARE_SHORTCUTS = 8;
 
   const DEFAULT_TEMPLATES = [
     { id: uid(), name: "AI整理依頼", text: "次のメモを、目的・要点・次アクションの3項目で整理してください。\n\n[メモ]\n", updatedAt: Date.now() },
     { id: uid(), name: "要約と見出し", text: "次の文章を3〜5行で要約し、見出しを付けてください。\n\n[本文]\n", updatedAt: Date.now() },
     { id: uid(), name: "改善レビュー依頼", text: "次の下書きを、読みやすさ・説得力・簡潔さの観点で改善提案してください。\n\n[本文]\n", updatedAt: Date.now() },
     { id: uid(), name: "メール下書き", text: "件名：\n\n○○様\n\nいつもお世話になっております。\n\n要件：\n\nどうぞよろしくお願いいたします。", updatedAt: Date.now() },
-    { id: uid(), name: "議事メモ", text: "# 議事メモ\n- 日時:\n- 参加者:\n\n## 決定事項\n- \n\n## ToDo\n- [ ] ", updatedAt: Date.now() }
+    { id: uid(), name: "議事メモ", text: "# 議事メモ\n- 日時:\n- 参加者:\n\n## 決定事項\n- \n\n## ToDo\n- [ ] ", updatedAt: Date.now() },
+    { id: uid(), name: "SNS投稿案", text: "以下の内容をSNS向けに3パターン作成してください。\n条件: 100文字前後 / 絵文字は控えめ / ハッシュタグ2つまで\n\n[内容]\n", updatedAt: Date.now() },
+    { id: uid(), name: "PRDたたき台", text: "# PRD Draft\n## 背景\n\n## 課題\n\n## 目標\n\n## 機能要件\n- \n\n## 非機能要件\n- \n\n## 受け入れ条件\n- ", updatedAt: Date.now() },
+    { id: uid(), name: "障害報告テンプレ", text: "# 障害報告\n- 発生日:\n- 影響範囲:\n- 検知方法:\n\n## 原因\n\n## 暫定対応\n\n## 恒久対応\n\n## 再発防止\n", updatedAt: Date.now() },
+    { id: uid(), name: "翻訳依頼（日→英）", text: "次の日本語を自然なビジネス英語に翻訳してください。\n語調: 丁寧 / 簡潔\n\n[原文]\n", updatedAt: Date.now() },
+    { id: uid(), name: "チェックリスト作成", text: "次の作業内容をチェックリスト化してください。\n優先度(高/中/低)も付けてください。\n\n[作業内容]\n", updatedAt: Date.now() }
   ];
 
   const DEFAULT_SETTINGS = {
@@ -49,7 +55,11 @@
       { id: uid(), name: "メール", urlTemplate: "mailto:?subject={title}&body={text}" },
       { id: uid(), name: "LINE", urlTemplate: "https://line.me/R/share?text={prompt}" },
       { id: uid(), name: "ChatGPT", urlTemplate: "https://chatgpt.com/?q={prompt}" },
-      { id: uid(), name: "Gemini", urlTemplate: "https://gemini.google.com/app?q={prompt}" }
+      { id: uid(), name: "Gemini", urlTemplate: "https://gemini.google.com/app?q={prompt}" },
+      { id: uid(), name: "X", urlTemplate: "https://x.com/intent/tweet?text={prompt}" },
+      { id: uid(), name: "Google翻訳", urlTemplate: "https://translate.google.com/?sl=auto&tl=en&text={prompt}&op=translate" },
+      { id: uid(), name: "DeepL", urlTemplate: "https://www.deepl.com/translator#ja/en/{prompt}" },
+      { id: uid(), name: "GitHub Issue", urlTemplate: "https://github.com/issues/new?title={title}&body={text}" }
     ],
     documents: [],
     currentDocId: "",
@@ -267,6 +277,12 @@
         openDocumentListPanel();
       });
     }
+    if (el.btnBrandDocuments) {
+      el.btnBrandDocuments.addEventListener("click", () => {
+        closeMenuIfOpen();
+        openDocumentListPanel();
+      });
+    }
     if (el.btnHeaderSnapshot) {
       el.btnHeaderSnapshot.addEventListener("click", () => {
         closeMenuIfOpen();
@@ -455,10 +471,11 @@
       });
       el.toolbarOrderList.addEventListener("change", (evt) => {
         const input = evt.target;
-        if (!(input instanceof HTMLInputElement)) return;
+        if (!(input instanceof HTMLInputElement) || input.type !== "checkbox") return;
         if (!input.dataset.tool) return;
+        const tool = input.dataset.tool === "find" ? "replace" : input.dataset.tool;
         state.settings.toolbar = state.settings.toolbar || {};
-        state.settings.toolbar[input.dataset.tool] = input.checked;
+        state.settings.toolbar[tool] = input.checked;
         applyToolbarVisibility();
         saveSettings();
       });
@@ -1133,7 +1150,7 @@
     setShareMode(state.shareMode);
     el.shareShortcutList.innerHTML = "";
     el.settingsShareList.innerHTML = "";
-    for (const s of state.settings.shareShortcuts.slice(0, 5)) {
+    for (const s of state.settings.shareShortcuts.slice(0, MAX_SHARE_SHORTCUTS)) {
       const shareRow = document.createElement("button");
       shareRow.type = "button";
       shareRow.className = "share-shortcut-btn";
@@ -1200,7 +1217,7 @@
     const idx = state.settings.shareShortcuts.findIndex((s) => s.id === id);
     if (idx >= 0) state.settings.shareShortcuts[idx] = next;
     else state.settings.shareShortcuts.push(next);
-    state.settings.shareShortcuts = state.settings.shareShortcuts.slice(0, 5);
+    state.settings.shareShortcuts = state.settings.shareShortcuts.slice(0, MAX_SHARE_SHORTCUTS);
     saveSettings();
     renderShareShortcuts();
     renderSidebar();
@@ -1589,10 +1606,12 @@
   }
 
   function applyToolbarVisibility() {
-    const t = { ...DEFAULT_SETTINGS.toolbar, ...(state.settings.toolbar || {}) };
-    if ("find" in t) delete t.find;
+    const t = getEffectiveToolbarSettings();
     state.settings.toolbar = t;
-    const order = (state.settings.toolbarOrder || DEFAULT_SETTINGS.toolbarOrder).filter((k) => k in t);
+    const allowed = Object.keys(DEFAULT_SETTINGS.toolbar);
+    const baseOrder = Array.isArray(state.settings.toolbarOrder) ? state.settings.toolbarOrder : DEFAULT_SETTINGS.toolbarOrder;
+    const normalizedBase = baseOrder.filter((k) => allowed.includes(k));
+    const order = [...normalizedBase.filter((k) => k in t), ...allowed.filter((k) => !(normalizedBase.includes(k)) && (k in t))];
     state.settings.toolbarOrder = order;
     el.toolbarButtons.forEach((btn) => {
       const key = btn.dataset.tool;
@@ -1668,7 +1687,9 @@
   }
 
   function renderToolbarOrder() {
-    const order = state.settings.toolbarOrder || DEFAULT_SETTINGS.toolbarOrder;
+    const allowed = Object.keys(DEFAULT_SETTINGS.toolbar);
+    const order = (state.settings.toolbarOrder || DEFAULT_SETTINGS.toolbarOrder).filter((k) => allowed.includes(k));
+    const toolbarState = getEffectiveToolbarSettings();
     const labels = {
       mic: "音声入力",
       voiceMode: "音声モード",
@@ -1684,7 +1705,7 @@
       row.className = "dialog-item toolbar-item-row";
       row.innerHTML = `
         <label class="toolbar-check">
-          <input type="checkbox" data-tool="${tool}" ${state.settings.toolbar?.[tool] ? "checked" : ""} />
+          <input type="checkbox" data-tool="${tool}" ${toolbarState[tool] ? "checked" : ""} />
           <strong>${labels[tool] || tool}</strong>
         </label>
         <div class="toolbar-move">
@@ -1696,7 +1717,8 @@
   }
 
   function moveToolbarItem(tool, delta) {
-    const order = state.settings.toolbarOrder || DEFAULT_SETTINGS.toolbarOrder;
+    const allowed = Object.keys(DEFAULT_SETTINGS.toolbar);
+    const order = (state.settings.toolbarOrder || DEFAULT_SETTINGS.toolbarOrder).filter((k) => allowed.includes(k));
     const idx = order.indexOf(tool);
     if (idx === -1) return;
     const next = idx + delta;
@@ -1706,6 +1728,19 @@
     state.settings.toolbarOrder = order;
     applyToolbarVisibility();
     saveSettings();
+  }
+
+  function getEffectiveToolbarSettings() {
+    const allowed = new Set(Object.keys(DEFAULT_SETTINGS.toolbar));
+    const rawToolbar = state.settings.toolbar || {};
+    const normalizedRaw = {};
+    Object.keys(rawToolbar).forEach((k) => {
+      if (allowed.has(k)) normalizedRaw[k] = !!rawToolbar[k];
+    });
+    const t = { ...DEFAULT_SETTINGS.toolbar, ...normalizedRaw };
+    if ("find" in rawToolbar && !("replace" in normalizedRaw)) t.replace = !!rawToolbar.find;
+    if ("find" in t) delete t.find;
+    return t;
   }
 
   function getFontFamily(key) {
@@ -2402,6 +2437,7 @@
       btnEditTools: document.getElementById("btnEditTools"),
       btnMenu: document.getElementById("btnMenu"),
       btnHeaderDocuments: document.getElementById("btnHeaderDocuments"),
+      btnBrandDocuments: document.getElementById("btnBrandDocuments"),
       btnHeaderSnapshot: document.getElementById("btnHeaderSnapshot"),
       btnSettings: document.getElementById("btnSettings"),
       btnHelp: document.getElementById("btnHelp"),
