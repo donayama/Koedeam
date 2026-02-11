@@ -280,8 +280,11 @@
     </div>
     <div class="edit-tools-block">
       <div class="edit-group cursor-group">
-        <div class="edit-group-head">カーソル</div>
-        <div class="edit-grid">
+        <button type="button" class="edit-group-head edit-group-toggle" data-section="cursor" aria-expanded="true">
+          <span>カーソル</span><span class="caret">▾</span>
+        </button>
+        <div class="edit-group-body">
+          <div class="edit-grid">
           <div class="edit-row row-1">
             <button id="btnSelectParaPrev" type="button" class="nav-wide"><span class="icon">⤒</span>段落</button>
             <button id="btnMoveUp" type="button" class="nav-pad"><span class="icon">▲</span></button>
@@ -298,11 +301,15 @@
             <button id="btnMoveDown" type="button" class="nav-pad"><span class="icon">▼</span></button>
             <button id="btnDocEnd" type="button"><span class="icon">⏭</span>文末</button>
           </div>
+          </div>
         </div>
       </div>
       <div class="edit-group toolbar-group">
-        <div class="edit-group-head">編集</div>
-        <div class="edit-toolbar-grid">
+        <button type="button" class="edit-group-head edit-group-toggle" data-section="toolbar" aria-expanded="true">
+          <span>編集</span><span class="caret">▾</span>
+        </button>
+        <div class="edit-group-body">
+          <div class="edit-toolbar-grid">
           <div class="edit-toolbar-main">
             <button id="btnCopySel" type="button" class="icon-only" aria-label="Copy"><span class="icon">⎘</span></button>
             <button id="btnCutSel" type="button" class="icon-only" aria-label="Cut"><span class="icon">✂</span></button>
@@ -318,20 +325,25 @@
             <button id="btnDeleteToLineStart" type="button" class="line-delete"><span class="icon">⌫|</span>行頭まで削除</button>
             <button id="btnDeleteToLineEnd" type="button" class="line-delete"><span class="icon">|⌦</span>行末まで削除</button>
           </div>
+          </div>
         </div>
       </div>
       <div class="edit-group range-group">
-        <div class="edit-group-head">範囲選択</div>
-        <div class="edit-tools-row">
+        <button type="button" class="edit-group-head edit-group-toggle" data-section="range" aria-expanded="true">
+          <span>範囲選択</span><span class="caret">▾</span>
+        </button>
+        <div class="edit-group-body">
+          <div class="edit-tools-row">
           <button id="btnSelectLine" type="button"><span class="icon">▭</span>行</button>
           <button id="btnSelectPara" type="button"><span class="icon">≡</span>段落</button>
           <button id="btnSelectAll" type="button"><span class="icon">▣</span>全文</button>
         </div>
-        <div class="edit-tools-row">
+          <div class="edit-tools-row">
           <button id="btnExpandUp" type="button"><span class="icon">⇑</span>上に拡張</button>
           <button id="btnExpandDown" type="button"><span class="icon">⇓</span>下に拡張</button>
           <button id="btnShrinkUp" type="button"><span class="icon">⇠</span>上を縮小</button>
           <button id="btnShrinkDown" type="button"><span class="icon">⇢</span>下を縮小</button>
+          </div>
         </div>
       </div>
     </div>

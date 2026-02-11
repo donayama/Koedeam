@@ -35,6 +35,11 @@
     fontSize: 16,
     fontFace: "sans-jp",
     editPanelPosition: "bottom",
+    editPanelSections: {
+      cursor: true,
+      toolbar: true,
+      range: true
+    },
     sidebarTab: "templates",
     toolbar: {
       mic: true,
@@ -113,6 +118,7 @@
       state.settings.voiceInsertMode = "cursor";
       saveSettings();
     }
+    normalizeEditPanelSections();
     ensureDocuments();
     const currentDoc = getCurrentDocument();
     state.draft = currentDoc?.text || state.draft || "";
@@ -123,6 +129,7 @@
     applyTypography();
     applyInstallHints();
     applyEditPanelPosition();
+    applyEditPanelSections();
     applyToolbarVisibility();
     applySidebarTab(state.settings.sidebarTab || "templates");
     applyLayoutState();
@@ -204,6 +211,13 @@
       const next = !state.editToolsVisible;
       setEditToolsVisible(next);
     });
+    if (el.editGroupToggles?.length) {
+      el.editToolsPanel.addEventListener("click", (evt) => {
+        const btn = evt.target.closest(".edit-group-toggle[data-section]");
+        if (!btn) return;
+        toggleEditPanelSection(btn.dataset.section);
+      });
+    }
     el.editToolsPanel.addEventListener("mousedown", (evt) => {
       if (!evt.target.closest("button")) return;
       // Keep editor focus during desktop pointer operations to reduce flicker.
@@ -1962,6 +1976,46 @@
     triggerInput();
   }
 
+  function normalizeEditPanelSections() {
+    const base = { cursor: true, toolbar: true, range: true };
+    const src = state.settings.editPanelSections && typeof state.settings.editPanelSections === "object"
+      ? state.settings.editPanelSections
+      : {};
+    state.settings.editPanelSections = {
+      cursor: src.cursor !== false,
+      toolbar: src.toolbar !== false,
+      range: src.range !== false
+    };
+    // Prevent a state where everything is collapsed.
+    if (!state.settings.editPanelSections.cursor && !state.settings.editPanelSections.toolbar && !state.settings.editPanelSections.range) {
+      state.settings.editPanelSections = base;
+    }
+  }
+
+  function applyEditPanelSections() {
+    if (!el.editToolsPanel) return;
+    normalizeEditPanelSections();
+    el.editGroups.forEach((group) => {
+      const key = group.querySelector(".edit-group-toggle")?.dataset.section;
+      if (!key) return;
+      const expanded = state.settings.editPanelSections[key] !== false;
+      group.classList.toggle("is-collapsed", !expanded);
+      const toggle = group.querySelector(".edit-group-toggle");
+      if (toggle) toggle.setAttribute("aria-expanded", expanded ? "true" : "false");
+    });
+  }
+
+  function toggleEditPanelSection(section) {
+    if (!["cursor", "toolbar", "range"].includes(section)) return;
+    normalizeEditPanelSections();
+    const next = { ...state.settings.editPanelSections, [section]: !state.settings.editPanelSections[section] };
+    if (!next.cursor && !next.toolbar && !next.range) return;
+    state.settings.editPanelSections = next;
+    applyEditPanelSections();
+    saveSettings();
+    requestAnimationFrame(updateEditPanelSize);
+  }
+
   function setEditToolsVisible(on) {
     state.editToolsVisible = !!on;
     if (state.editToolsVisible) {
@@ -1978,6 +2032,7 @@
     }
     el.editToolsPanel.classList.toggle("show", state.editToolsVisible);
     document.body.classList.toggle("edit-tools-show", state.editToolsVisible);
+    applyEditPanelSections();
     applySoftKeyboardSuppression();
     applyEditPanelPosition();
     requestAnimationFrame(updateEditPanelSize);
@@ -2611,6 +2666,8 @@
       btnCloseShare: document.getElementById("btnCloseShare"),
 
       editToolsPanel: document.getElementById("editToolsPanel"),
+      editGroupToggles: Array.from(document.querySelectorAll("#editToolsPanel .edit-group-toggle[data-section]")),
+      editGroups: Array.from(document.querySelectorAll("#editToolsPanel .edit-group")),
       voiceModeRadios: Array.from(document.querySelectorAll("input[name='voiceMode']")),
       btnSelectLine: document.getElementById("btnSelectLine"),
       btnSelectBlock: document.getElementById("btnSelectBlock"),
