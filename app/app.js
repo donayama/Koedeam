@@ -500,12 +500,9 @@
       row.className = "dialog-item compact-item";
       row.innerHTML = `
         <div class="dialog-item-head compact-head">
-          <div class="compact-actions">
-            <button data-act="edit" data-id="${t.id}" type="button" class="icon-only" aria-label="編集"><span class="icon">✎</span></button>
-            <button data-act="delete" data-id="${t.id}" type="button" class="icon-only" aria-label="削除"><span class="icon">🗑</span></button>
-          </div>
+          <button data-act="edit" data-id="${t.id}" type="button" class="icon-only" aria-label="編集"><span class="icon">✎</span></button>
           <strong>${escapeHtml(t.name)}</strong>
-          <small>${new Date(t.updatedAt).toLocaleDateString()}</small>
+          <button data-act="delete" data-id="${t.id}" type="button" class="icon-only compact-delete" aria-label="削除"><span class="icon">🗑</span></button>
         </div>
         <p class="compact-preview">${escapeHtml(preview(t.text))}</p>`;
       row.addEventListener("click", (e) => handleTemplateAction(e));
@@ -526,6 +523,8 @@
       el.templateText.value = item.text;
       openSettings("templates");
     } else if (act === "delete") {
+      const ok = confirm("このテンプレを削除します。よろしいですか？");
+      if (!ok) return;
       state.templates = state.templates.filter((t) => t.id !== id);
       persistTemplates();
       renderTemplates();
