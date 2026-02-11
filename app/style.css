@@ -319,18 +319,28 @@ select {
 .edit-tools.show { display: block; }
 .edit-tools.pos-bottom { left: 0; right: 0; bottom: 70px; }
 .edit-tools.pos-top { left: 0; right: 0; top: 56px; }
-.edit-tools.pos-left { left: 0; top: 56px; bottom: 70px; width: min(320px, 90vw); overflow: auto; }
-.edit-tools.pos-right { right: 0; top: 56px; bottom: 70px; width: min(320px, 90vw); overflow: auto; }
+.edit-tools.pos-left { left: 0; top: 56px; bottom: 70px; width: min(360px, 92vw); overflow: auto; }
+.edit-tools.pos-right { right: 0; top: 56px; bottom: 70px; width: min(360px, 92vw); overflow: auto; }
 .edit-tools.pos-bottom .edit-tools-block,
 .edit-tools.pos-top .edit-tools-block {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
+  grid-template-areas:
+    "cursor"
+    "range"
+    "toolbar";
   gap: 8px;
 }
 .edit-tools.pos-bottom .edit-group,
 .edit-tools.pos-top .edit-group {
   margin-bottom: 0;
 }
+.edit-tools.pos-bottom .edit-group:nth-child(1),
+.edit-tools.pos-top .edit-group:nth-child(1) { grid-area: cursor; }
+.edit-tools.pos-bottom .edit-group:nth-child(2),
+.edit-tools.pos-top .edit-group:nth-child(2) { grid-area: toolbar; }
+.edit-tools.pos-bottom .edit-group:nth-child(3),
+.edit-tools.pos-top .edit-group:nth-child(3) { grid-area: range; }
 .edit-tools.pos-left .edit-tools-block,
 .edit-tools.pos-right .edit-tools-block {
   display: block;
@@ -343,9 +353,22 @@ select {
   .edit-tools.pos-bottom .edit-tools-block,
   .edit-tools.pos-top .edit-tools-block {
     grid-template-columns: 1fr;
+    grid-template-areas:
+      "cursor"
+      "range"
+      "toolbar";
   }
   .edit-toolbar-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+@media (min-width: 900px) {
+  .edit-tools.pos-bottom .edit-tools-block,
+  .edit-tools.pos-top .edit-tools-block {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "cursor range"
+      "toolbar toolbar";
   }
 }
 .edit-tools-head { display:flex; align-items:center; gap: 8px; margin-bottom: 6px; }
@@ -373,6 +396,8 @@ select {
 .line-delete {
   min-height: 40px;
   white-space: nowrap;
+  min-width: 0;
+  font-size: 12px;
 }
 .nav-cluster { display:flex; flex-direction: column; gap: 6px; }
 .nav-row { display:grid; grid-template-columns: 1fr 64px 1fr; gap: 6px; align-items:center; }
@@ -382,9 +407,9 @@ select {
 .edit-row { display: grid; gap: 6px; }
 .edit-row.row-1 {
   grid-template-columns:
-    minmax(52px, 3fr)
-    minmax(40px, 1.5fr)
-    minmax(52px, 3fr);
+    minmax(46px, 2.4fr)
+    minmax(40px, 1.2fr)
+    minmax(46px, 2.4fr);
 }
 .edit-row.row-2 {
   grid-template-columns:
@@ -395,9 +420,9 @@ select {
 }
 .edit-row.row-3 {
   grid-template-columns:
-    minmax(52px, 3fr)
-    minmax(40px, 1.5fr)
-    minmax(52px, 3fr);
+    minmax(46px, 2.4fr)
+    minmax(40px, 1.2fr)
+    minmax(46px, 2.4fr);
 }
 .edit-row button { height: 44px; }
 .nav-wide-2 { justify-content: center; }
@@ -412,7 +437,8 @@ select {
 .edit-row #btnSelectParaNext,
 .edit-row #btnDocStart,
 .edit-row #btnDocEnd {
-  font-size: 13px;
+  font-size: 12px;
+  padding-inline: 6px;
 }
 .edit-tools.pos-left .nav-wide,
 .edit-tools.pos-right .nav-wide {
@@ -433,6 +459,26 @@ select {
   .layout-tablet .edit-tools.pos-top .edit-group:nth-child(2) { grid-area: toolbar; }
   .layout-tablet .edit-tools.pos-bottom .edit-group:nth-child(3),
   .layout-tablet .edit-tools.pos-top .edit-group:nth-child(3) { grid-area: range; }
+
+  .layout-tablet .edit-tools.pos-left,
+  .layout-tablet .edit-tools.pos-right {
+    width: min(640px, 72vw);
+  }
+  .layout-tablet .edit-tools.pos-left .edit-tools-block,
+  .layout-tablet .edit-tools.pos-right .edit-tools-block {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "cursor range"
+      "toolbar toolbar";
+    gap: 8px;
+  }
+  .layout-tablet .edit-tools.pos-left .edit-group:nth-child(1),
+  .layout-tablet .edit-tools.pos-right .edit-group:nth-child(1) { grid-area: cursor; }
+  .layout-tablet .edit-tools.pos-left .edit-group:nth-child(2),
+  .layout-tablet .edit-tools.pos-right .edit-group:nth-child(2) { grid-area: toolbar; }
+  .layout-tablet .edit-tools.pos-left .edit-group:nth-child(3),
+  .layout-tablet .edit-tools.pos-right .edit-group:nth-child(3) { grid-area: range; }
 }
 .icon { font-size: 12px; opacity: .9; margin-right: 6px; display: inline-flex; align-items: center; }
 .btn-icon { display: inline-flex; align-items: center; gap: 6px; }
