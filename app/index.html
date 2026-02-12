@@ -280,6 +280,7 @@
       <div class="edit-mode-switch" role="tablist" aria-label="Edit Panel mode">
         <button id="btnEditModeNavigation" type="button" class="chip active" data-edit-mode="navigation" role="tab" aria-selected="true">Navigation</button>
         <button id="btnEditModeEdit" type="button" class="chip" data-edit-mode="edit" role="tab" aria-selected="false">Edit</button>
+        <button id="btnEditModeAssist" type="button" class="chip" data-edit-mode="assist" role="tab" aria-selected="false">Assist</button>
       </div>
     </div>
     <div class="edit-tools-block">
@@ -331,29 +332,29 @@
             <button id="btnDeleteToLineStart" type="button" class="line-delete"><span class="icon">⌫|</span>行頭まで削除</button>
             <button id="btnDeleteToLineEnd" type="button" class="line-delete"><span class="icon">|⌦</span>行末まで削除</button>
           </div>
-          <div class="chunk-tools-row">
+          <div class="chunk-tools-row" data-edit-mode-group="assist">
             <button id="btnChunkDelete" type="button" class="line-delete"><span class="icon">🧩</span>チャンク削除</button>
             <button id="btnChunkSplit" type="button" class="line-delete"><span class="icon">✂</span>チャンク分割</button>
             <button id="btnChunkMerge" type="button" class="line-delete"><span class="icon">🔗</span>チャンク結合</button>
             <button id="btnChunkFormat" type="button" class="line-delete"><span class="icon">≋</span>チャンク整形</button>
           </div>
-          <div class="telemetry-tools-row">
+          <div class="telemetry-tools-row" data-edit-mode-group="assist">
             <button id="btnTelemetryExportJson" type="button" class="line-delete"><span class="icon">📥</span>Telemetry JSON</button>
             <button id="btnTelemetryCopyJson" type="button" class="line-delete"><span class="icon">📋</span>Telemetry Copy</button>
           </div>
-          <div class="candidate-settings-row">
+          <div class="candidate-settings-row" data-edit-mode-group="assist">
             <label>候補しきい値<input id="candidateThreshold" type="number" min="0" max="1" step="0.05" value="0.65" /></label>
             <label>信頼値なし<select id="candidateNoConfidenceRule"><option value="show">候補表示</option><option value="direct">即採用</option></select></label>
             <label>放置時<select id="candidateIdleBehavior"><option value="auto">自動採用</option><option value="hold">保留</option></select></label>
           </div>
-          <div class="history-settings-row">
+          <div class="history-settings-row" data-edit-mode-group="assist">
             <label>Undo履歴数<input id="undoDepth" type="number" min="1" max="5" step="1" value="3" /></label>
           </div>
-          <div id="candidatePanel" class="candidate-panel hidden" aria-hidden="true">
+          <div id="candidatePanel" class="candidate-panel hidden" aria-hidden="true" data-edit-mode-group="assist">
             <strong>候補選択</strong>
             <div id="candidateList" class="candidate-list"></div>
           </div>
-          <div class="time-menu-wrap">
+          <div class="time-menu-wrap" data-edit-mode-group="assist">
             <button id="btnTimeMenu" type="button" class="line-delete"><span class="icon">🕒</span>Time</button>
             <div id="timeMenuPanel" class="time-menu-panel hidden" aria-hidden="true">
               <div class="time-menu-section">

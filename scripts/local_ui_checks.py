@@ -102,6 +102,7 @@ def run(base_url: str) -> int:
             "btnHeaderSnapshot",
             "btnEditModeNavigation",
             "btnEditModeEdit",
+            "btnEditModeAssist",
             "btnTimeMenu",
             "timeMenuPanel",
             "btnChunkDelete",
@@ -155,7 +156,7 @@ def run(base_url: str) -> int:
             failures.append("keyboard proxy: could not parse computed bottom values")
 
 
-        # 2.5) Edit Panel mode split (Navigation / Edit)
+        # 2.5) Edit Panel mode split (Navigation / Edit / Assist)
         page.click("#btnEditModeEdit")
         page.wait_for_timeout(50)
         mode_state = page.evaluate(
@@ -185,8 +186,23 @@ def run(base_url: str) -> int:
         if nav_state["editHidden"] < 1:
             failures.append("edit mode: edit group is not hidden in navigation mode")
 
+        page.click("#btnEditModeAssist")
+        page.wait_for_timeout(50)
+        assist_state = page.evaluate(
+            """() => ({
+              assistVisible: document.querySelectorAll('#editToolsPanel [data-edit-mode-group="assist"]:not(.mode-hidden)').length,
+              navHidden: document.querySelectorAll('#editToolsPanel [data-edit-mode-group="navigation"].mode-hidden').length,
+              navTotal: document.querySelectorAll('#editToolsPanel [data-edit-mode-group="navigation"]').length
+            })"""
+        )
+        report["edit_mode_assist"] = assist_state
+        if assist_state["assistVisible"] < 1:
+            failures.append("edit mode: assist tools are not visible in assist mode")
+        if assist_state["navHidden"] != assist_state["navTotal"]:
+            failures.append("edit mode: navigation groups are not hidden in assist mode")
+
         # 2.6) Time menu insert/expand behavior
-        page.click("#btnEditModeEdit")
+        page.click("#btnEditModeAssist")
         page.evaluate(
             """() => {
               const ta = document.getElementById('editor');
@@ -226,11 +242,11 @@ def run(base_url: str) -> int:
             failures.append("time menu: insert-datetime did not insert token")
 
         # 2.7) Chunk operations (delete/split/merge/format)
-        page.click("#btnEditModeEdit")
+        page.click("#btnEditModeAssist")
         page.evaluate(
             """() => {
               const ta = document.getElementById('editor');
-              ta.value = 'A\n\n――\n\nB';
+              ta.value = 'A\\n\\n――\\n\\nB';
               const pos = ta.value.length;
               ta.focus();
               ta.setSelectionRange(pos, pos);
@@ -259,7 +275,7 @@ def run(base_url: str) -> int:
         page.evaluate(
             """() => {
               const ta = document.getElementById('editor');
-              ta.value = 'A\n\n――\n\nB';
+              ta.value = 'A\\n\\n――\\n\\nB';
               ta.focus();
               ta.setSelectionRange(ta.value.length, ta.value.length);
             }"""
@@ -285,13 +301,14 @@ def run(base_url: str) -> int:
             failures.append("chunk: format did not normalize chunk text")
 
         # 2.75) Undo/Redo restore (including selection)
-        page.click("#btnEditModeEdit")
+        page.click("#btnEditModeAssist")
         page.evaluate(
             """() => {
               const ta = document.getElementById('editor');
               ta.value = 'ABC';
               ta.focus();
               ta.setSelectionRange(1, 2);
+              ta.dispatchEvent(new Event('input', { bubbles: true }));
               ta.setRangeText('XX', 1, 2, 'select');
               ta.dispatchEvent(new Event('input', { bubbles: true }));
             }"""

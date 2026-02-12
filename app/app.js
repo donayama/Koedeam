@@ -285,6 +285,16 @@
     if (el.btnEditModeEdit) {
       el.btnEditModeEdit.addEventListener("click", () => setEditPanelMode("edit"));
     }
+    if (el.btnEditModeAssist) {
+      el.btnEditModeAssist.addEventListener("click", () => setEditPanelMode("assist"));
+    }
+    if (el.editToolsPanel) {
+      el.editToolsPanel.addEventListener("click", (evt) => {
+        const btn = evt.target.closest("button[data-edit-mode]");
+        if (!btn) return;
+        setEditPanelMode(btn.dataset.editMode || "navigation");
+      });
+    }
     el.editToolsPanel.addEventListener("mousedown", (evt) => {
       if (!evt.target.closest("button")) return;
       // Keep editor focus during desktop pointer operations to reduce flicker.
@@ -2721,12 +2731,17 @@
   }
 
   function applyEditPanelMode() {
-    const mode = state.editPanelMode === "edit" ? "edit" : "navigation";
+    const mode = ["navigation", "edit", "assist"].includes(state.editPanelMode) ? state.editPanelMode : "navigation";
     state.editPanelMode = mode;
-    el.editGroups.forEach((group) => {
-      const groupMode = group.dataset.editModeGroup || "navigation";
-      group.classList.toggle("mode-hidden", groupMode !== mode);
-    });
+    const applyModeClass = (node) => {
+      const groupMode = node.dataset.editModeGroup || "navigation";
+      const isToolbarGroup = node.classList?.contains("toolbar-group");
+      const isEditOrAssist = mode === "edit" || mode === "assist";
+      const visible = isToolbarGroup ? isEditOrAssist : groupMode === mode;
+      node.classList.toggle("mode-hidden", !visible);
+    };
+    el.editGroups.forEach(applyModeClass);
+    document.querySelectorAll("#editToolsPanel [data-edit-mode-group]").forEach(applyModeClass);
     if (el.btnEditModeNavigation) {
       const active = mode === "navigation";
       el.btnEditModeNavigation.classList.toggle("active", active);
@@ -2737,13 +2752,18 @@
       el.btnEditModeEdit.classList.toggle("active", active);
       el.btnEditModeEdit.setAttribute("aria-selected", active ? "true" : "false");
     }
+    if (el.btnEditModeAssist) {
+      const active = mode === "assist";
+      el.btnEditModeAssist.classList.toggle("active", active);
+      el.btnEditModeAssist.setAttribute("aria-selected", active ? "true" : "false");
+    }
     requestAnimationFrame(updateEditPanelSize);
   }
 
   function setEditPanelMode(mode) {
-    if (!["navigation", "edit"].includes(mode)) return;
+    if (!["navigation", "edit", "assist"].includes(mode)) return;
     state.editPanelMode = mode;
-    if (mode !== "edit") {
+    if (mode !== "assist") {
       setTimeMenuOpen(false);
       hideCandidatePanel();
     }
@@ -3418,6 +3438,7 @@
       editToolsPanel: document.getElementById("editToolsPanel"),
       btnEditModeNavigation: document.getElementById("btnEditModeNavigation"),
       btnEditModeEdit: document.getElementById("btnEditModeEdit"),
+      btnEditModeAssist: document.getElementById("btnEditModeAssist"),
       editGroupToggles: Array.from(document.querySelectorAll("#editToolsPanel .edit-group-toggle[data-section]")),
       editGroups: Array.from(document.querySelectorAll("#editToolsPanel .edit-group")),
       voiceModeRadios: Array.from(document.querySelectorAll("input[name='voiceMode']")),
