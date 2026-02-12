@@ -9,6 +9,7 @@
     settings: "koedeam.settings"
   };
   const MAX_SHARE_SHORTCUTS = 8;
+  const CHUNK_SEPARATOR = "\n\n――\n\n";
 
   const DEFAULT_TEMPLATES = [
     { id: uid(), name: "AI整理依頼", text: "次のメモを、目的・要点・次アクションの3項目で整理してください。\n\n[メモ]\n", updatedAt: Date.now() },
@@ -68,7 +69,14 @@
     ],
     documents: [],
     currentDocId: "",
-    ui: { sidebar: false }
+    ui: { sidebar: false },
+    candidate: {
+      threshold: 0.65,
+      noConfidenceRule: "show",
+      idleBehavior: "auto",
+      idleMs: 3500
+    },
+    undoDepth: 3
   };
 
   const state = {
@@ -94,7 +102,33 @@
     layoutMode: "MOBILE",
     overflowedTools: [],
     isComposing: false,
-    deferredInstallPrompt: null
+    deferredInstallPrompt: null,
+    voiceSessionState: "STOPPED",
+    voiceRestartTimer: null,
+    voiceRestartAttempt: 0,
+    voiceManualStop: false,
+    stopVoiceInput: null,
+    editPanelMode: "navigation",
+    timeMenuOpen: false,
+    telemetry: {
+      events: [],
+      sessions: [],
+      activeSession: null,
+      maxSessions: 200
+    },
+    candidateState: {
+      list: [],
+      timer: null,
+      pending: null
+    },
+    history: {
+      undoStack: [],
+      redoStack: [],
+      typingTimer: null,
+      applying: false,
+      maxDepth: 3
+    },
+    nextInputReason: ""
   };
 
   const el = getElements();
@@ -118,6 +152,13 @@
       state.settings.voiceInsertMode = "cursor";
       saveSettings();
     }
+    if (!state.settings.candidate || typeof state.settings.candidate !== "object") {
+      state.settings.candidate = { ...DEFAULT_SETTINGS.candidate };
+      saveSettings();
+    }
+    state.settings.undoDepth = Number.isFinite(Number(state.settings.undoDepth))
+      ? Math.max(1, Math.min(5, Number(state.settings.undoDepth)))
+      : DEFAULT_SETTINGS.undoDepth;
     normalizeEditPanelSections();
     ensureDocuments();
     const currentDoc = getCurrentDocument();
@@ -130,6 +171,9 @@
     applyInstallHints();
     applyEditPanelPosition();
     applyEditPanelSections();
+    applyEditPanelMode();
+    applyCandidateSettingsUI();
+    applyUndoSettingsUI();
     applyToolbarVisibility();
     applySidebarTab(state.settings.sidebarTab || "templates");
     applyLayoutState();
@@ -149,6 +193,7 @@
     setupInstallPrompt();
     setupVersionPolling();
     setupViewportWatcher();
+    seedUndoState();
   }
 
   function bindEvents() {
@@ -157,6 +202,8 @@
       if (el.menuOverlay && !el.menuOverlay.classList.contains("hidden")) closeMenu();
     };
     el.editor.addEventListener("input", () => {
+      const inputReason = state.nextInputReason || "typing";
+      state.nextInputReason = "";
       if (!canType()) return;
       if (saveTimer) clearTimeout(saveTimer);
       el.saveStatus.textContent = "Typing...";
@@ -169,6 +216,10 @@
         el.saveStatus.textContent = "Saved";
         applySystemState(navigator.onLine ? "LOCAL" : "OFFLINE");
       }, 800);
+      if (!state.history.applying) {
+        if (inputReason === "typing") scheduleTypingHistoryCommit();
+        else pushUndoSnapshot(inputReason);
+      }
       updateCaretUI();
     });
     el.editor.addEventListener("compositionstart", () => {
@@ -184,6 +235,16 @@
       if (!canType()) evt.preventDefault();
     });
     el.editor.addEventListener("keydown", (evt) => {
+      if ((evt.metaKey || evt.ctrlKey) && !evt.shiftKey && evt.key.toLowerCase() === "z") {
+        evt.preventDefault();
+        undoEdit();
+        return;
+      }
+      if ((evt.metaKey || evt.ctrlKey) && (evt.key.toLowerCase() === "y" || (evt.shiftKey && evt.key.toLowerCase() === "z"))) {
+        evt.preventDefault();
+        redoEdit();
+        return;
+      }
       if (!canType() && !evt.metaKey && !evt.ctrlKey) evt.preventDefault();
     });
     el.editor.addEventListener("click", updateCaretUI);
@@ -218,6 +279,12 @@
         toggleEditPanelSection(btn.dataset.section);
       });
     }
+    if (el.btnEditModeNavigation) {
+      el.btnEditModeNavigation.addEventListener("click", () => setEditPanelMode("navigation"));
+    }
+    if (el.btnEditModeEdit) {
+      el.btnEditModeEdit.addEventListener("click", () => setEditPanelMode("edit"));
+    }
     el.editToolsPanel.addEventListener("mousedown", (evt) => {
       if (!evt.target.closest("button")) return;
       // Keep editor focus during desktop pointer operations to reduce flicker.
@@ -227,6 +294,11 @@
       if (!evt.target.closest("button, .btn-icon, .nav-pad, .nav-wide, .chip, .tab-btn")) return;
       evt.preventDefault();
     }, { passive: false });
+    document.addEventListener("pointerdown", (evt) => {
+      if (!state.timeMenuOpen) return;
+      if (evt.target.closest("#timeMenuPanel, #btnTimeMenu")) return;
+      setTimeMenuOpen(false);
+    });
     if (el.btnSettings) {
       el.btnSettings.addEventListener("click", () => {
         closeMenuIfOpen();
@@ -435,6 +507,62 @@
     el.btnComma.addEventListener("click", () => insertPunctuation("comma"));
     el.btnPeriod.addEventListener("click", () => insertPunctuation("period"));
     el.btnNewline.addEventListener("click", () => insertTextAtCursor("\n"));
+    if (el.btnTimeMenu) {
+      el.btnTimeMenu.addEventListener("click", () => toggleTimeMenu());
+    }
+    if (el.timeMenuPanel) {
+      el.timeMenuPanel.addEventListener("click", (evt) => {
+        const btn = evt.target.closest("button[data-time-action]");
+        if (!btn) return;
+        runTimeMenuAction(btn.dataset.timeAction || "");
+      });
+    }
+    if (el.btnChunkDelete) el.btnChunkDelete.addEventListener("click", deleteCurrentChunk);
+    if (el.btnChunkSplit) el.btnChunkSplit.addEventListener("click", splitCurrentChunk);
+    if (el.btnChunkMerge) el.btnChunkMerge.addEventListener("click", mergeCurrentChunk);
+    if (el.btnChunkFormat) el.btnChunkFormat.addEventListener("click", formatCurrentChunk);
+    if (el.btnTelemetryExportJson) el.btnTelemetryExportJson.addEventListener("click", exportTelemetryJson);
+    if (el.btnTelemetryCopyJson) el.btnTelemetryCopyJson.addEventListener("click", copyTelemetryJson);
+    if (el.btnUndo) el.btnUndo.addEventListener("click", undoEdit);
+    if (el.btnRedo) el.btnRedo.addEventListener("click", redoEdit);
+    if (el.undoDepth) {
+      el.undoDepth.addEventListener("change", () => {
+        const depth = Number(el.undoDepth.value);
+        state.settings.undoDepth = Number.isFinite(depth) ? Math.max(1, Math.min(5, depth)) : 3;
+        state.history.maxDepth = state.settings.undoDepth;
+        trimUndoStack();
+        applyUndoSettingsUI();
+        saveSettings();
+      });
+    }
+    if (el.candidateThreshold) {
+      el.candidateThreshold.addEventListener("change", () => {
+        const v = Number(el.candidateThreshold.value);
+        state.settings.candidate.threshold = Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : 0.65;
+        applyCandidateSettingsUI();
+        saveSettings();
+      });
+    }
+    if (el.candidateNoConfidenceRule) {
+      el.candidateNoConfidenceRule.addEventListener("change", () => {
+        state.settings.candidate.noConfidenceRule = el.candidateNoConfidenceRule.value === "direct" ? "direct" : "show";
+        saveSettings();
+      });
+    }
+    if (el.candidateIdleBehavior) {
+      el.candidateIdleBehavior.addEventListener("change", () => {
+        state.settings.candidate.idleBehavior = el.candidateIdleBehavior.value === "hold" ? "hold" : "auto";
+        saveSettings();
+      });
+    }
+    if (el.candidateList) {
+      el.candidateList.addEventListener("click", (evt) => {
+        const btn = evt.target.closest("button[data-candidate-index]");
+        if (!btn) return;
+        const idx = Number(btn.dataset.candidateIndex || "0");
+        applyCandidateSelection(idx);
+      });
+    }
     el.btnCopySel.addEventListener("click", copySelection);
     el.btnCutSel.addEventListener("click", cutSelection);
     el.btnPasteSel.addEventListener("click", pasteClipboard);
@@ -449,7 +577,7 @@
         applyVoiceModeUI();
         if (state.speaking) {
           if (next === "off") {
-            state.recognition?.stop();
+            state.stopVoiceInput?.();
           } else {
             applyInputState(next === "append" ? "VOICE_APPEND" : "VOICE_LOCKED");
           }
@@ -464,7 +592,7 @@
         applyVoiceModeUI();
         if (state.speaking) {
           if (radio.value === "off") {
-            state.recognition?.stop();
+            state.stopVoiceInput?.();
           } else {
             applyInputState(radio.value === "append" ? "VOICE_APPEND" : "VOICE_LOCKED");
           }
@@ -1353,6 +1481,76 @@
     });
   }
 
+  function applyCandidateSettingsUI() {
+    const c = state.settings.candidate || DEFAULT_SETTINGS.candidate;
+    state.settings.candidate = {
+      threshold: Number.isFinite(Number(c.threshold)) ? Math.max(0, Math.min(1, Number(c.threshold))) : 0.65,
+      noConfidenceRule: c.noConfidenceRule === "direct" ? "direct" : "show",
+      idleBehavior: c.idleBehavior === "hold" ? "hold" : "auto",
+      idleMs: Number.isFinite(Number(c.idleMs)) ? Math.max(1000, Number(c.idleMs)) : 3500
+    };
+    if (el.candidateThreshold) el.candidateThreshold.value = String(state.settings.candidate.threshold);
+    if (el.candidateNoConfidenceRule) el.candidateNoConfidenceRule.value = state.settings.candidate.noConfidenceRule;
+    if (el.candidateIdleBehavior) el.candidateIdleBehavior.value = state.settings.candidate.idleBehavior;
+  }
+
+  function clearCandidateTimer() {
+    if (!state.candidateState.timer) return;
+    clearTimeout(state.candidateState.timer);
+    state.candidateState.timer = null;
+  }
+
+  function hideCandidatePanel() {
+    clearCandidateTimer();
+    state.candidateState.pending = null;
+    state.candidateState.list = [];
+    if (!el.candidatePanel || !el.candidateList) return;
+    el.candidatePanel.classList.add("hidden");
+    el.candidatePanel.setAttribute("aria-hidden", "true");
+    el.candidateList.innerHTML = "";
+  }
+
+  function renderCandidatePanel(items) {
+    state.candidateState.list = items.slice(0, 3);
+    if (!el.candidatePanel || !el.candidateList) return;
+    el.candidatePanel.classList.remove("hidden");
+    el.candidatePanel.setAttribute("aria-hidden", "false");
+    el.candidateList.innerHTML = state.candidateState.list.map((c, i) => {
+      const rank = ["①", "②", "③"][i] || `${i + 1}.`;
+      const cf = Number.isFinite(c.confidence) ? ` (${Math.round(c.confidence * 100)}%)` : "";
+      return `<button type="button" data-candidate-index="${i}">${rank} ${escapeHtml(c.text)}${cf}</button>`;
+    }).join("");
+  }
+
+  function applyCandidateSelection(index) {
+    const pending = state.candidateState.pending;
+    if (!pending) return;
+    const item = state.candidateState.list[index] || state.candidateState.list[0];
+    if (!item) return;
+    insertByVoiceMode(item.text);
+    hideCandidatePanel();
+  }
+
+  function shouldShowCandidates(candidates) {
+    if (!candidates || candidates.length <= 1) return false;
+    const top = candidates[0];
+    if (!Number.isFinite(top.confidence)) {
+      return state.settings.candidate.noConfidenceRule !== "direct";
+    }
+    return top.confidence < Number(state.settings.candidate.threshold || 0.65);
+  }
+
+  function queueCandidateSelection(candidates) {
+    state.candidateState.pending = { at: Date.now() };
+    renderCandidatePanel(candidates);
+    clearCandidateTimer();
+    if (state.settings.candidate.idleBehavior === "auto") {
+      state.candidateState.timer = setTimeout(() => {
+        applyCandidateSelection(0);
+      }, Number(state.settings.candidate.idleMs || 3500));
+    }
+  }
+
   function setupSpeech() {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) {
@@ -1364,26 +1562,186 @@
     state.recognition = recognition;
     recognition.lang = "ja-JP";
     recognition.interimResults = true;
-    recognition.continuous = true;
+    recognition.continuous = false;
 
-    let finalText = "";
+    const clearRestartTimer = () => {
+      if (!state.voiceRestartTimer) return;
+      clearTimeout(state.voiceRestartTimer);
+      state.voiceRestartTimer = null;
+    };
+
+    const applyVoiceSessionState = (next) => {
+      state.voiceSessionState = next;
+      updateStatusIndicator();
+    };
+
+    const sessionRecord = (eventName, payload = {}) => {
+      const ts = new Date().toISOString();
+      const docId = state.settings.currentDocId || "";
+      const base = {
+        ts,
+        sessionId: state.telemetry.activeSession?.id || "",
+        docId,
+        layout: state.layoutMode,
+        primaryState: state.primary,
+        inputState: state.input,
+        event: eventName
+      };
+      const item = { ...base, ...payload };
+      state.telemetry.events.push(item);
+      if (state.telemetry.events.length > 2000) {
+        state.telemetry.events.splice(0, state.telemetry.events.length - 2000);
+      }
+    };
+
+    const startTelemetrySession = () => {
+      const id = `voice-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+      state.telemetry.activeSession = {
+        id,
+        startedAt: Date.now(),
+        firstInterimAt: null,
+        firstFinalAt: null,
+        endedAt: null,
+        restartScheduledAt: null,
+        restartStartedAt: null
+      };
+      state.telemetry.sessions.push(state.telemetry.activeSession);
+      if (state.telemetry.sessions.length > state.telemetry.maxSessions) {
+        state.telemetry.sessions.splice(0, state.telemetry.sessions.length - state.telemetry.maxSessions);
+      }
+      sessionRecord("voice.onstart");
+    };
+
+    const closeTelemetrySession = (reason) => {
+      const session = state.telemetry.activeSession;
+      if (!session) return;
+      session.endedAt = Date.now();
+      sessionRecord("voice.onend", { reason: reason || "end" });
+      state.telemetry.activeSession = null;
+    };
+
+    const canAutoRestart = () => {
+      if (!state.speaking) return false;
+      if (state.primary !== "EDIT") return false;
+      if (state.settings.voiceInsertMode === "off") return false;
+      return true;
+    };
+
+    const requestStopVoice = () => {
+      clearRestartTimer();
+      state.voiceManualStop = true;
+      state.speaking = false;
+      applyVoiceSessionState("STOPPED");
+      sessionRecord("voice.stop.requested", { reason: "manual" });
+      recognition.stop();
+    };
+
+    const scheduleRestart = (reason) => {
+      if (!canAutoRestart()) {
+        state.speaking = false;
+        applyVoiceSessionState("STOPPED");
+        applyInputState("VOICE_OFF");
+        el.btnMic.innerHTML = '<span class="icon">🎤</span>音声入力';
+        return;
+      }
+      clearRestartTimer();
+      applyVoiceSessionState("RESTART_WAIT");
+      if (state.telemetry.activeSession) state.telemetry.activeSession.restartScheduledAt = Date.now();
+      sessionRecord("voice.restart.scheduled", { cause: reason, delayMs: reason === "no-speech" ? 300 : 650 });
+      state.voiceRestartTimer = setTimeout(() => {
+        state.voiceRestartTimer = null;
+        if (!canAutoRestart()) return;
+        try {
+          state.voiceRestartAttempt += 1;
+          applyVoiceSessionState("PERMISSION_WAIT");
+          if (state.telemetry.activeSession) state.telemetry.activeSession.restartStartedAt = Date.now();
+          sessionRecord("voice.restart.started", { attempt: state.voiceRestartAttempt });
+          recognition.start();
+        } catch {
+          toast("音声入力の再開に失敗しました");
+          state.speaking = false;
+          applyVoiceSessionState("STOPPED");
+          applyInputState("VOICE_OFF");
+          el.btnMic.innerHTML = '<span class="icon">🎤</span>音声入力';
+        }
+      }, reason === "no-speech" ? 300 : 650);
+    };
+
     recognition.addEventListener("result", (event) => {
-      finalText = "";
       for (let i = event.resultIndex; i < event.results.length; i += 1) {
         const result = event.results[i];
-        if (result.isFinal) finalText += result[0].transcript;
+        const session = state.telemetry.activeSession;
+        if (!result.isFinal && session && session.firstInterimAt == null) {
+          session.firstInterimAt = Date.now();
+        }
+        sessionRecord(result.isFinal ? "voice.onresult.final" : "voice.onresult.interim", {
+          resultIndex: i,
+          charLen: `${result[0]?.transcript || ""}`.length
+        });
+        if (!result.isFinal) continue;
+        const candidates = [];
+        for (let j = 0; j < Math.min(3, result.length || 0); j += 1) {
+          const alt = result[j];
+          candidates.push({
+            text: `${alt?.transcript || ""}`.trim(),
+            confidence: Number.isFinite(alt?.confidence) ? Number(alt.confidence) : null
+          });
+        }
+        const filtered = candidates.filter((c) => c.text);
+        if (!filtered.length) continue;
+        if (session && session.firstFinalAt == null) session.firstFinalAt = Date.now();
+        if (shouldShowCandidates(filtered)) {
+          queueCandidateSelection(filtered);
+        } else {
+          insertByVoiceMode(filtered[0].text);
+        }
       }
-      if (finalText) insertByVoiceMode(finalText);
+    });
+    recognition.addEventListener("start", () => {
+      state.voiceRestartAttempt = 0;
+      applyVoiceSessionState("RUNNING");
+      state.speaking = true;
+      startTelemetrySession();
+      el.btnMic.innerHTML = '<span class="icon">■</span>停止';
+      applyInputState(state.settings.voiceInsertMode === "append" ? "VOICE_APPEND" : "VOICE_LOCKED");
+    });
+    recognition.addEventListener("error", (event) => {
+      const err = event?.error || "unknown";
+      sessionRecord("voice.onerror", { error: err });
+      if (err === "aborted" && state.voiceManualStop) {
+        return;
+      }
+      if (err === "no-speech" || err === "network" || err === "audio-capture") {
+        scheduleRestart(err);
+        return;
+      }
+      toast(`音声入力エラー: ${err}`);
+      state.speaking = false;
+      clearRestartTimer();
+      applyVoiceSessionState("STOPPED");
+      applyInputState("VOICE_OFF");
+      closeTelemetrySession("error");
+      el.btnMic.innerHTML = '<span class="icon">🎤</span>音声入力';
     });
     recognition.addEventListener("end", () => {
-      state.speaking = false;
-      el.btnMic.innerHTML = '<span class="icon">🎤</span>音声入力';
-      applyInputState("VOICE_OFF");
+      if (state.voiceManualStop) {
+        state.voiceManualStop = false;
+        state.speaking = false;
+        applyVoiceSessionState("STOPPED");
+        el.btnMic.innerHTML = '<span class="icon">🎤</span>音声入力';
+        applyInputState("VOICE_OFF");
+        hideCandidatePanel();
+        closeTelemetrySession("manual");
+        return;
+      }
+      hideCandidatePanel();
+      closeTelemetrySession("auto-end");
+      scheduleRestart("end");
     });
 
     el.btnMic.addEventListener("click", () => {
       if (state.speaking) {
-        recognition.stop();
+        requestStopVoice();
         return;
       }
       if (state.settings.voiceInsertMode === "off") {
@@ -1391,39 +1749,151 @@
         return;
       }
       try {
+        clearRestartTimer();
+        applyVoiceSessionState("PERMISSION_WAIT");
+        state.voiceManualStop = false;
         recognition.start();
-        state.speaking = true;
-        el.btnMic.innerHTML = '<span class="icon">■</span>停止';
-        applyInputState(state.settings.voiceInsertMode === "append" ? "VOICE_APPEND" : "VOICE_LOCKED");
       } catch {
+        applyVoiceSessionState("STOPPED");
         toast("音声入力を開始できませんでした");
       }
     });
+
+    state.stopVoiceInput = requestStopVoice;
+  }
+
+  function splitChunks(text) {
+    if (!text) return [""];
+    return String(text).split(CHUNK_SEPARATOR);
+  }
+
+  function joinChunks(chunks) {
+    return chunks.join(CHUNK_SEPARATOR);
+  }
+
+  function getChunkIndexAtCursor(text, cursorPos) {
+    const chunks = splitChunks(text);
+    let offset = 0;
+    for (let i = 0; i < chunks.length; i += 1) {
+      const end = offset + chunks[i].length;
+      if (cursorPos <= end) return i;
+      offset = end + CHUNK_SEPARATOR.length;
+    }
+    return chunks.length - 1;
+  }
+
+  function getChunkCursorOffset(text, cursorPos, chunkIndex) {
+    const chunks = splitChunks(text);
+    let offset = 0;
+    for (let i = 0; i < chunkIndex; i += 1) {
+      offset += chunks[i].length + CHUNK_SEPARATOR.length;
+    }
+    return Math.max(0, Math.min(chunks[chunkIndex].length, cursorPos - offset));
+  }
+
+  function applyChunksAndSelection(chunks, chunkIndex, inChunkOffset) {
+    const normalized = chunks.map((chunk) => String(chunk));
+    const value = joinChunks(normalized);
+    el.editor.value = value;
+    const idx = Math.max(0, Math.min(normalized.length - 1, chunkIndex));
+    let cursor = 0;
+    for (let i = 0; i < idx; i += 1) {
+      cursor += normalized[i].length + CHUNK_SEPARATOR.length;
+    }
+    cursor += Math.max(0, Math.min(normalized[idx].length, inChunkOffset));
+    el.editor.setSelectionRange(cursor, cursor);
+    triggerInput("voice-final");
+    updateCaretUI();
+  }
+
+  function insertVoiceChunk(text) {
+    const mode = state.settings.voiceInsertMode;
+    if (mode === "off") return;
+    const cleaned = String(text || "").trim();
+    if (!cleaned) return;
+    const source = el.editor.value || "";
+    const chunks = splitChunks(source);
+    if (chunks.length === 1 && !chunks[0]) {
+      chunks[0] = cleaned;
+      applyChunksAndSelection(chunks, 0, cleaned.length);
+      return;
+    }
+    if (mode === "append") {
+      chunks.push(cleaned);
+      applyChunksAndSelection(chunks, chunks.length - 1, cleaned.length);
+      return;
+    }
+    const pos = el.editor.selectionStart;
+    const idx = getChunkIndexAtCursor(source, pos);
+    chunks.splice(idx + 1, 0, cleaned);
+    applyChunksAndSelection(chunks, idx + 1, cleaned.length);
+  }
+
+  function getActiveChunkContext() {
+    const value = el.editor.value || "";
+    const chunks = splitChunks(value);
+    const cursorPos = el.editor.selectionStart;
+    const idx = getChunkIndexAtCursor(value, cursorPos);
+    const inOffset = getChunkCursorOffset(value, cursorPos, idx);
+    return { value, chunks, idx, inOffset };
+  }
+
+  function deleteCurrentChunk() {
+    focusEditorForEditAction();
+    const { chunks, idx } = getActiveChunkContext();
+    if (chunks.length <= 1) {
+      el.editor.value = "";
+      el.editor.setSelectionRange(0, 0);
+      triggerInput();
+      return;
+    }
+    chunks.splice(idx, 1);
+    const next = Math.max(0, idx - 1);
+    applyChunksAndSelection(chunks, next, chunks[next].length);
+  }
+
+  function splitCurrentChunk() {
+    focusEditorForEditAction();
+    const { chunks, idx, inOffset } = getActiveChunkContext();
+    const current = chunks[idx] || "";
+    if (inOffset <= 0 || inOffset >= current.length) {
+      toast("チャンク内の中間位置で分割してください");
+      return;
+    }
+    const left = current.slice(0, inOffset);
+    const right = current.slice(inOffset);
+    chunks.splice(idx, 1, left, right);
+    applyChunksAndSelection(chunks, idx + 1, 0);
+  }
+
+  function mergeCurrentChunk() {
+    focusEditorForEditAction();
+    const { chunks, idx } = getActiveChunkContext();
+    if (idx <= 0) {
+      toast("先頭チャンクは結合できません");
+      return;
+    }
+    chunks[idx - 1] = `${chunks[idx - 1]} ${chunks[idx]}`.trim();
+    chunks.splice(idx, 1);
+    applyChunksAndSelection(chunks, idx - 1, chunks[idx - 1].length);
+  }
+
+  function formatCurrentChunk() {
+    focusEditorForEditAction();
+    const { chunks, idx, inOffset } = getActiveChunkContext();
+    const before = chunks[idx] || "";
+    const formatted = before
+      .split("\n")
+      .map((line) => line.trim())
+      .join("\n")
+      .replace(/[ \t]{2,}/g, " ")
+      .trim();
+    chunks[idx] = formatted;
+    applyChunksAndSelection(chunks, idx, Math.min(inOffset, formatted.length));
   }
 
   function insertByVoiceMode(text) {
-    const mode = state.settings.voiceInsertMode;
-    if (mode === "off") return;
-    if (mode === "append") {
-      const ta = el.editor;
-      const hadFocus = document.activeElement === ta;
-      const prevStart = ta.selectionStart;
-      const prevEnd = ta.selectionEnd;
-      const prevScrollTop = ta.scrollTop;
-      const prevScrollLeft = ta.scrollLeft;
-      const insertAt = ta.value.length;
-      const sep = ta.value && !ta.value.endsWith("\n") ? "\n" : "";
-      ta.setRangeText(`${sep}${text}`, insertAt, insertAt, "preserve");
-      if (hadFocus) {
-        ta.setSelectionRange(prevStart, prevEnd);
-        ta.scrollTop = prevScrollTop;
-        ta.scrollLeft = prevScrollLeft;
-      }
-    } else {
-      const { selectionStart, selectionEnd } = el.editor;
-      el.editor.setRangeText(text, selectionStart, selectionEnd, "end");
-    }
-    triggerInput();
+    insertVoiceChunk(text);
   }
 
   function setupServiceWorker() {
@@ -1514,7 +1984,7 @@
     document.body.classList.remove("primary-edit", "primary-search", "primary-manage", "primary-config");
     document.body.classList.add(`primary-${next.toLowerCase()}`);
     if (next !== "EDIT" && state.speaking && state.recognition) {
-      state.recognition.stop();
+      state.stopVoiceInput?.();
     }
     enforceKeyboardPolicy();
     updateStatusIndicator();
@@ -1616,6 +2086,7 @@
     if (!el.statusPrimary) return;
     el.statusPrimary.textContent = state.primary;
     el.statusInput.textContent = state.input.replaceAll("_", ":");
+    el.statusInput.title = `voice-session:${state.voiceSessionState}`;
     el.statusSystem.textContent = state.system;
     el.statusLayout.textContent = state.layoutMode;
     el.statusInput.classList.toggle("input-locked", state.input === "VOICE_LOCKED");
@@ -1644,7 +2115,101 @@
     }
   }
 
-  function triggerInput() {
+  function captureEditorState() {
+    return {
+      value: el.editor.value,
+      selectionStart: el.editor.selectionStart,
+      selectionEnd: el.editor.selectionEnd,
+      scrollTop: el.editor.scrollTop,
+      scrollLeft: el.editor.scrollLeft
+    };
+  }
+
+  function statesEqual(a, b) {
+    if (!a || !b) return false;
+    return a.value === b.value
+      && a.selectionStart === b.selectionStart
+      && a.selectionEnd === b.selectionEnd;
+  }
+
+  function trimUndoStack() {
+    const maxDepth = Math.max(1, Math.min(5, Number(state.settings.undoDepth || 3)));
+    state.history.maxDepth = maxDepth;
+    if (state.history.undoStack.length > maxDepth) {
+      state.history.undoStack.splice(0, state.history.undoStack.length - maxDepth);
+    }
+  }
+
+  function pushUndoSnapshot(reason) {
+    const next = captureEditorState();
+    const last = state.history.undoStack[state.history.undoStack.length - 1];
+    if (statesEqual(last, next)) return;
+    state.history.undoStack.push(next);
+    trimUndoStack();
+    state.history.redoStack = [];
+    el.btnUndo?.toggleAttribute("disabled", state.history.undoStack.length <= 1);
+    el.btnRedo?.toggleAttribute("disabled", state.history.redoStack.length === 0);
+  }
+
+  function scheduleTypingHistoryCommit() {
+    if (state.history.typingTimer) clearTimeout(state.history.typingTimer);
+    state.history.typingTimer = setTimeout(() => {
+      state.history.typingTimer = null;
+      pushUndoSnapshot("typing");
+    }, 450);
+  }
+
+  function applyEditorState(snapshot) {
+    if (!snapshot) return;
+    state.history.applying = true;
+    el.editor.value = snapshot.value;
+    requestAnimationFrame(() => {
+      el.editor.setSelectionRange(snapshot.selectionStart, snapshot.selectionEnd);
+      el.editor.scrollTop = snapshot.scrollTop;
+      el.editor.scrollLeft = snapshot.scrollLeft;
+      triggerInput("undo");
+      state.history.applying = false;
+      updateCaretUI();
+    });
+  }
+
+  function seedUndoState() {
+    state.history.undoStack = [captureEditorState()];
+    state.history.redoStack = [];
+    trimUndoStack();
+    el.btnUndo?.setAttribute("disabled", "true");
+    el.btnRedo?.setAttribute("disabled", "true");
+  }
+
+  function undoEdit() {
+    if (state.history.undoStack.length <= 1) return;
+    const current = state.history.undoStack.pop();
+    if (current) state.history.redoStack.push(current);
+    const prev = state.history.undoStack[state.history.undoStack.length - 1];
+    applyEditorState(prev);
+    el.btnUndo?.toggleAttribute("disabled", state.history.undoStack.length <= 1);
+    el.btnRedo?.toggleAttribute("disabled", state.history.redoStack.length === 0);
+  }
+
+  function redoEdit() {
+    if (!state.history.redoStack.length) return;
+    const next = state.history.redoStack.pop();
+    if (!next) return;
+    state.history.undoStack.push(next);
+    trimUndoStack();
+    applyEditorState(next);
+    el.btnUndo?.toggleAttribute("disabled", state.history.undoStack.length <= 1);
+    el.btnRedo?.toggleAttribute("disabled", state.history.redoStack.length === 0);
+  }
+
+  function applyUndoSettingsUI() {
+    if (!el.undoDepth) return;
+    const depth = Number(state.settings.undoDepth || 3);
+    el.undoDepth.value = String(Math.max(1, Math.min(5, depth)));
+  }
+
+  function triggerInput(reason = "toolbar") {
+    state.nextInputReason = reason;
     el.editor.dispatchEvent(new Event("input", { bubbles: true }));
   }
 
@@ -1970,10 +2535,160 @@
     insertTextAtCursor(text);
   }
 
+  function setTimeMenuOpen(on) {
+    state.timeMenuOpen = !!on;
+    if (!el.timeMenuPanel || !el.btnTimeMenu) return;
+    el.timeMenuPanel.classList.toggle("hidden", !state.timeMenuOpen);
+    el.timeMenuPanel.setAttribute("aria-hidden", state.timeMenuOpen ? "false" : "true");
+    el.btnTimeMenu.setAttribute("aria-expanded", state.timeMenuOpen ? "true" : "false");
+  }
+
+  function toggleTimeMenu() {
+    setTimeMenuOpen(!state.timeMenuOpen);
+  }
+
+  function pad2(num) {
+    return String(num).padStart(2, "0");
+  }
+
+  function getCurrentTimeParts() {
+    const now = new Date();
+    const date = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`;
+    const time = `${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
+    return { date, time, datetime: `${date} ${time}` };
+  }
+
+  function getTokenRangeBeforeCursor(text, cursorPos) {
+    if (cursorPos <= 0) return null;
+    const maxScan = 12;
+    const start = Math.max(0, cursorPos - maxScan);
+    const segment = text.slice(start, cursorPos);
+    const match = segment.match(/(\((?:今日|今|日時)\))$/);
+    if (!match) return null;
+    const tokenStart = cursorPos - match[1].length;
+    return { start: tokenStart, end: cursorPos };
+  }
+
+  function expandTimeTokenInRange(raw, action) {
+    const parts = getCurrentTimeParts();
+    const map = {
+      "expand-today": { token: "(今日)", value: parts.date },
+      "expand-now": { token: "(今)", value: parts.time },
+      "expand-datetime": { token: "(日時)", value: parts.datetime }
+    };
+    const target = map[action];
+    if (!target) return { text: raw, changed: false };
+    if (!raw.includes(target.token)) return { text: raw, changed: false };
+    return { text: raw.split(target.token).join(target.value), changed: true };
+  }
+
+  function runTimeMenuAction(action) {
+    focusEditorForEditAction();
+    const insertMap = {
+      "insert-today": "(今日)",
+      "insert-now": "(今)",
+      "insert-datetime": "(日時)"
+    };
+    if (insertMap[action]) {
+      insertTextAtCursor(insertMap[action]);
+      setTimeMenuOpen(false);
+      return;
+    }
+    const ta = el.editor;
+    const { selectionStart, selectionEnd, value } = ta;
+    if (selectionStart !== selectionEnd) {
+      const selected = value.slice(selectionStart, selectionEnd);
+      const replaced = expandTimeTokenInRange(selected, action);
+      if (!replaced.changed) {
+        toast("選択範囲に対象トークンがありません");
+        return;
+      }
+      ta.setRangeText(replaced.text, selectionStart, selectionEnd, "select");
+      triggerInput();
+      setTimeMenuOpen(false);
+      return;
+    }
+    const tokenRange = getTokenRangeBeforeCursor(value, selectionStart);
+    if (!tokenRange) {
+      toast("カーソル直前に対象トークンがありません");
+      return;
+    }
+    const token = value.slice(tokenRange.start, tokenRange.end);
+    const replaced = expandTimeTokenInRange(token, action);
+    if (!replaced.changed) {
+      toast("カーソル直前に対象トークンがありません");
+      return;
+    }
+    ta.setRangeText(replaced.text, tokenRange.start, tokenRange.end, "end");
+    triggerInput();
+    setTimeMenuOpen(false);
+  }
+
   function insertTextAtCursor(text) {
     const { selectionStart, selectionEnd } = el.editor;
     el.editor.setRangeText(text, selectionStart, selectionEnd, "end");
     triggerInput();
+  }
+
+  function buildTelemetryPayload() {
+    const sessions = state.telemetry.sessions.map((s) => {
+      const start = s.startedAt || 0;
+      const end = s.endedAt || start;
+      const restartDelay = s.restartScheduledAt && s.restartStartedAt
+        ? Math.max(0, s.restartStartedAt - s.restartScheduledAt)
+        : null;
+      return {
+        sessionId: s.id,
+        t_start_to_first_interim_ms: s.firstInterimAt ? Math.max(0, s.firstInterimAt - start) : null,
+        t_start_to_first_final_ms: s.firstFinalAt ? Math.max(0, s.firstFinalAt - start) : null,
+        session_duration_ms: end > start ? (end - start) : null,
+        restart_delay_actual_ms: restartDelay
+      };
+    });
+    return {
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      sessions,
+      events: state.telemetry.events.slice(),
+      metrics: sessions
+    };
+  }
+
+  function exportTelemetryJson() {
+    const payload = buildTelemetryPayload();
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `koedeam-telemetry-${Date.now()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    toast("Telemetry JSON を出力しました");
+  }
+
+  async function copyTelemetryJson() {
+    const payload = JSON.stringify(buildTelemetryPayload(), null, 2);
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(payload);
+        toast("Telemetry JSON をコピーしました");
+        return;
+      }
+    } catch {
+      // fallback below
+    }
+    const ta = document.createElement("textarea");
+    ta.value = payload;
+    ta.setAttribute("readonly", "true");
+    ta.style.position = "absolute";
+    ta.style.left = "-9999px";
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand("copy");
+    ta.remove();
+    toast("Telemetry JSON をコピーしました");
   }
 
   function normalizeEditPanelSections() {
@@ -2005,6 +2720,36 @@
     });
   }
 
+  function applyEditPanelMode() {
+    const mode = state.editPanelMode === "edit" ? "edit" : "navigation";
+    state.editPanelMode = mode;
+    el.editGroups.forEach((group) => {
+      const groupMode = group.dataset.editModeGroup || "navigation";
+      group.classList.toggle("mode-hidden", groupMode !== mode);
+    });
+    if (el.btnEditModeNavigation) {
+      const active = mode === "navigation";
+      el.btnEditModeNavigation.classList.toggle("active", active);
+      el.btnEditModeNavigation.setAttribute("aria-selected", active ? "true" : "false");
+    }
+    if (el.btnEditModeEdit) {
+      const active = mode === "edit";
+      el.btnEditModeEdit.classList.toggle("active", active);
+      el.btnEditModeEdit.setAttribute("aria-selected", active ? "true" : "false");
+    }
+    requestAnimationFrame(updateEditPanelSize);
+  }
+
+  function setEditPanelMode(mode) {
+    if (!["navigation", "edit"].includes(mode)) return;
+    state.editPanelMode = mode;
+    if (mode !== "edit") {
+      setTimeMenuOpen(false);
+      hideCandidatePanel();
+    }
+    applyEditPanelMode();
+  }
+
   function toggleEditPanelSection(section) {
     if (!["cursor", "toolbar", "range"].includes(section)) return;
     normalizeEditPanelSections();
@@ -2018,6 +2763,10 @@
 
   function setEditToolsVisible(on) {
     state.editToolsVisible = !!on;
+    if (!state.editToolsVisible) {
+      setTimeMenuOpen(false);
+      hideCandidatePanel();
+    }
     if (state.editToolsVisible) {
       if (isMobileLayout() && document.activeElement === el.editor) {
         // Close software keyboard once when opening EditPanel on mobile.
@@ -2033,6 +2782,7 @@
     el.editToolsPanel.classList.toggle("show", state.editToolsVisible);
     document.body.classList.toggle("edit-tools-show", state.editToolsVisible);
     applyEditPanelSections();
+    applyEditPanelMode();
     applySoftKeyboardSuppression();
     applyEditPanelPosition();
     requestAnimationFrame(updateEditPanelSize);
@@ -2666,6 +3416,8 @@
       btnCloseShare: document.getElementById("btnCloseShare"),
 
       editToolsPanel: document.getElementById("editToolsPanel"),
+      btnEditModeNavigation: document.getElementById("btnEditModeNavigation"),
+      btnEditModeEdit: document.getElementById("btnEditModeEdit"),
       editGroupToggles: Array.from(document.querySelectorAll("#editToolsPanel .edit-group-toggle[data-section]")),
       editGroups: Array.from(document.querySelectorAll("#editToolsPanel .edit-group")),
       voiceModeRadios: Array.from(document.querySelectorAll("input[name='voiceMode']")),
@@ -2690,6 +3442,22 @@
       btnMoveLeft: document.getElementById("btnMoveLeft"),
       btnMoveRight: document.getElementById("btnMoveRight"),
       btnPuncMode: document.getElementById("btnPuncMode"),
+      btnUndo: document.getElementById("btnUndo"),
+      btnRedo: document.getElementById("btnRedo"),
+      btnTimeMenu: document.getElementById("btnTimeMenu"),
+      timeMenuPanel: document.getElementById("timeMenuPanel"),
+      btnChunkDelete: document.getElementById("btnChunkDelete"),
+      btnChunkSplit: document.getElementById("btnChunkSplit"),
+      btnChunkMerge: document.getElementById("btnChunkMerge"),
+      btnChunkFormat: document.getElementById("btnChunkFormat"),
+      btnTelemetryExportJson: document.getElementById("btnTelemetryExportJson"),
+      btnTelemetryCopyJson: document.getElementById("btnTelemetryCopyJson"),
+      candidateThreshold: document.getElementById("candidateThreshold"),
+      candidateNoConfidenceRule: document.getElementById("candidateNoConfidenceRule"),
+      candidateIdleBehavior: document.getElementById("candidateIdleBehavior"),
+      undoDepth: document.getElementById("undoDepth"),
+      candidatePanel: document.getElementById("candidatePanel"),
+      candidateList: document.getElementById("candidateList"),
       btnComma: document.getElementById("btnComma"),
       btnPeriod: document.getElementById("btnPeriod"),
       btnNewline: document.getElementById("btnNewline"),
