@@ -277,11 +277,15 @@
     <div class="edit-tools-head">
       <strong>編集補助</strong>
       <span class="hint">リアルタイム操作用</span>
+      <div class="edit-mode-switch" role="tablist" aria-label="Edit Panel mode">
+        <button id="btnEditModeNavigation" type="button" class="chip active" data-edit-mode="navigation" role="tab" aria-selected="true">Navigation</button>
+        <button id="btnEditModeEdit" type="button" class="chip" data-edit-mode="edit" role="tab" aria-selected="false">Edit</button>
+      </div>
     </div>
     <div class="edit-tools-block">
-      <div class="edit-group cursor-group">
+      <div class="edit-group cursor-group" data-edit-mode-group="navigation">
         <button type="button" class="edit-group-head edit-group-toggle" data-section="cursor" aria-expanded="true">
-          <span>カーソル</span><span class="caret">▾</span>
+          <span>Navigation: カーソル移動</span><span class="caret">▾</span>
         </button>
         <div class="edit-group-body">
           <div class="edit-grid">
@@ -304,9 +308,9 @@
           </div>
         </div>
       </div>
-      <div class="edit-group toolbar-group">
+      <div class="edit-group toolbar-group" data-edit-mode-group="edit">
         <button type="button" class="edit-group-head edit-group-toggle" data-section="toolbar" aria-expanded="true">
-          <span>編集</span><span class="caret">▾</span>
+          <span>Edit: 文字編集</span><span class="caret">▾</span>
         </button>
         <div class="edit-group-body">
           <div class="edit-toolbar-grid">
@@ -320,17 +324,58 @@
             <button id="btnPeriod" type="button">。</button>
             <button id="btnNewline" type="button" class="icon-only" aria-label="改行"><span class="icon">↵</span></button>
             <button id="btnPuncMode" type="button" class="chip">JP</button>
+            <button id="btnUndo" type="button" class="chip">↶ Undo</button>
+            <button id="btnRedo" type="button" class="chip">↷ Redo</button>
           </div>
           <div class="line-delete-row">
             <button id="btnDeleteToLineStart" type="button" class="line-delete"><span class="icon">⌫|</span>行頭まで削除</button>
             <button id="btnDeleteToLineEnd" type="button" class="line-delete"><span class="icon">|⌦</span>行末まで削除</button>
           </div>
+          <div class="chunk-tools-row">
+            <button id="btnChunkDelete" type="button" class="line-delete"><span class="icon">🧩</span>チャンク削除</button>
+            <button id="btnChunkSplit" type="button" class="line-delete"><span class="icon">✂</span>チャンク分割</button>
+            <button id="btnChunkMerge" type="button" class="line-delete"><span class="icon">🔗</span>チャンク結合</button>
+            <button id="btnChunkFormat" type="button" class="line-delete"><span class="icon">≋</span>チャンク整形</button>
+          </div>
+          <div class="telemetry-tools-row">
+            <button id="btnTelemetryExportJson" type="button" class="line-delete"><span class="icon">📥</span>Telemetry JSON</button>
+            <button id="btnTelemetryCopyJson" type="button" class="line-delete"><span class="icon">📋</span>Telemetry Copy</button>
+          </div>
+          <div class="candidate-settings-row">
+            <label>候補しきい値<input id="candidateThreshold" type="number" min="0" max="1" step="0.05" value="0.65" /></label>
+            <label>信頼値なし<select id="candidateNoConfidenceRule"><option value="show">候補表示</option><option value="direct">即採用</option></select></label>
+            <label>放置時<select id="candidateIdleBehavior"><option value="auto">自動採用</option><option value="hold">保留</option></select></label>
+          </div>
+          <div class="history-settings-row">
+            <label>Undo履歴数<input id="undoDepth" type="number" min="1" max="5" step="1" value="3" /></label>
+          </div>
+          <div id="candidatePanel" class="candidate-panel hidden" aria-hidden="true">
+            <strong>候補選択</strong>
+            <div id="candidateList" class="candidate-list"></div>
+          </div>
+          <div class="time-menu-wrap">
+            <button id="btnTimeMenu" type="button" class="line-delete"><span class="icon">🕒</span>Time</button>
+            <div id="timeMenuPanel" class="time-menu-panel hidden" aria-hidden="true">
+              <div class="time-menu-section">
+                <strong>挿入</strong>
+                <button type="button" data-time-action="insert-today">(今日)</button>
+                <button type="button" data-time-action="insert-now">(今)</button>
+                <button type="button" data-time-action="insert-datetime">(日時)</button>
+              </div>
+              <div class="time-menu-section">
+                <strong>展開</strong>
+                <button type="button" data-time-action="expand-today">日付</button>
+                <button type="button" data-time-action="expand-now">時刻</button>
+                <button type="button" data-time-action="expand-datetime">日時</button>
+              </div>
+            </div>
+          </div>
           </div>
         </div>
       </div>
-      <div class="edit-group range-group">
+      <div class="edit-group range-group" data-edit-mode-group="navigation">
         <button type="button" class="edit-group-head edit-group-toggle" data-section="range" aria-expanded="true">
-          <span>範囲選択</span><span class="caret">▾</span>
+          <span>Navigation: 範囲選択</span><span class="caret">▾</span>
         </button>
         <div class="edit-group-body">
           <div class="edit-tools-row">
