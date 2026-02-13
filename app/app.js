@@ -27,6 +27,7 @@
     voiceInsertMode: "cursor",
     voiceContinuous: false,
     voiceLang: "ja-JP",
+    voiceStartTone: true,
     autoSnapshotMinutes: 0,
     searchHistory: [],
     searchOptions: {
@@ -115,6 +116,7 @@
     voiceRestartTimer: null,
     voiceRestartAttempt: 0,
     voiceManualStop: false,
+    voiceCueCtx: null,
     stopVoiceInput: null,
     startVoiceInput: null,
     editPanelMode: "navigation",
@@ -167,6 +169,7 @@
       state.settings.voiceLang = "ja-JP";
       saveSettings();
     }
+    state.settings.voiceStartTone = state.settings.voiceStartTone !== false;
     if (!state.settings.candidate || typeof state.settings.candidate !== "object") {
       state.settings.candidate = { ...DEFAULT_SETTINGS.candidate };
       saveSettings();
@@ -487,6 +490,7 @@
     el.shareShortcutForm.addEventListener("submit", saveShareShortcut);
     el.btnShortcutReset.addEventListener("click", resetShareShortcutForm);
 
+    if (el.btnSelectionClear) el.btnSelectionClear.addEventListener("click", clearSelectionRange);
     el.btnSelectLine.addEventListener("click", selectLine);
     if (el.btnSelectBlock) el.btnSelectBlock.addEventListener("click", selectBlock);
     el.btnSelectPara.addEventListener("click", selectBlock);
@@ -624,6 +628,12 @@
         if (state.speaking) restartVoiceForSettingChange();
       });
     });
+    if (el.optVoiceStartTone) {
+      el.optVoiceStartTone.addEventListener("change", () => {
+        state.settings.voiceStartTone = !!el.optVoiceStartTone.checked;
+        saveSettings();
+      });
+    }
     if (el.btnVoicePresetWalk) {
       el.btnVoicePresetWalk.addEventListener("click", () => {
         applyVoicePreset("walk");
@@ -1798,6 +1808,7 @@
       applyVoiceSessionState("RUNNING");
       state.speaking = true;
       startTelemetrySession();
+      playVoiceStartCue();
       el.btnMic.innerHTML = '<span class="icon">■</span>停止';
       applyInputState(state.settings.voiceInsertMode === "append" ? "VOICE_APPEND" : "VOICE_LOCKED");
     });
@@ -2252,11 +2263,44 @@
     if (el.voiceEvalExpectedChars) el.voiceEvalExpectedChars.value = String(state.settings.voiceEval?.expectedChars || "");
     if (el.voiceEvalExpectedTail) el.voiceEvalExpectedTail.value = state.settings.voiceEval?.expectedTail || "";
     if (el.btnVoiceMode) {
+      const iconMap = {
+        cursor: "⌶",
+        append: "↘"
+      };
       const labelMap = {
         cursor: "音声:カーソル",
         append: "音声:文末"
       };
-      el.btnVoiceMode.innerHTML = `<span class="icon">🎛</span>${labelMap[state.settings.voiceInsertMode] || "音声:カーソル"}`;
+      const mode = state.settings.voiceInsertMode === "append" ? "append" : "cursor";
+      el.btnVoiceMode.innerHTML = `<span class="icon">${iconMap[mode]}</span>${labelMap[mode]}`;
+    }
+    if (el.optVoiceStartTone) {
+      el.optVoiceStartTone.checked = state.settings.voiceStartTone !== false;
+    }
+  }
+
+  function playVoiceStartCue() {
+    if (state.settings.voiceStartTone === false) return;
+    try {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return;
+      state.voiceCueCtx = state.voiceCueCtx || new Ctx();
+      const ctx = state.voiceCueCtx;
+      if (ctx.state === "suspended") ctx.resume();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = 960;
+      gain.gain.value = 0.0001;
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      const now = ctx.currentTime;
+      gain.gain.exponentialRampToValueAtTime(0.06, now + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.12);
+      osc.start(now);
+      osc.stop(now + 0.13);
+    } catch {
+      // ignore
     }
   }
 
@@ -3092,6 +3136,13 @@
     ensureSelectionVisible(1);
   }
 
+  function clearSelectionRange() {
+    focusEditorForEditAction();
+    const pos = el.editor.selectionEnd;
+    el.editor.setSelectionRange(pos, pos);
+    ensureCaretVisible();
+  }
+
   function selectBlock() {
     const text = el.editor.value;
     const pos = el.editor.selectionStart;
@@ -3540,6 +3591,7 @@
       voiceModeRadios: Array.from(document.querySelectorAll("input[name='voiceMode']")),
       voiceContinuousRadios: Array.from(document.querySelectorAll("input[name='voiceContinuous']")),
       voiceLangRadios: Array.from(document.querySelectorAll("input[name='voiceLang']")),
+      optVoiceStartTone: document.getElementById("optVoiceStartTone"),
       btnVoicePresetWalk: document.getElementById("btnVoicePresetWalk"),
       btnVoicePresetFocus: document.getElementById("btnVoicePresetFocus"),
       btnVoiceCase1: document.getElementById("btnVoiceCase1"),
@@ -3549,6 +3601,7 @@
       voiceEvalLabel: document.getElementById("voiceEvalLabel"),
       voiceEvalExpectedChars: document.getElementById("voiceEvalExpectedChars"),
       voiceEvalExpectedTail: document.getElementById("voiceEvalExpectedTail"),
+      btnSelectionClear: document.getElementById("btnSelectionClear"),
       btnSelectLine: document.getElementById("btnSelectLine"),
       btnSelectBlock: document.getElementById("btnSelectBlock"),
       btnSelectPara: document.getElementById("btnSelectPara"),

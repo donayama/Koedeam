@@ -6,6 +6,8 @@
   --fg: #121316;
   --surface: rgba(255, 255, 255, 0.88);
   --surface-strong: rgba(255, 255, 255, 0.96);
+  --accent: #0b7cff;
+  --accent-ink: #ffffff;
   --edit-panel-size: 140px;
   --kb-offset: 0px;
   --safe-bottom: env(safe-area-inset-bottom, 0px);
@@ -18,6 +20,8 @@
     --surface: rgba(16, 18, 24, 0.9);
     --surface-strong: rgba(10, 12, 18, 0.96);
     --panel: rgba(255, 255, 255, 0.05);
+    --accent: #38bdf8;
+    --accent-ink: #071218;
   }
 }
 * { box-sizing: border-box; }
@@ -491,8 +495,18 @@ select {
 }
 .edit-tools-head { display:flex; align-items:center; gap: 8px; margin-bottom: 6px; }
 .edit-mode-switch { margin-left: auto; display: inline-flex; gap: 4px; }
-.edit-mode-switch .chip { min-height: 28px; padding: 4px 10px; font-size: 12px; }
-.edit-mode-switch .chip.active { background: var(--accent); color: #fff; border-color: transparent; }
+.edit-mode-switch .chip {
+  min-height: 28px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.edit-mode-switch .chip.active {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: color-mix(in srgb, var(--accent) 86%, #000 14%);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
+}
 .edit-group.mode-hidden { display: none; }
 .edit-toolbar-grid [data-edit-mode-group].mode-hidden { display: none; }
 .telemetry-tools-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-top: 6px; }
