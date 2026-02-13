@@ -207,6 +207,29 @@
           <label class="option-chip"><input type="radio" name="voiceLang" value="auto" />言語AUTO</label>
           <label class="option-chip"><input type="radio" name="voiceLang" value="ja-JP" />言語ja-JP</label>
         </div>
+        <div class="option-row">
+          <label class="option-chip"><input type="radio" name="speechUnitMode" value="sentence" />文単位</label>
+          <label class="option-chip"><input type="radio" name="speechUnitMode" value="chunk" />チャンク単位</label>
+        </div>
+      </fieldset>
+      <fieldset class="segment">
+        <legend>音声プリセット</legend>
+        <div class="option-row">
+          <button id="btnVoicePresetWalk" type="button">散歩モード</button>
+          <button id="btnVoicePresetFocus" type="button">確定モード</button>
+        </div>
+      </fieldset>
+      <fieldset class="segment">
+        <legend>品質比較（4条件）</legend>
+        <div class="option-row">
+          <button id="btnVoiceCase1" type="button">1) OFF+AUTO</button>
+          <button id="btnVoiceCase2" type="button">2) ON+AUTO</button>
+          <button id="btnVoiceCase3" type="button">3) OFF+JA</button>
+          <button id="btnVoiceCase4" type="button">4) ON+JA</button>
+        </div>
+        <label>比較ラベル<input id="voiceEvalLabel" type="text" placeholder="同一音声A-1" /></label>
+        <label>期待文字数（任意）<input id="voiceEvalExpectedChars" type="number" min="1" step="1" /></label>
+        <label>期待語尾（任意）<input id="voiceEvalExpectedTail" type="text" placeholder="です。" /></label>
       </fieldset>
     </section>
     <section id="panelSettingsDisplay" class="tab-panel settings-section" role="tabpanel">

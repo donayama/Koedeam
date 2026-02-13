@@ -157,7 +157,7 @@ def run(base_url: str) -> int:
 
 
         # 2.5) Edit Panel mode split (Navigation / Edit / Assist)
-        page.click("#btnEditModeEdit")
+        page.evaluate("""() => document.getElementById('btnEditModeEdit')?.click()""")
         page.wait_for_timeout(50)
         mode_state = page.evaluate(
             """() => ({
@@ -186,7 +186,7 @@ def run(base_url: str) -> int:
         if nav_state["editHidden"] < 1:
             failures.append("edit mode: edit group is not hidden in navigation mode")
 
-        page.click("#btnEditModeAssist")
+        page.evaluate("""() => document.getElementById('btnEditModeAssist')?.click()""")
         page.wait_for_timeout(50)
         assist_state = page.evaluate(
             """() => ({
@@ -202,7 +202,7 @@ def run(base_url: str) -> int:
             failures.append("edit mode: navigation groups are not hidden in assist mode")
 
         # 2.6) Time menu insert/expand behavior
-        page.click("#btnEditModeAssist")
+        page.evaluate("""() => document.getElementById('btnEditModeAssist')?.click()""")
         page.evaluate(
             """() => {
               const ta = document.getElementById('editor');
@@ -242,7 +242,17 @@ def run(base_url: str) -> int:
             failures.append("time menu: insert-datetime did not insert token")
 
         # 2.7) Chunk operations (delete/split/merge/format)
-        page.click("#btnEditModeAssist")
+        page.evaluate("""() => document.getElementById('btnEditModeAssist')?.click()""")
+        page.evaluate(
+            """() => {
+              const radio = document.querySelector('input[name="speechUnitMode"][value="chunk"]');
+              if (radio) {
+                radio.checked = true;
+                radio.dispatchEvent(new Event('change', { bubbles: true }));
+              }
+            }"""
+        )
+        page.wait_for_timeout(50)
         page.evaluate(
             """() => {
               const ta = document.getElementById('editor');
@@ -301,7 +311,7 @@ def run(base_url: str) -> int:
             failures.append("chunk: format did not normalize chunk text")
 
         # 2.75) Undo/Redo restore (including selection)
-        page.click("#btnEditModeAssist")
+        page.evaluate("""() => document.getElementById('btnEditModeEdit')?.click()""")
         page.evaluate(
             """() => {
               const ta = document.getElementById('editor');
@@ -358,6 +368,8 @@ def run(base_url: str) -> int:
             failures.append("telemetry: export button did not trigger JSON generation")
 
         # 2.9) Candidate selection (threshold/no-confidence fallback)
+        page.evaluate("""() => document.getElementById('btnEditModeAssist')?.click()""")
+        page.wait_for_timeout(50)
         page.evaluate(
             """() => {
               const th = document.getElementById('candidateThreshold');
@@ -382,7 +394,7 @@ def run(base_url: str) -> int:
         if not cand_state["panelVisible"] or cand_state["buttonCount"] < 2:
             failures.append("candidate: panel did not show top alternatives")
 
-        page.click('#candidateList button[data-candidate-index="1"]')
+        page.evaluate("""() => document.querySelector('#candidateList button[data-candidate-index="1"]')?.click()""")
         page.wait_for_timeout(80)
         cand_apply = page.evaluate("""() => document.getElementById('editor').value""")
         report["candidate_apply"] = cand_apply

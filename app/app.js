@@ -28,6 +28,7 @@
     voiceInsertMode: "cursor",
     voiceContinuous: false,
     voiceLang: "ja-JP",
+    speechUnitMode: "sentence",
     autoSnapshotMinutes: 0,
     searchHistory: [],
     searchOptions: {
@@ -82,6 +83,11 @@
       chunk: true,
       candidate: true
     },
+    voiceEval: {
+      label: "",
+      expectedChars: 0,
+      expectedTail: ""
+    },
     undoDepth: 3
   };
 
@@ -123,6 +129,7 @@
       activeSession: null,
       maxSessions: 200
     },
+    voiceEvalActive: null,
     candidateState: {
       list: [],
       timer: null,
@@ -164,6 +171,10 @@
       state.settings.voiceLang = "ja-JP";
       saveSettings();
     }
+    if (!["sentence", "chunk"].includes(state.settings.speechUnitMode)) {
+      state.settings.speechUnitMode = "sentence";
+      saveSettings();
+    }
     if (!state.settings.candidate || typeof state.settings.candidate !== "object") {
       state.settings.candidate = { ...DEFAULT_SETTINGS.candidate };
       saveSettings();
@@ -175,6 +186,15 @@
     state.settings.advancedTools = {
       chunk: state.settings.advancedTools.chunk !== false,
       candidate: state.settings.advancedTools.candidate !== false
+    };
+    if (!state.settings.voiceEval || typeof state.settings.voiceEval !== "object") {
+      state.settings.voiceEval = { ...DEFAULT_SETTINGS.voiceEval };
+      saveSettings();
+    }
+    state.settings.voiceEval = {
+      label: String(state.settings.voiceEval.label || ""),
+      expectedChars: Number.isFinite(Number(state.settings.voiceEval.expectedChars)) ? Math.max(0, Number(state.settings.voiceEval.expectedChars)) : 0,
+      expectedTail: String(state.settings.voiceEval.expectedTail || "")
     };
     state.settings.undoDepth = Number.isFinite(Number(state.settings.undoDepth))
       ? Math.max(1, Math.min(5, Number(state.settings.undoDepth)))
@@ -593,7 +613,9 @@
     if (el.optShowChunkTools) {
       el.optShowChunkTools.addEventListener("change", () => {
         state.settings.advancedTools.chunk = !!el.optShowChunkTools.checked;
+        if (!state.settings.advancedTools.chunk) state.settings.speechUnitMode = "sentence";
         applyAdvancedToolVisibility();
+        applyVoiceModeUI();
         saveSettings();
       });
     }
@@ -660,6 +682,49 @@
         if (state.speaking) restartVoiceForSettingChange();
       });
     });
+    el.speechUnitModeRadios.forEach((radio) => {
+      radio.addEventListener("change", () => {
+        if (!radio.checked) return;
+        state.settings.speechUnitMode = radio.value === "chunk" ? "chunk" : "sentence";
+        if (state.settings.speechUnitMode !== "chunk") hideCandidatePanel();
+        applyAdvancedToolVisibility();
+        applyVoiceModeUI();
+        saveSettings();
+      });
+    });
+    if (el.btnVoicePresetWalk) {
+      el.btnVoicePresetWalk.addEventListener("click", () => {
+        applyVoicePreset("walk");
+      });
+    }
+    if (el.btnVoicePresetFocus) {
+      el.btnVoicePresetFocus.addEventListener("click", () => {
+        applyVoicePreset("focus");
+      });
+    }
+    if (el.btnVoiceCase1) el.btnVoiceCase1.addEventListener("click", () => applyVoiceCompareCase(1));
+    if (el.btnVoiceCase2) el.btnVoiceCase2.addEventListener("click", () => applyVoiceCompareCase(2));
+    if (el.btnVoiceCase3) el.btnVoiceCase3.addEventListener("click", () => applyVoiceCompareCase(3));
+    if (el.btnVoiceCase4) el.btnVoiceCase4.addEventListener("click", () => applyVoiceCompareCase(4));
+    if (el.voiceEvalLabel) {
+      el.voiceEvalLabel.addEventListener("change", () => {
+        state.settings.voiceEval.label = el.voiceEvalLabel.value.trim();
+        saveSettings();
+      });
+    }
+    if (el.voiceEvalExpectedChars) {
+      el.voiceEvalExpectedChars.addEventListener("change", () => {
+        const n = Number(el.voiceEvalExpectedChars.value);
+        state.settings.voiceEval.expectedChars = Number.isFinite(n) ? Math.max(0, n) : 0;
+        saveSettings();
+      });
+    }
+    if (el.voiceEvalExpectedTail) {
+      el.voiceEvalExpectedTail.addEventListener("change", () => {
+        state.settings.voiceEval.expectedTail = el.voiceEvalExpectedTail.value.trim();
+        saveSettings();
+      });
+    }
     el.fontSizeRange.addEventListener("input", () => {
       state.settings.fontSize = Number(el.fontSizeRange.value);
       applyTypography();
@@ -1561,7 +1626,7 @@
   }
 
   function applyAdvancedToolVisibility() {
-    const chunkOn = state.settings.advancedTools?.chunk !== false;
+    const chunkOn = state.settings.advancedTools?.chunk !== false && state.settings.speechUnitMode === "chunk";
     const candidateOn = state.settings.advancedTools?.candidate !== false;
     document.querySelectorAll("[data-advanced-group='chunk']").forEach((node) => {
       node.classList.toggle("hidden", !chunkOn);
@@ -1611,6 +1676,7 @@
   }
 
   function shouldShowCandidates(candidates) {
+    if (state.settings.advancedTools?.candidate === false) return false;
     if (!candidates || candidates.length <= 1) return false;
     const top = candidates[0];
     if (!Number.isFinite(top.confidence)) {
@@ -1678,6 +1744,11 @@
 
     const startTelemetrySession = () => {
       const id = `voice-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+      const evalSpec = {
+        label: state.settings.voiceEval?.label || "",
+        expectedChars: Number(state.settings.voiceEval?.expectedChars || 0),
+        expectedTail: state.settings.voiceEval?.expectedTail || ""
+      };
       state.telemetry.activeSession = {
         id,
         startedAt: Date.now(),
@@ -1685,8 +1756,19 @@
         firstFinalAt: null,
         endedAt: null,
         restartScheduledAt: null,
-        restartStartedAt: null
+        restartStartedAt: null,
+        voiceLang: state.settings.voiceLang,
+        voiceContinuous: !!state.settings.voiceContinuous,
+        speechUnitMode: state.settings.speechUnitMode,
+        candidateThreshold: Number(state.settings.candidate?.threshold || 0),
+        finalCharsTotal: 0,
+        finalResultCount: 0,
+        finalText: "",
+        noSpeechCount: 0,
+        autoEndCount: 0,
+        eval: evalSpec
       };
+      state.voiceEvalActive = evalSpec.label ? { ...evalSpec } : null;
       state.telemetry.sessions.push(state.telemetry.activeSession);
       if (state.telemetry.sessions.length > state.telemetry.maxSessions) {
         state.telemetry.sessions.splice(0, state.telemetry.sessions.length - state.telemetry.maxSessions);
@@ -1698,8 +1780,20 @@
       const session = state.telemetry.activeSession;
       if (!session) return;
       session.endedAt = Date.now();
+      if (reason === "auto-end") session.autoEndCount = Number(session.autoEndCount || 0) + 1;
+      if (session.eval) {
+        const expectedChars = Number(session.eval.expectedChars || 0);
+        const actualChars = Number(session.finalCharsTotal || 0);
+        session.metrics = {
+          charCount: actualChars,
+          stopFrequency: Number(session.noSpeechCount || 0) + Number(session.autoEndCount || 0),
+          omissionRateEst: expectedChars > 0 ? Math.max(0, (expectedChars - actualChars) / expectedChars) : null,
+          tailDropped: session.eval.expectedTail ? !`${session.finalText || ""}`.endsWith(session.eval.expectedTail) : null
+        };
+      }
       sessionRecord("voice.onend", { reason: reason || "end" });
       state.telemetry.activeSession = null;
+      state.voiceEvalActive = null;
     };
 
     const canAutoRestart = () => {
@@ -1771,6 +1865,12 @@
         const filtered = candidates.filter((c) => c.text);
         if (!filtered.length) continue;
         if (session && session.firstFinalAt == null) session.firstFinalAt = Date.now();
+        if (session) {
+          const best = filtered[0].text || "";
+          session.finalCharsTotal = Number(session.finalCharsTotal || 0) + best.length;
+          session.finalResultCount = Number(session.finalResultCount || 0) + 1;
+          session.finalText = `${session.finalText || ""}${best}`;
+        }
         if (shouldShowCandidates(filtered)) {
           queueCandidateSelection(filtered);
         } else {
@@ -1793,6 +1893,9 @@
         return;
       }
       if (err === "no-speech" || err === "network" || err === "audio-capture") {
+        if (err === "no-speech" && state.telemetry.activeSession) {
+          state.telemetry.activeSession.noSpeechCount = Number(state.telemetry.activeSession.noSpeechCount || 0) + 1;
+        }
         scheduleRestart(err);
         return;
       }
@@ -1913,6 +2016,33 @@
     applyChunksAndSelection(chunks, idx + 1, cleaned.length);
   }
 
+  function insertVoicePlain(text) {
+    const mode = state.settings.voiceInsertMode;
+    const cleaned = String(text || "").trim();
+    if (!cleaned) return;
+    if (mode === "append") {
+      const ta = el.editor;
+      const hadFocus = document.activeElement === ta;
+      const prevStart = ta.selectionStart;
+      const prevEnd = ta.selectionEnd;
+      const prevScrollTop = ta.scrollTop;
+      const prevScrollLeft = ta.scrollLeft;
+      const insertAt = ta.value.length;
+      const sep = ta.value && !ta.value.endsWith("\n") ? "\n" : "";
+      ta.setRangeText(`${sep}${cleaned}`, insertAt, insertAt, "preserve");
+      if (hadFocus) {
+        ta.setSelectionRange(prevStart, prevEnd);
+        ta.scrollTop = prevScrollTop;
+        ta.scrollLeft = prevScrollLeft;
+      }
+    } else {
+      const { selectionStart, selectionEnd } = el.editor;
+      el.editor.setRangeText(cleaned, selectionStart, selectionEnd, "end");
+    }
+    triggerInput("voice-final");
+    updateCaretUI();
+  }
+
   function getActiveChunkContext() {
     const value = el.editor.value || "";
     const chunks = splitChunks(value);
@@ -1977,7 +2107,11 @@
   }
 
   function insertByVoiceMode(text) {
-    insertVoiceChunk(text);
+    if (state.settings.speechUnitMode === "chunk") {
+      insertVoiceChunk(text);
+      return;
+    }
+    insertVoicePlain(text);
   }
 
   function setupServiceWorker() {
@@ -2327,6 +2461,12 @@
     el.voiceLangRadios.forEach((radio) => {
       radio.checked = radio.value === state.settings.voiceLang;
     });
+    el.speechUnitModeRadios.forEach((radio) => {
+      radio.checked = radio.value === state.settings.speechUnitMode;
+    });
+    if (el.voiceEvalLabel) el.voiceEvalLabel.value = state.settings.voiceEval?.label || "";
+    if (el.voiceEvalExpectedChars) el.voiceEvalExpectedChars.value = String(state.settings.voiceEval?.expectedChars || "");
+    if (el.voiceEvalExpectedTail) el.voiceEvalExpectedTail.value = state.settings.voiceEval?.expectedTail || "";
     if (el.btnVoiceMode) {
       const labelMap = {
         cursor: "音声:カーソル",
@@ -2342,6 +2482,45 @@
       if (state.speaking) return;
       state.startVoiceInput?.();
     }, 180);
+  }
+
+  function applyVoicePreset(kind) {
+    if (kind === "walk") {
+      state.settings.voiceContinuous = true;
+      state.settings.voiceInsertMode = "append";
+      state.settings.voiceLang = "auto";
+      state.settings.speechUnitMode = "sentence";
+      state.settings.candidate.threshold = 0.55;
+      state.settings.candidate.noConfidenceRule = "show";
+    } else {
+      state.settings.voiceContinuous = false;
+      state.settings.voiceInsertMode = "cursor";
+      state.settings.voiceLang = "ja-JP";
+      state.settings.speechUnitMode = "sentence";
+      state.settings.candidate.threshold = 0.65;
+      state.settings.candidate.noConfidenceRule = "direct";
+    }
+    applyVoiceModeUI();
+    applyCandidateSettingsUI();
+    applyAdvancedToolVisibility();
+    saveSettings();
+    if (state.speaking) restartVoiceForSettingChange();
+    toast(kind === "walk" ? "散歩モードを適用しました" : "確定モードを適用しました");
+  }
+
+  function applyVoiceCompareCase(caseNo) {
+    const c = Number(caseNo);
+    const on = c === 2 || c === 4;
+    const langAuto = c === 1 || c === 2;
+    state.settings.candidate.threshold = on ? 0.65 : 0;
+    state.settings.candidate.noConfidenceRule = on ? "show" : "direct";
+    state.settings.voiceLang = langAuto ? "auto" : "ja-JP";
+    applyVoiceModeUI();
+    applyCandidateSettingsUI();
+    applyAdvancedToolVisibility();
+    saveSettings();
+    if (state.speaking) restartVoiceForSettingChange();
+    toast(`比較条件${c}を適用しました`);
   }
 
   function applyTypography() {
@@ -3612,6 +3791,16 @@
       voiceModeRadios: Array.from(document.querySelectorAll("input[name='voiceMode']")),
       voiceContinuousRadios: Array.from(document.querySelectorAll("input[name='voiceContinuous']")),
       voiceLangRadios: Array.from(document.querySelectorAll("input[name='voiceLang']")),
+      speechUnitModeRadios: Array.from(document.querySelectorAll("input[name='speechUnitMode']")),
+      btnVoicePresetWalk: document.getElementById("btnVoicePresetWalk"),
+      btnVoicePresetFocus: document.getElementById("btnVoicePresetFocus"),
+      btnVoiceCase1: document.getElementById("btnVoiceCase1"),
+      btnVoiceCase2: document.getElementById("btnVoiceCase2"),
+      btnVoiceCase3: document.getElementById("btnVoiceCase3"),
+      btnVoiceCase4: document.getElementById("btnVoiceCase4"),
+      voiceEvalLabel: document.getElementById("voiceEvalLabel"),
+      voiceEvalExpectedChars: document.getElementById("voiceEvalExpectedChars"),
+      voiceEvalExpectedTail: document.getElementById("voiceEvalExpectedTail"),
       btnSelectLine: document.getElementById("btnSelectLine"),
       btnSelectBlock: document.getElementById("btnSelectBlock"),
       btnSelectPara: document.getElementById("btnSelectPara"),
