@@ -2436,7 +2436,7 @@
     const allowed = Object.keys(DEFAULT_SETTINGS.toolbar);
     const order = (state.settings.toolbarOrder || DEFAULT_SETTINGS.toolbarOrder)
       .filter((k) => allowed.includes(k));
-    const menuTools = order;
+    const menuTools = order.filter((tool) => tool !== "voiceMode");
     el.overflowMenuItems.innerHTML = "";
     menuTools.forEach((tool) => {
       const btn = document.createElement("button");
