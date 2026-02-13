@@ -26,6 +26,8 @@
 
   const DEFAULT_SETTINGS = {
     voiceInsertMode: "cursor",
+    voiceContinuous: false,
+    voiceLang: "ja-JP",
     autoSnapshotMinutes: 0,
     searchHistory: [],
     searchOptions: {
@@ -108,6 +110,7 @@
     voiceRestartAttempt: 0,
     voiceManualStop: false,
     stopVoiceInput: null,
+    startVoiceInput: null,
     editPanelMode: "navigation",
     timeMenuOpen: false,
     telemetry: {
@@ -144,12 +147,17 @@
       state.settings.sidebarTab = "templates";
       saveSettings();
     }
-    if (state.settings.voiceInsertMode === "replace") {
+    if (state.settings.voiceInsertMode === "replace" || state.settings.voiceInsertMode === "off") {
       state.settings.voiceInsertMode = "cursor";
       saveSettings();
     }
-    if (!["off", "cursor", "append"].includes(state.settings.voiceInsertMode)) {
+    if (!["cursor", "append"].includes(state.settings.voiceInsertMode)) {
       state.settings.voiceInsertMode = "cursor";
+      saveSettings();
+    }
+    state.settings.voiceContinuous = !!state.settings.voiceContinuous;
+    if (!["auto", "ja-JP"].includes(state.settings.voiceLang)) {
+      state.settings.voiceLang = "ja-JP";
       saveSettings();
     }
     if (!state.settings.candidate || typeof state.settings.candidate !== "object") {
@@ -499,6 +507,8 @@
     el.btnExpandDown.addEventListener("click", () => expandSelection(1));
     if (el.btnShrinkUp) el.btnShrinkUp.addEventListener("click", () => shrinkSelection(-1));
     el.btnShrinkDown.addEventListener("click", () => shrinkSelection(1));
+    if (el.btnSelectToStart) el.btnSelectToStart.addEventListener("click", () => selectToDocumentEdge("start"));
+    if (el.btnSelectToEnd) el.btnSelectToEnd.addEventListener("click", () => selectToDocumentEdge("end"));
     el.btnSelectAll.addEventListener("click", () => {
       focusEditorForEditAction();
       el.editor.select();
@@ -509,6 +519,8 @@
     el.btnDocEnd.addEventListener("click", () => moveToDocumentEdge("end"));
     el.btnDeleteToLineStart.addEventListener("click", () => deleteToLineEdge("start"));
     el.btnDeleteToLineEnd.addEventListener("click", () => deleteToLineEdge("end"));
+    if (el.btnDeleteLine) el.btnDeleteLine.addEventListener("click", deleteCurrentLine);
+    if (el.btnDeleteParagraph) el.btnDeleteParagraph.addEventListener("click", deleteCurrentParagraph);
     el.btnMoveUp.addEventListener("click", () => moveCursorLine(-1));
     el.btnMoveDown.addEventListener("click", () => moveCursorLine(1));
     el.btnMoveLeft.addEventListener("click", () => moveCursorChar(-1));
@@ -580,17 +592,13 @@
     el.btnDelete.addEventListener("click", () => deleteByDirection(1));
     if (el.btnVoiceMode) {
       el.btnVoiceMode.addEventListener("click", () => {
-        const modes = ["off", "cursor", "append"];
+        const modes = ["cursor", "append"];
         const idx = modes.indexOf(state.settings.voiceInsertMode);
         const next = modes[(idx + 1) % modes.length] || "cursor";
         state.settings.voiceInsertMode = next;
         applyVoiceModeUI();
         if (state.speaking) {
-          if (next === "off") {
-            state.stopVoiceInput?.();
-          } else {
-            applyInputState(next === "append" ? "VOICE_APPEND" : "VOICE_LOCKED");
-          }
+          applyInputState(next === "append" ? "VOICE_APPEND" : "VOICE_LOCKED");
         }
         saveSettings();
       });
@@ -601,13 +609,27 @@
         state.settings.voiceInsertMode = radio.value;
         applyVoiceModeUI();
         if (state.speaking) {
-          if (radio.value === "off") {
-            state.stopVoiceInput?.();
-          } else {
-            applyInputState(radio.value === "append" ? "VOICE_APPEND" : "VOICE_LOCKED");
-          }
+          applyInputState(radio.value === "append" ? "VOICE_APPEND" : "VOICE_LOCKED");
         }
         saveSettings();
+      });
+    });
+    el.voiceContinuousRadios.forEach((radio) => {
+      radio.addEventListener("change", () => {
+        if (!radio.checked) return;
+        state.settings.voiceContinuous = radio.value === "true";
+        applyVoiceModeUI();
+        saveSettings();
+        if (state.speaking) restartVoiceForSettingChange();
+      });
+    });
+    el.voiceLangRadios.forEach((radio) => {
+      radio.addEventListener("change", () => {
+        if (!radio.checked) return;
+        state.settings.voiceLang = radio.value === "auto" ? "auto" : "ja-JP";
+        applyVoiceModeUI();
+        saveSettings();
+        if (state.speaking) restartVoiceForSettingChange();
       });
     });
     el.fontSizeRange.addEventListener("input", () => {
@@ -1570,9 +1592,12 @@
     }
     const recognition = new SR();
     state.recognition = recognition;
-    recognition.lang = "ja-JP";
-    recognition.interimResults = true;
-    recognition.continuous = false;
+    const applyRecognitionRuntimeSettings = () => {
+      recognition.interimResults = true;
+      recognition.continuous = !!state.settings.voiceContinuous;
+      recognition.lang = state.settings.voiceLang === "auto" ? "" : state.settings.voiceLang;
+    };
+    applyRecognitionRuntimeSettings();
 
     const clearRestartTimer = () => {
       if (!state.voiceRestartTimer) return;
@@ -1633,7 +1658,6 @@
     const canAutoRestart = () => {
       if (!state.speaking) return false;
       if (state.primary !== "EDIT") return false;
-      if (state.settings.voiceInsertMode === "off") return false;
       return true;
     };
 
@@ -1754,10 +1778,7 @@
         requestStopVoice();
         return;
       }
-      if (state.settings.voiceInsertMode === "off") {
-        toast("音声モードがOFFです。ツールバーの音声モードを切り替えてください。");
-        return;
-      }
+      applyRecognitionRuntimeSettings();
       try {
         clearRestartTimer();
         applyVoiceSessionState("PERMISSION_WAIT");
@@ -1770,6 +1791,13 @@
     });
 
     state.stopVoiceInput = requestStopVoice;
+    state.startVoiceInput = () => {
+      applyRecognitionRuntimeSettings();
+      clearRestartTimer();
+      applyVoiceSessionState("PERMISSION_WAIT");
+      state.voiceManualStop = false;
+      recognition.start();
+    };
   }
 
   function splitChunks(text) {
@@ -1818,7 +1846,6 @@
 
   function insertVoiceChunk(text) {
     const mode = state.settings.voiceInsertMode;
-    if (mode === "off") return;
     const cleaned = String(text || "").trim();
     if (!cleaned) return;
     const source = el.editor.value || "";
@@ -2241,14 +2268,28 @@
     el.voiceModeRadios.forEach((radio) => {
       radio.checked = radio.value === state.settings.voiceInsertMode;
     });
+    el.voiceContinuousRadios.forEach((radio) => {
+      const expected = state.settings.voiceContinuous ? "true" : "false";
+      radio.checked = radio.value === expected;
+    });
+    el.voiceLangRadios.forEach((radio) => {
+      radio.checked = radio.value === state.settings.voiceLang;
+    });
     if (el.btnVoiceMode) {
       const labelMap = {
-        off: "音声:OFF",
         cursor: "音声:カーソル",
         append: "音声:文末"
       };
       el.btnVoiceMode.innerHTML = `<span class="icon">🎛</span>${labelMap[state.settings.voiceInsertMode] || "音声:カーソル"}`;
     }
+  }
+
+  function restartVoiceForSettingChange() {
+    state.stopVoiceInput?.();
+    setTimeout(() => {
+      if (state.speaking) return;
+      state.startVoiceInput?.();
+    }, 180);
   }
 
   function applyTypography() {
@@ -3059,6 +3100,7 @@
     const { start, end } = getLineBounds(text, pos);
     focusEditorForEditAction();
     el.editor.setSelectionRange(start, end);
+    ensureSelectionVisible(1);
   }
 
   function selectBlock() {
@@ -3067,6 +3109,7 @@
     const { start, end } = getBlockBounds(text, pos);
     focusEditorForEditAction();
     el.editor.setSelectionRange(start, end);
+    ensureSelectionVisible(1);
   }
 
   function moveParagraph(dir) {
@@ -3103,28 +3146,55 @@
       const nextStart = prevStart === -1 ? 0 : prevStart + 1;
       focusEditorForEditAction();
       el.editor.setSelectionRange(nextStart, selectionEnd);
+      ensureSelectionVisible(-1);
     } else {
       const { end } = getLineBounds(text, selectionEnd);
       const nextEnd = text.indexOf("\n", end + 1);
       const next = nextEnd === -1 ? text.length : nextEnd;
       focusEditorForEditAction();
       el.editor.setSelectionRange(selectionStart, next);
+      ensureSelectionVisible(1);
     }
   }
 
-  function shrinkSelection() {
+  function shrinkSelection(dir = 1) {
     const text = el.editor.value;
     const { selectionStart, selectionEnd } = el.editor;
     if (selectionStart === selectionEnd) return;
-    const { end } = getLineBounds(text, selectionEnd);
-    const prevEnd = text.lastIndexOf("\n", Math.max(0, end - 2));
-    const nextEnd = prevEnd === -1 ? selectionStart : prevEnd;
-    if (nextEnd <= selectionStart) {
-      el.editor.setSelectionRange(selectionStart, selectionStart);
+    if (dir < 0) {
+      const { end } = getLineBounds(text, selectionStart);
+      const nextStart = Math.min(selectionEnd, end < text.length ? end + 1 : end);
+      if (nextStart >= selectionEnd) {
+        el.editor.setSelectionRange(selectionEnd, selectionEnd);
+      } else {
+        el.editor.setSelectionRange(nextStart, selectionEnd);
+      }
+      ensureSelectionVisible(-1);
     } else {
-      el.editor.setSelectionRange(selectionStart, nextEnd);
+      const { end } = getLineBounds(text, selectionEnd);
+      const prevEnd = text.lastIndexOf("\n", Math.max(0, end - 2));
+      const nextEnd = prevEnd === -1 ? selectionStart : prevEnd;
+      if (nextEnd <= selectionStart) {
+        el.editor.setSelectionRange(selectionStart, selectionStart);
+      } else {
+        el.editor.setSelectionRange(selectionStart, nextEnd);
+      }
+      ensureSelectionVisible(1);
     }
     focusEditorForEditAction();
+  }
+
+  function selectToDocumentEdge(edge) {
+    const len = el.editor.value.length;
+    const { selectionStart, selectionEnd } = el.editor;
+    focusEditorForEditAction();
+    if (edge === "start") {
+      el.editor.setSelectionRange(0, selectionEnd);
+      ensureSelectionVisible(-1);
+      return;
+    }
+    el.editor.setSelectionRange(selectionStart, len);
+    ensureSelectionVisible(1);
   }
 
   function moveToLineEdge(edge) {
@@ -3159,6 +3229,39 @@
       el.editor.setRangeText("", selectionStart, end, "start");
       triggerInput();
     }
+  }
+
+  function deleteCurrentLine() {
+    const text = el.editor.value;
+    const { selectionStart, selectionEnd } = el.editor;
+    let startPos = selectionStart;
+    let endPos = selectionEnd;
+    if (selectionStart === selectionEnd) {
+      const bounds = getLineBounds(text, selectionStart);
+      startPos = bounds.start;
+      endPos = bounds.end;
+    } else {
+      startPos = getLineBounds(text, selectionStart).start;
+      endPos = getLineBounds(text, Math.max(selectionStart, selectionEnd)).end;
+    }
+    if (endPos < text.length && text[endPos] === "\n") endPos += 1;
+    focusEditorForEditAction();
+    el.editor.setRangeText("", startPos, endPos, "start");
+    triggerInput();
+  }
+
+  function deleteCurrentParagraph() {
+    const text = el.editor.value;
+    const { selectionStart, selectionEnd } = el.editor;
+    const startBlock = getBlockBounds(text, selectionStart);
+    const endBlock = getBlockBounds(text, Math.max(selectionStart, selectionEnd));
+    let startPos = startBlock.start;
+    let endPos = endBlock.end;
+    if (startPos >= 2 && text.slice(startPos - 2, startPos) === "\n\n") startPos -= 2;
+    else if (endPos + 2 <= text.length && text.slice(endPos, endPos + 2) === "\n\n") endPos += 2;
+    focusEditorForEditAction();
+    el.editor.setRangeText("", startPos, endPos, "start");
+    triggerInput();
   }
 
   async function copyEditorOrSelection() {
@@ -3251,6 +3354,16 @@
       ta.scrollTop = Math.max(0, caretTop - ta.clientHeight / 2);
     }
     mirror.remove();
+  }
+
+  function ensureSelectionVisible(dir = 1) {
+    const ta = el.editor;
+    const keepStart = ta.selectionStart;
+    const keepEnd = ta.selectionEnd;
+    const anchor = dir < 0 ? keepStart : keepEnd;
+    ta.setSelectionRange(anchor, anchor);
+    ensureCaretVisible();
+    ta.setSelectionRange(keepStart, keepEnd);
   }
 
   function updateCaretUI() {
@@ -3442,6 +3555,8 @@
       editGroupToggles: Array.from(document.querySelectorAll("#editToolsPanel .edit-group-toggle[data-section]")),
       editGroups: Array.from(document.querySelectorAll("#editToolsPanel .edit-group")),
       voiceModeRadios: Array.from(document.querySelectorAll("input[name='voiceMode']")),
+      voiceContinuousRadios: Array.from(document.querySelectorAll("input[name='voiceContinuous']")),
+      voiceLangRadios: Array.from(document.querySelectorAll("input[name='voiceLang']")),
       btnSelectLine: document.getElementById("btnSelectLine"),
       btnSelectBlock: document.getElementById("btnSelectBlock"),
       btnSelectPara: document.getElementById("btnSelectPara"),
@@ -3451,6 +3566,8 @@
       btnExpandDown: document.getElementById("btnExpandDown"),
       btnShrinkUp: document.getElementById("btnShrinkUp"),
       btnShrinkDown: document.getElementById("btnShrinkDown"),
+      btnSelectToStart: document.getElementById("btnSelectToStart"),
+      btnSelectToEnd: document.getElementById("btnSelectToEnd"),
       btnSelectAll: document.getElementById("btnSelectAll"),
       btnLineStart: document.getElementById("btnLineStart"),
       btnLineEnd: document.getElementById("btnLineEnd"),
@@ -3458,6 +3575,8 @@
       btnDocEnd: document.getElementById("btnDocEnd"),
       btnDeleteToLineStart: document.getElementById("btnDeleteToLineStart"),
       btnDeleteToLineEnd: document.getElementById("btnDeleteToLineEnd"),
+      btnDeleteLine: document.getElementById("btnDeleteLine"),
+      btnDeleteParagraph: document.getElementById("btnDeleteParagraph"),
       btnMoveUp: document.getElementById("btnMoveUp"),
       btnMoveDown: document.getElementById("btnMoveDown"),
       btnMoveLeft: document.getElementById("btnMoveLeft"),

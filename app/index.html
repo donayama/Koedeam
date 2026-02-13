@@ -215,9 +215,19 @@
       <fieldset class="segment">
         <legend>音声挿入モード</legend>
         <div class="option-row">
-          <label class="option-chip"><input type="radio" name="voiceMode" value="off" />OFF</label>
           <label class="option-chip"><input type="radio" name="voiceMode" value="append" />末尾</label>
           <label class="option-chip"><input type="radio" name="voiceMode" value="cursor" />カーソル</label>
+        </div>
+      </fieldset>
+      <fieldset class="segment">
+        <legend>音声認識</legend>
+        <div class="option-row">
+          <label class="option-chip"><input type="radio" name="voiceContinuous" value="true" />連続ON</label>
+          <label class="option-chip"><input type="radio" name="voiceContinuous" value="false" />連続OFF</label>
+        </div>
+        <div class="option-row">
+          <label class="option-chip"><input type="radio" name="voiceLang" value="auto" />言語AUTO</label>
+          <label class="option-chip"><input type="radio" name="voiceLang" value="ja-JP" />言語ja-JP</label>
         </div>
       </fieldset>
       <fieldset class="segment">
@@ -331,6 +341,8 @@
           <div class="line-delete-row">
             <button id="btnDeleteToLineStart" type="button" class="line-delete"><span class="icon">⌫|</span>行頭まで削除</button>
             <button id="btnDeleteToLineEnd" type="button" class="line-delete"><span class="icon">|⌦</span>行末まで削除</button>
+            <button id="btnDeleteLine" type="button" class="line-delete"><span class="icon">⌧</span>行削除</button>
+            <button id="btnDeleteParagraph" type="button" class="line-delete"><span class="icon">¶</span>段落削除</button>
           </div>
           <div class="chunk-tools-row" data-edit-mode-group="assist">
             <button id="btnChunkDelete" type="button" class="line-delete"><span class="icon">🧩</span>チャンク削除</button>
@@ -389,6 +401,8 @@
           <button id="btnExpandDown" type="button"><span class="icon">⇓</span>下に拡張</button>
           <button id="btnShrinkUp" type="button"><span class="icon">⇠</span>上を縮小</button>
           <button id="btnShrinkDown" type="button"><span class="icon">⇢</span>下を縮小</button>
+          <button id="btnSelectToStart" type="button"><span class="icon">⤒</span>最初まで選択</button>
+          <button id="btnSelectToEnd" type="button"><span class="icon">⤓</span>最後まで選択</button>
           </div>
         </div>
       </div>
