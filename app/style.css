@@ -350,7 +350,7 @@ select {
   font-size: 14px;
   white-space: nowrap;
 }
-.settings-tabs { margin-bottom: 0; grid-template-columns: repeat(5, 1fr); }
+.settings-tabs { margin-bottom: 0; grid-template-columns: repeat(7, 1fr); }
 .settings-tabs .tab-btn {
   color: var(--fg);
   border-color: var(--line);

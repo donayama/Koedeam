@@ -78,6 +78,10 @@
       idleBehavior: "auto",
       idleMs: 3500
     },
+    advancedTools: {
+      chunk: true,
+      candidate: true
+    },
     undoDepth: 3
   };
 
@@ -164,6 +168,14 @@
       state.settings.candidate = { ...DEFAULT_SETTINGS.candidate };
       saveSettings();
     }
+    if (!state.settings.advancedTools || typeof state.settings.advancedTools !== "object") {
+      state.settings.advancedTools = { ...DEFAULT_SETTINGS.advancedTools };
+      saveSettings();
+    }
+    state.settings.advancedTools = {
+      chunk: state.settings.advancedTools.chunk !== false,
+      candidate: state.settings.advancedTools.candidate !== false
+    };
     state.settings.undoDepth = Number.isFinite(Number(state.settings.undoDepth))
       ? Math.max(1, Math.min(5, Number(state.settings.undoDepth)))
       : DEFAULT_SETTINGS.undoDepth;
@@ -181,6 +193,7 @@
     applyEditPanelSections();
     applyEditPanelMode();
     applyCandidateSettingsUI();
+    applyAdvancedToolVisibility();
     applyUndoSettingsUI();
     applyToolbarVisibility();
     applySidebarTab(state.settings.sidebarTab || "templates");
@@ -577,6 +590,21 @@
         saveSettings();
       });
     }
+    if (el.optShowChunkTools) {
+      el.optShowChunkTools.addEventListener("change", () => {
+        state.settings.advancedTools.chunk = !!el.optShowChunkTools.checked;
+        applyAdvancedToolVisibility();
+        saveSettings();
+      });
+    }
+    if (el.optShowCandidateTools) {
+      el.optShowCandidateTools.addEventListener("change", () => {
+        state.settings.advancedTools.candidate = !!el.optShowCandidateTools.checked;
+        applyAdvancedToolVisibility();
+        if (!state.settings.advancedTools.candidate) hideCandidatePanel();
+        saveSettings();
+      });
+    }
     if (el.candidateList) {
       el.candidateList.addEventListener("click", (evt) => {
         const btn = evt.target.closest("button[data-candidate-index]");
@@ -795,7 +823,13 @@
         triggerToolbarTool(act);
       } else if (act === "documents") openDocumentListPanel();
       else if (act === "snapshot") openSnapshotPanel();
-      else if (act === "settings") openSettings("appearance");
+      else if (act === "settings") openSettings("voice");
+      else if (act === "settings-voice") openSettings("voice");
+      else if (act === "settings-display") openSettings("display");
+      else if (act === "settings-edit") openSettings("edit");
+      else if (act === "settings-templates") openSettings("templates");
+      else if (act === "settings-share") openSettings("share");
+      else if (act === "settings-other") openSettings("other");
       else if (act === "help") {
         applyPrimary("CONFIG");
         enforceKeyboardPolicy();
@@ -1526,6 +1560,19 @@
     if (el.candidateIdleBehavior) el.candidateIdleBehavior.value = state.settings.candidate.idleBehavior;
   }
 
+  function applyAdvancedToolVisibility() {
+    const chunkOn = state.settings.advancedTools?.chunk !== false;
+    const candidateOn = state.settings.advancedTools?.candidate !== false;
+    document.querySelectorAll("[data-advanced-group='chunk']").forEach((node) => {
+      node.classList.toggle("hidden", !chunkOn);
+    });
+    document.querySelectorAll("[data-advanced-group='candidate']").forEach((node) => {
+      node.classList.toggle("hidden", !candidateOn);
+    });
+    if (el.optShowChunkTools) el.optShowChunkTools.checked = chunkOn;
+    if (el.optShowCandidateTools) el.optShowCandidateTools.checked = candidateOn;
+  }
+
   function clearCandidateTimer() {
     if (!state.candidateState.timer) return;
     clearTimeout(state.candidateState.timer);
@@ -2124,6 +2171,11 @@
     el.statusPrimary.textContent = state.primary;
     el.statusInput.textContent = state.input.replaceAll("_", ":");
     el.statusInput.title = `voice-session:${state.voiceSessionState}`;
+    if (el.statusEdit) {
+      const editable = canType();
+      el.statusEdit.textContent = editable ? "EDIT:READY" : "EDIT:LOCKED";
+      el.statusEdit.classList.toggle("input-locked", !editable);
+    }
     el.statusSystem.textContent = state.system;
     el.statusLayout.textContent = state.layoutMode;
     el.statusInput.classList.toggle("input-locked", state.input === "VOICE_LOCKED");
@@ -2488,7 +2540,7 @@
     renderShareShortcuts();
     loadApiKeys();
     applyEditPanelPosition();
-    applySettingsTab(section || "appearance");
+    applySettingsTab(section || "voice");
   }
 
   function applySettingsTab(tab) {
@@ -3449,6 +3501,7 @@
       appMessage: document.getElementById("appMessage"),
       statusPrimary: document.getElementById("statusPrimary"),
       statusInput: document.getElementById("statusInput"),
+      statusEdit: document.getElementById("statusEdit"),
       statusSystem: document.getElementById("statusSystem"),
       statusLayout: document.getElementById("statusLayout"),
       sidebar: document.getElementById("sidebar"),
@@ -3492,10 +3545,12 @@
       btnReplaceInSelection: document.getElementById("btnReplaceInSelection"),
 
       dlgSettings: document.getElementById("dlgSettings"),
-      settingsAppearance: document.getElementById("panelSettingsAppearance"),
+      settingsVoice: document.getElementById("panelSettingsVoice"),
+      settingsDisplay: document.getElementById("panelSettingsDisplay"),
+      settingsEdit: document.getElementById("panelSettingsEdit"),
       settingsTemplates: document.getElementById("panelSettingsTemplates"),
       settingsShare: document.getElementById("panelSettingsShare"),
-      settingsApi: document.getElementById("panelSettingsApi"),
+      settingsOther: document.getElementById("panelSettingsOther"),
       settingsTabs: Array.from(document.querySelectorAll("#dlgSettings .settings-tabs .tab-btn[data-tab]")),
       settingsPanels: Array.from(document.querySelectorAll("#dlgSettings .tab-panel")),
       fontSizeRange: document.getElementById("fontSizeRange"),
@@ -3595,6 +3650,8 @@
       candidateThreshold: document.getElementById("candidateThreshold"),
       candidateNoConfidenceRule: document.getElementById("candidateNoConfidenceRule"),
       candidateIdleBehavior: document.getElementById("candidateIdleBehavior"),
+      optShowChunkTools: document.getElementById("optShowChunkTools"),
+      optShowCandidateTools: document.getElementById("optShowCandidateTools"),
       undoDepth: document.getElementById("undoDepth"),
       candidatePanel: document.getElementById("candidatePanel"),
       candidateList: document.getElementById("candidateList"),
