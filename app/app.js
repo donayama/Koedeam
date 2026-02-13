@@ -1489,11 +1489,13 @@
 
   function scrollSidebarSection(tab) {
     if (!el.sidebar) return;
-    const targetId = tab === "history" ? "panelHistory" : "panelTemplates";
-    const section = document.getElementById(targetId);
-    if (section) {
-      section.scrollIntoView({ block: "start", inline: "nearest" });
-    }
+    const showHistory = tab === "history";
+    const templateSection = document.getElementById("panelTemplates");
+    const historySection = document.getElementById("panelHistory");
+    if (templateSection) templateSection.classList.toggle("hidden", showHistory);
+    if (historySection) historySection.classList.toggle("hidden", !showHistory);
+    const section = showHistory ? historySection : templateSection;
+    if (section) section.scrollIntoView({ block: "start", inline: "nearest" });
   }
 
   function bindSettingsTabs() {
@@ -2382,7 +2384,7 @@
     const allowed = Object.keys(DEFAULT_SETTINGS.toolbar);
     const order = (state.settings.toolbarOrder || DEFAULT_SETTINGS.toolbarOrder)
       .filter((k) => allowed.includes(k));
-    const menuTools = order.filter((tool) => tool !== "voiceMode");
+    const menuTools = order.filter((tool) => tool !== "voiceMode" && tool !== "history");
     el.overflowMenuItems.innerHTML = "";
     menuTools.forEach((tool) => {
       const btn = document.createElement("button");
