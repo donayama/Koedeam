@@ -55,8 +55,9 @@
 - `TABLET/DESKTOP`: `Side Bar` 併用可。ただし文書操作優先時は編集抑止
 - `Tool Bar`: 1行固定。溢れた機能は `Overflow Menu` へ退避
 - `Hamburger Menu`: `Tool Bar` 機能を集約表示（`音声モード` は除外）
-- `Search Panel`: `Dialog Overlay` として表示し、`Side Bar` と同時表示しない
-- `Dialog > Snapshot > Search` の優先順で表示し、上位表示中は下位を開かない
+- `Search Panel`: `Dialog Overlay` として表示し、起動時に `Side Bar` / `Edit Panel` を閉じる
+- `Snapshot Panel`: `Side Bar` の履歴セクションとして表示する
+- `Dialog` 表示中は `canOpen()` により `Menu/Search/Document List/Side Bar` の起動を抑止する
 - iOS入力ズーム回避: `input/textarea/select` は 16px以上を保証
 - Android戻る操作: 開いている `Dialog/Overlay/Side Bar/Edit Panel` を先に閉じてから離脱
 
@@ -65,7 +66,8 @@
 - `SpeechRecognition / webkitSpeechRecognition` 対応時のみ有効
 - 非対応時はOSの音声入力キーボードを利用
 - Web Speech APIはブラウザ実装により外部認識サービスを使う可能性あり
-- `Tool Bar` の音声モード切替で `OFF / カーソル位置 / 文末追記` を切替可能
+- `Tool Bar` のマイクボタンで `音声ON/OFF`、音声モードボタンで `カーソル / 文末追記` を切替
+- 設定 `音声 > 音声認識` で `continuous` と `lang(auto/ja-JP)` を切替可能
 
 ## 共有
 
@@ -85,10 +87,12 @@
 ## Edit Panel
 
 - `Edit Panel` は配置（上/右/下/左）を設定可能
-- `Edit Panel` の `カーソル / 編集 / 範囲選択` はアコーディオン開閉に対応（開閉状態を保存）
+- `Edit Panel` は `Navigation / Edit` の2モードを切替可能
+- `Navigation` では `カーソル移動 / 範囲選択` をアコーディオン開閉可能（開閉状態を保存）
 - 広い画面では `カーソル` と `範囲選択` を左右分割
 - 狭い画面では `カーソル` -> `編集` -> `範囲選択` を縦積み
-- `Edit Toolbar` で `Copy/Cut/Paste/Delete/Backspace/句読点/改行/行頭まで削除/行末まで削除` を提供
+- `Edit Toolbar` で `Copy/Cut/Paste/Delete/Backspace/句読点/改行/Time/行頭まで削除/行末まで削除/行削除/段落削除` を提供
+- `候補しきい値/信頼値なし/放置時/Undo履歴数` は `設定 > 編集` で調整する
 - `MOBILE` で `Edit Panel` 操作中はエディタへフォーカスしない（ソフトウェアキーボード干渉を抑制）
 
 ## Help導線
@@ -123,6 +127,7 @@
 - 設定の「その他」タブから実行
 - 初期化: `localStorage` の下書き/履歴/テンプレ/設定をリセット
 - 強制リロード: Service Worker解除 + Cache削除 + 再読み込み
+- Telemetry: 音声認識セッションの検証ログをJSON出力/コピー可能
 
 ## ローカル開発
 
@@ -148,8 +153,8 @@ python scripts/local_ui_checks.py --url http://localhost:8000/app/
 1. `MOBILE` 幅で `Tool Bar` が2段化しない
 2. `MOBILE` で `Edit Panel` と `Side Bar` が同時展開しない
 3. `VOICE_LOCKED` 時に編集入力が反映されない
-4. `Snapshot Panel` 表示中に背後編集を開始できない
-5. `SEARCH` 表示時に `Edit Panel` が同時展開しない
+4. `Dialog` 表示中に `Menu/Search/Document List/Side Bar` を新規起動できない（`canOpen`）
+5. `SEARCH` 表示時に `Side Bar` が閉じ、`Edit Panel` が同時展開しない
 6. IME変換中にショートカットが誤発火しない
 7. `Update Banner` が `version.json` 差分で表示される
 8. iOSで入力タップ時に自動ズームしない

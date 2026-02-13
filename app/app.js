@@ -758,7 +758,7 @@
   }
 
   function openFindReplace(focusReplace) {
-    if (isDialogLayerOpen()) {
+    if (!canOpen("search")) {
       toast("現在のパネルを閉じてから検索を開いてください");
       return;
     }
@@ -878,6 +878,10 @@
   }
 
   function openMenu() {
+    if (!canOpen("menu")) {
+      toast("現在のダイアログを閉じてからメニューを開いてください");
+      return;
+    }
     pushUiHistory();
     applyPrimary("MANAGE");
     el.menuOverlay.classList.remove("hidden");
@@ -2060,6 +2064,11 @@
     return true;
   }
 
+  function canOpen(target) {
+    if (target === "settings") return true;
+    return !isDialogLayerOpen();
+  }
+
   function focusEditorForEditAction() {
     if (document.activeElement === el.editor) return;
     try {
@@ -2506,7 +2515,7 @@
   }
 
   function openDocumentListPanel() {
-    if (isDialogLayerOpen()) {
+    if (!canOpen("documents")) {
       toast("現在のダイアログを閉じてからドキュメント一覧を開いてください");
       return;
     }
@@ -2529,6 +2538,10 @@
   }
 
   function openSidebarPanel(tab) {
+    if (!canOpen("sidebar")) {
+      toast("現在のダイアログを閉じてからパネルを開いてください");
+      return;
+    }
     pushUiHistory();
     if (tab === "replace") setEditToolsVisible(false);
     applyPrimary(tab === "replace" ? "SEARCH" : "MANAGE");
