@@ -103,7 +103,6 @@
     lastAutoSnapshotText: "",
     dismissedUpdate: false,
     editToolsVisible: false,
-    sideTabsBound: false,
     settingsTabsBound: false,
     primary: "EDIT",
     input: "VOICE_OFF",
@@ -208,7 +207,6 @@
     applyAdvancedToolVisibility();
     applyUndoSettingsUI();
     applyToolbarVisibility();
-    applySidebarTab(state.settings.sidebarTab || "templates");
     applyLayoutState();
     applyPrimary("EDIT");
     applyInputState("VOICE_OFF");
@@ -354,7 +352,6 @@
     if (el.btnCloseSidebar) {
       el.btnCloseSidebar.addEventListener("click", () => toggleSidebar());
     }
-    bindSideTabs();
     bindSettingsTabs();
 
     if (el.btnHelp) {
@@ -1489,9 +1486,7 @@
       applyPrimary("MANAGE");
     }
     if (state.settings.ui.sidebar) {
-      refreshSideTabElements();
-      bindSideTabs();
-      applySidebarTab(state.settings.sidebarTab || "templates");
+      scrollSidebarSection(state.settings.sidebarTab || "templates");
     }
     enforceKeyboardPolicy();
   }
@@ -1517,34 +1512,13 @@
     toast(ok ? "Copyしました" : "Copyできませんでした");
   }
 
-  function refreshSideTabElements() {
-    el.sideTabs = Array.from(document.querySelectorAll("#sidebar .side-tabs .tab-btn[data-tab]"));
-    el.tabPanels = Array.from(document.querySelectorAll("#sidebar .tab-panel"));
-  }
-
-  function bindSideTabs() {
-    if (state.sideTabsBound) return;
+  function scrollSidebarSection(tab) {
     if (!el.sidebar) return;
-    el.sidebar.addEventListener("click", (evt) => {
-      const tabBtn = evt.target.closest(".tab-btn");
-      if (!tabBtn) return;
-      const tab = tabBtn.dataset.tab;
-      applySidebarTab(tab);
-      state.settings.sidebarTab = tab;
-      saveSettings();
-    });
-    state.sideTabsBound = true;
-  }
-
-  function applySidebarTab(tab) {
-    const btn = el.sideTabs.find((b) => b.dataset.tab === tab);
-    const targetId = btn?.getAttribute("aria-controls") || `panel${capitalize(tab)}`;
-    el.sideTabs.forEach((b) => {
-      b.classList.toggle("active", b === btn);
-    });
-    el.tabPanels.forEach((panel) => {
-      panel.classList.toggle("active", panel.id === targetId);
-    });
+    const targetId = tab === "history" ? "panelHistory" : "panelTemplates";
+    const section = document.getElementById(targetId);
+    if (section) {
+      section.scrollIntoView({ block: "start", inline: "nearest" });
+    }
   }
 
   function bindSettingsTabs() {
@@ -2599,12 +2573,12 @@
     if (isMobileLayout()) setEditToolsVisible(false);
     state.settings.ui.sidebar = true;
     applySidebar();
-    applySidebarTab(tab);
+    state.settings.sidebarTab = tab === "history" ? "history" : "templates";
+    scrollSidebarSection(state.settings.sidebarTab);
     saveSettings();
     if (tab === "history") renderHistory();
     if (tab === "templates") renderSidebar();
     if (tab === "replace") refreshMatches();
-    if (el.sidebar) el.sidebar.scrollTop = 0;
   }
 
   function toggleSidebar() {
@@ -3498,8 +3472,6 @@
       statusLayout: document.getElementById("statusLayout"),
       sidebar: document.getElementById("sidebar"),
       sidebarTemplates: document.getElementById("sidebarTemplates"),
-      sideTabs: Array.from(document.querySelectorAll("#sidebar .side-tabs .tab-btn[data-tab]")),
-      tabPanels: Array.from(document.querySelectorAll("#sidebar .tab-panel")),
       btnCloseSidebar: document.getElementById("btnCloseSidebar"),
 
       btnSidebar: document.getElementById("btnSidebar"),

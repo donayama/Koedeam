@@ -43,14 +43,12 @@
         <strong>サイドバー</strong>
         <button id="btnCloseSidebar" type="button" class="btn-icon"><span class="icon">✕</span>Close</button>
       </div>
-      <div class="side-tabs" role="tablist" aria-label="sidebar tabs">
-        <button type="button" class="tab-btn" data-tab="templates" aria-controls="panelTemplates">テンプレ</button>
-        <button type="button" class="tab-btn" data-tab="history" aria-controls="panelHistory">保存・履歴</button>
-      </div>
-      <section id="panelTemplates" class="tab-panel" role="tabpanel">
+      <section id="panelTemplates" class="sidebar-section">
+        <h3>テンプレ</h3>
         <div id="sidebarTemplates" class="sidebar-list"></div>
       </section>
-      <section id="panelHistory" class="tab-panel">
+      <section id="panelHistory" class="sidebar-section">
+        <h3>保存・履歴</h3>
         <div class="dialog-actions">
           <button id="btnOpenDocuments" type="button">ドキュメント一覧</button>
           <button id="btnSnapshot" type="button">スナップショット保存</button>

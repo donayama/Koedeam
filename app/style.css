@@ -152,6 +152,8 @@ button, .btn-icon, .nav-pad, .nav-wide, .chip, .tab-btn {
 .sidebar .dialog-actions button { padding: 8px 6px; }
 .sidebar .dialog-list { gap: 6px; }
 .sidebar h2 { margin: 2px 0 6px; }
+.sidebar h3 { margin: 0 0 6px; font-size: 13px; }
+.sidebar-section + .sidebar-section { margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--line); }
 .side-tabs { gap: 4px; margin-bottom: 6px; }
 .tab-btn { padding: 6px; font-size: 12px; }
 .side-head { display:flex; justify-content:space-between; align-items:center; gap: 8px; margin-bottom: 8px; }
