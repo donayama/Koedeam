@@ -350,11 +350,19 @@ select {
   font-size: 14px;
   white-space: nowrap;
 }
-.settings-tabs { margin-bottom: 0; grid-template-columns: repeat(7, 1fr); }
+.settings-tabs {
+  margin-bottom: 0;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 6px;
+  overflow-x: auto;
+}
 .settings-tabs .tab-btn {
   color: var(--fg);
   border-color: var(--line);
   background: color-mix(in srgb, var(--surface) 92%, transparent);
+  white-space: nowrap;
+  flex: 0 0 auto;
 }
 .settings-tabs .tab-btn.active {
   color: var(--fg);

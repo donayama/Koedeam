@@ -93,12 +93,6 @@
         <div id="overflowMenuItems" class="menu-list overflow-menu-items"></div>
         <button type="button" class="btn-icon" data-menu="documents"><span class="icon">🗂</span>文書一覧</button>
         <button type="button" class="btn-icon" data-menu="snapshot"><span class="icon">🕒</span>スナップショット</button>
-        <button type="button" class="btn-icon" data-menu="settings-voice"><span class="icon">🎤</span>設定:音声</button>
-        <button type="button" class="btn-icon" data-menu="settings-display"><span class="icon">🖥</span>設定:表示</button>
-        <button type="button" class="btn-icon" data-menu="settings-edit"><span class="icon">✎</span>設定:編集</button>
-        <button type="button" class="btn-icon" data-menu="settings-templates"><span class="icon">📄</span>設定:テンプレ</button>
-        <button type="button" class="btn-icon" data-menu="settings-share"><span class="icon">⇪</span>設定:共有</button>
-        <button type="button" class="btn-icon" data-menu="settings-other"><span class="icon">⚙</span>設定:その他</button>
         <button type="button" class="btn-icon" data-menu="settings"><span class="icon">⚙</span>設定</button>
         <button type="button" class="btn-icon" data-menu="help"><span class="icon">?</span>ヘルプ</button>
       </div>
@@ -183,7 +177,7 @@
         <button type="button" class="tab-btn" data-tab="display" aria-controls="panelSettingsDisplay">表示</button>
         <button type="button" class="tab-btn" data-tab="edit" aria-controls="panelSettingsEdit">編集</button>
         <button type="button" class="tab-btn" data-tab="templates" aria-controls="panelSettingsTemplates">テンプレート</button>
-        <button type="button" class="tab-btn" data-tab="share" aria-controls="panelSettingsShare">共有ショートカット</button>
+        <button type="button" class="tab-btn" data-tab="share" aria-controls="panelSettingsShare">共有</button>
         <button type="button" class="tab-btn" data-tab="other" aria-controls="panelSettingsOther">その他</button>
         <button id="btnCloseSettings" type="button" class="tab-btn settings-close">Close</button>
       </div>
@@ -265,6 +259,10 @@
           <label class="option-chip"><input type="radio" name="editPanelPos" value="right" />右</label>
         </div>
       </fieldset>
+      <fieldset class="segment">
+        <legend>Tool Bar 表示</legend>
+        <div id="toolbarOrderList" class="dialog-list dialog-body"></div>
+      </fieldset>
     </section>
     <section id="panelSettingsEdit" class="tab-panel settings-section" role="tabpanel">
       <h3>編集</h3>
@@ -276,8 +274,18 @@
         </div>
       </fieldset>
       <fieldset class="segment">
-        <legend>Tool Bar 表示</legend>
-        <div id="toolbarOrderList" class="dialog-list dialog-body"></div>
+        <legend>候補設定</legend>
+        <div class="candidate-settings-row">
+          <label>候補しきい値<input id="candidateThreshold" type="number" min="0" max="1" step="0.05" value="0.65" /></label>
+          <label>信頼値なし<select id="candidateNoConfidenceRule"><option value="show">候補表示</option><option value="direct">即採用</option></select></label>
+          <label>放置時<select id="candidateIdleBehavior"><option value="auto">自動採用</option><option value="hold">保留</option></select></label>
+        </div>
+      </fieldset>
+      <fieldset class="segment">
+        <legend>履歴</legend>
+        <div class="history-settings-row">
+          <label>Undo履歴数<input id="undoDepth" type="number" min="1" max="5" step="1" value="3" /></label>
+        </div>
       </fieldset>
     </section>
     <section id="panelSettingsTemplates" class="tab-panel settings-section">
@@ -370,7 +378,7 @@
         </button>
         <div class="edit-group-body">
           <div class="edit-toolbar-grid">
-          <div class="edit-toolbar-main">
+          <div class="edit-toolbar-main" data-edit-mode-group="edit">
             <button id="btnCopySel" type="button" class="icon-only" aria-label="Copy"><span class="icon">⎘</span></button>
             <button id="btnCutSel" type="button" class="icon-only" aria-label="Cut"><span class="icon">✂</span></button>
             <button id="btnPasteSel" type="button" class="icon-only" aria-label="Paste"><span class="icon">⎘</span></button>
@@ -383,7 +391,7 @@
             <button id="btnUndo" type="button" class="chip">↶ Undo</button>
             <button id="btnRedo" type="button" class="chip">↷ Redo</button>
           </div>
-          <div class="line-delete-row">
+          <div class="line-delete-row" data-edit-mode-group="edit">
             <button id="btnDeleteToLineStart" type="button" class="line-delete"><span class="icon">⌫|</span>行頭まで削除</button>
             <button id="btnDeleteToLineEnd" type="button" class="line-delete"><span class="icon">|⌦</span>行末まで削除</button>
             <button id="btnDeleteLine" type="button" class="line-delete"><span class="icon">⌧</span>行削除</button>
@@ -398,14 +406,6 @@
           <div class="telemetry-tools-row" data-edit-mode-group="assist">
             <button id="btnTelemetryExportJson" type="button" class="line-delete"><span class="icon">📥</span>Telemetry JSON</button>
             <button id="btnTelemetryCopyJson" type="button" class="line-delete"><span class="icon">📋</span>Telemetry Copy</button>
-          </div>
-          <div class="candidate-settings-row" data-edit-mode-group="assist" data-advanced-group="candidate">
-            <label>候補しきい値<input id="candidateThreshold" type="number" min="0" max="1" step="0.05" value="0.65" /></label>
-            <label>信頼値なし<select id="candidateNoConfidenceRule"><option value="show">候補表示</option><option value="direct">即採用</option></select></label>
-            <label>放置時<select id="candidateIdleBehavior"><option value="auto">自動採用</option><option value="hold">保留</option></select></label>
-          </div>
-          <div class="history-settings-row" data-edit-mode-group="assist">
-            <label>Undo履歴数<input id="undoDepth" type="number" min="1" max="5" step="1" value="3" /></label>
           </div>
           <div id="candidatePanel" class="candidate-panel hidden" aria-hidden="true" data-edit-mode-group="assist" data-advanced-group="candidate">
             <strong>候補選択</strong>
