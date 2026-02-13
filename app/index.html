@@ -48,11 +48,10 @@
         <div id="sidebarTemplates" class="sidebar-list"></div>
       </section>
       <section id="panelHistory" class="sidebar-section">
-        <h3>保存・履歴</h3>
+        <h3>スナップショット</h3>
         <div class="dialog-actions">
           <button id="btnOpenDocuments" type="button">ドキュメント一覧</button>
           <button id="btnSnapshot" type="button">スナップショット保存</button>
-          <button id="btnOpenSnapshotPanel" type="button">パネル表示</button>
         </div>
         <label>自動スナップショット（分）
           <select id="autoSnapshotSelect">
@@ -75,7 +74,7 @@
     <button id="btnVoiceMode" type="button" class="btn-icon toolbar-item" data-tool="voiceMode"><span class="icon">🎛</span>音声:カーソル</button>
     <button id="btnReplace" type="button" class="btn-icon toolbar-item" data-tool="replace"><span class="icon">🔎</span>検索・置換</button>
     <button id="btnTemplates" type="button" class="btn-icon toolbar-item" data-tool="templates"><span class="icon">📄</span>テンプレ</button>
-    <button id="btnHistory" type="button" class="btn-icon toolbar-item" data-tool="history"><span class="icon">🕒</span>保存・履歴</button>
+    <button id="btnHistory" type="button" class="btn-icon toolbar-item" data-tool="history"><span class="icon">🕒</span>スナップショット</button>
     <button id="btnEditTools" type="button" class="btn-icon toolbar-item" data-tool="edit"><span class="icon">✎</span>編集</button>
     <button id="btnShare" type="button" class="btn-icon toolbar-item" data-tool="share"><span class="icon">⇪</span>共有</button>
     <button id="btnOverflow" type="button" class="btn-icon toolbar-overflow" aria-label="その他"><span class="icon">…</span></button>
@@ -145,26 +144,6 @@
     </div>
     <div id="documentsList" class="dialog-list dialog-body"></div>
     <div class="dialog-footer"><button id="btnCloseDocuments" type="button">Close</button></div>
-  </dialog>
-
-  <dialog id="dlgSnapshot">
-    <h2>スナップショット</h2>
-    <div class="dialog-actions">
-      <button id="btnSnapshotSave" type="button">スナップショット保存</button>
-    </div>
-    <label>自動スナップショット（分）
-      <select id="snapshotAutoSnapshotSelect">
-        <option value="0">OFF</option>
-        <option value="1">1</option>
-        <option value="2">2</option>
-        <option value="3">3</option>
-        <option value="5">5</option>
-        <option value="10">10</option>
-        <option value="15">15</option>
-      </select>
-    </label>
-    <div id="snapshotHistoryList" class="dialog-list dialog-body"></div>
-    <div class="dialog-footer"><button id="btnCloseSnapshot" type="button">Close</button></div>
   </dialog>
 
   <dialog id="dlgSettings">

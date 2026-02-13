@@ -436,9 +436,6 @@
     if (el.btnNewDoc) {
       el.btnNewDoc.addEventListener("click", () => createDocument());
     }
-    if (el.btnOpenSnapshotPanel) {
-      el.btnOpenSnapshotPanel.addEventListener("click", () => openSnapshotPanel());
-    }
     el.btnSnapshot.addEventListener("click", () => {
       snapshotDraft();
       renderHistory();
@@ -450,30 +447,8 @@
       saveSettings();
       setupAutoSnapshot();
     });
-    if (el.snapshotAutoSnapshotSelect) {
-      el.snapshotAutoSnapshotSelect.addEventListener("change", () => {
-        const mins = Number(el.snapshotAutoSnapshotSelect.value || 0);
-        state.settings.autoSnapshotMinutes = Number.isFinite(mins) ? mins : 0;
-        saveSettings();
-        setupAutoSnapshot();
-        renderHistory();
-      });
-    }
-    if (el.btnSnapshotSave) {
-      el.btnSnapshotSave.addEventListener("click", () => {
-        snapshotDraft();
-        renderHistory();
-        renderSidebar();
-      });
-    }
-    if (el.btnCloseSnapshot) {
-      el.btnCloseSnapshot.addEventListener("click", () => el.dlgSnapshot.close());
-    }
     if (el.btnCloseDocuments) {
       el.btnCloseDocuments.addEventListener("click", () => el.dlgDocuments.close());
-    }
-    if (el.dlgSnapshot) {
-      el.dlgSnapshot.addEventListener("close", () => applyPrimary("EDIT"));
     }
     if (el.dlgDocuments) {
       el.dlgDocuments.addEventListener("close", () => applyPrimary("EDIT"));
@@ -487,11 +462,6 @@
     if (el.documentsList) {
       el.documentsList.addEventListener("click", (evt) => handleDocumentAction(evt));
     }
-    if (el.snapshotHistoryList) {
-      el.snapshotHistoryList.addEventListener("click", (evt) => handleHistoryAction(evt));
-      el.snapshotHistoryList.addEventListener("change", (evt) => handleHistoryAction(evt));
-    }
-
     el.btnShare.addEventListener("click", () => {
       renderShareShortcuts();
       pushUiHistory();
@@ -781,7 +751,7 @@
   }
 
   function openFindReplace(focusReplace) {
-    if (isDialogLayerOpen() || el.dlgSnapshot?.open) {
+    if (isDialogLayerOpen()) {
       toast("現在のパネルを閉じてから検索を開いてください");
       return;
     }
@@ -803,7 +773,7 @@
   }
 
   function setupDialogDismiss() {
-    [el.dlgHelp, el.dlgShare, el.dlgSettings, el.dlgDocuments, el.dlgSnapshot, el.dlgSearch].forEach((dialog) => {
+    [el.dlgHelp, el.dlgShare, el.dlgSettings, el.dlgDocuments, el.dlgSearch].forEach((dialog) => {
       if (!dialog) return;
       dialog.addEventListener("click", (evt) => {
         if (evt.target !== dialog) return;
@@ -819,7 +789,6 @@
       share: el.dlgShare,
       settings: el.dlgSettings,
       documents: el.dlgDocuments,
-      snapshot: el.dlgSnapshot,
       search: el.dlgSearch
     };
     Object.entries(map).forEach(([key, dialog]) => {
@@ -1137,7 +1106,7 @@
     saveSettings();
     safeSet(STORAGE_KEYS.currentDraft, state.draft);
     renderDocumentLists();
-    if (el.dlgSnapshot?.open) renderHistory();
+    renderHistory();
     toast("新規ドキュメントを作成");
     el.editor.focus();
     applyPrimary("EDIT");
@@ -1236,10 +1205,9 @@
   }
 
   function renderHistory() {
-    const targets = [el.historyList, el.snapshotHistoryList].filter(Boolean);
+    const targets = [el.historyList].filter(Boolean);
     targets.forEach((target) => { target.innerHTML = ""; });
     if (el.autoSnapshotSelect) el.autoSnapshotSelect.value = String(state.settings.autoSnapshotMinutes || 0);
-    if (el.snapshotAutoSnapshotSelect) el.snapshotAutoSnapshotSelect.value = String(state.settings.autoSnapshotMinutes || 0);
     renderDocumentLists();
     const currentDocId = state.settings.currentDocId || "";
     const items = state.recentDrafts.filter((h) => !h.docId || h.docId === currentDocId);
@@ -1987,7 +1955,7 @@
 
   function closeOpenDialog() {
     let closed = false;
-    [el.dlgHelp, el.dlgShare, el.dlgSettings, el.dlgDocuments, el.dlgSnapshot, el.dlgSearch].forEach((d) => {
+    [el.dlgHelp, el.dlgShare, el.dlgSettings, el.dlgDocuments, el.dlgSearch].forEach((d) => {
       if (!d) return;
       if (d.open) {
         d.close();
@@ -2391,7 +2359,7 @@
       voiceMode: "音声モード",
       replace: "検索・置換",
       templates: "テンプレ",
-      history: "保存・履歴",
+      history: "スナップショット",
       edit: "編集",
       share: "共有"
     };
@@ -2430,7 +2398,7 @@
       voiceMode: "音声モード",
       replace: "検索・置換",
       templates: "テンプレ",
-      history: "保存・履歴",
+      history: "スナップショット",
       edit: "編集",
       share: "共有"
     };
@@ -2548,22 +2516,7 @@
   }
 
   function openSnapshotPanel() {
-    if (isDialogLayerOpen()) {
-      toast("現在のダイアログを閉じてから履歴を開いてください");
-      return;
-    }
-    pushUiHistory();
-    closeDialogsExcept("snapshot");
-    if (state.settings.ui.sidebar) {
-      state.settings.ui.sidebar = false;
-      applySidebar();
-      saveSettings();
-    }
-    setEditToolsVisible(false);
-    renderHistory();
-    applyPrimary("MANAGE");
-    enforceKeyboardPolicy();
-    if (el.dlgSnapshot && !el.dlgSnapshot.open) el.dlgSnapshot.showModal();
+    openSidebarPanel("history");
   }
 
   function openSidebarPanel(tab) {
@@ -3540,17 +3493,11 @@
       btnOpenDocuments: document.getElementById("btnOpenDocuments"),
       btnNewDoc: document.getElementById("btnNewDoc"),
       btnSnapshot: document.getElementById("btnSnapshot"),
-      btnOpenSnapshotPanel: document.getElementById("btnOpenSnapshotPanel"),
       documentsList: document.getElementById("documentsList"),
       autoSnapshotSelect: document.getElementById("autoSnapshotSelect"),
       historyList: document.getElementById("historyList"),
       dlgDocuments: document.getElementById("dlgDocuments"),
       btnCloseDocuments: document.getElementById("btnCloseDocuments"),
-      dlgSnapshot: document.getElementById("dlgSnapshot"),
-      btnSnapshotSave: document.getElementById("btnSnapshotSave"),
-      snapshotAutoSnapshotSelect: document.getElementById("snapshotAutoSnapshotSelect"),
-      snapshotHistoryList: document.getElementById("snapshotHistoryList"),
-      btnCloseSnapshot: document.getElementById("btnCloseSnapshot"),
 
       dlgShare: document.getElementById("dlgShare"),
       btnOpenSettingsShare: document.getElementById("btnOpenSettingsShare"),
