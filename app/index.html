@@ -331,6 +331,14 @@
         <button id="btnForceReload" type="button">強制リロード</button>
         <p class="hint">Service Worker とキャッシュを解除して再読み込みします。</p>
       </div>
+      <div class="settings-section">
+        <h3>Telemetry</h3>
+        <p class="hint">音声認識セッションの検証ログをJSONとして出力/コピーします。</p>
+        <div class="telemetry-tools-row">
+          <button id="btnTelemetryExportJson" type="button" class="line-delete"><span class="icon">📥</span>Telemetry JSON</button>
+          <button id="btnTelemetryCopyJson" type="button" class="line-delete"><span class="icon">📋</span>Telemetry Copy</button>
+        </div>
+      </div>
     </section>
   </dialog>
 
@@ -341,7 +349,6 @@
       <div class="edit-mode-switch" role="tablist" aria-label="Edit Panel mode">
         <button id="btnEditModeNavigation" type="button" class="chip active" data-edit-mode="navigation" role="tab" aria-selected="true">Navigation</button>
         <button id="btnEditModeEdit" type="button" class="chip" data-edit-mode="edit" role="tab" aria-selected="false">Edit</button>
-        <button id="btnEditModeAssist" type="button" class="chip" data-edit-mode="assist" role="tab" aria-selected="false">Assist</button>
       </div>
     </div>
     <div class="edit-tools-block">
@@ -395,15 +402,11 @@
             <button id="btnDeleteLine" type="button" class="line-delete"><span class="icon">⌧</span>行削除</button>
             <button id="btnDeleteParagraph" type="button" class="line-delete"><span class="icon">¶</span>段落削除</button>
           </div>
-          <div class="telemetry-tools-row" data-edit-mode-group="assist">
-            <button id="btnTelemetryExportJson" type="button" class="line-delete"><span class="icon">📥</span>Telemetry JSON</button>
-            <button id="btnTelemetryCopyJson" type="button" class="line-delete"><span class="icon">📋</span>Telemetry Copy</button>
-          </div>
-          <div id="candidatePanel" class="candidate-panel hidden" aria-hidden="true" data-edit-mode-group="assist" data-advanced-group="candidate">
+          <div id="candidatePanel" class="candidate-panel hidden" aria-hidden="true" data-edit-mode-group="edit" data-advanced-group="candidate">
             <strong>候補選択</strong>
             <div id="candidateList" class="candidate-list"></div>
           </div>
-          <div class="time-menu-wrap" data-edit-mode-group="assist">
+          <div class="time-menu-wrap" data-edit-mode-group="edit">
             <button id="btnTimeMenu" type="button" class="line-delete"><span class="icon">🕒</span>Time</button>
             <div id="timeMenuPanel" class="time-menu-panel hidden" aria-hidden="true">
               <div class="time-menu-section">

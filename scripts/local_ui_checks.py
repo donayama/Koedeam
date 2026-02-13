@@ -102,7 +102,6 @@ def run(base_url: str) -> int:
             "btnHeaderSnapshot",
             "btnEditModeNavigation",
             "btnEditModeEdit",
-            "btnEditModeAssist",
             "btnTimeMenu",
             "timeMenuPanel",
             "btnUndo",
@@ -152,7 +151,7 @@ def run(base_url: str) -> int:
             failures.append("keyboard proxy: could not parse computed bottom values")
 
 
-        # 2.5) Edit Panel mode split (Navigation / Edit / Assist)
+        # 2.5) Edit Panel mode split (Navigation / Edit)
         page.evaluate("""() => document.getElementById('btnEditModeEdit')?.click()""")
         page.wait_for_timeout(50)
         mode_state = page.evaluate(
@@ -182,23 +181,8 @@ def run(base_url: str) -> int:
         if nav_state["editHidden"] < 1:
             failures.append("edit mode: edit group is not hidden in navigation mode")
 
-        page.evaluate("""() => document.getElementById('btnEditModeAssist')?.click()""")
-        page.wait_for_timeout(50)
-        assist_state = page.evaluate(
-            """() => ({
-              assistVisible: document.querySelectorAll('#editToolsPanel [data-edit-mode-group="assist"]:not(.mode-hidden)').length,
-              navHidden: document.querySelectorAll('#editToolsPanel [data-edit-mode-group="navigation"].mode-hidden').length,
-              navTotal: document.querySelectorAll('#editToolsPanel [data-edit-mode-group="navigation"]').length
-            })"""
-        )
-        report["edit_mode_assist"] = assist_state
-        if assist_state["assistVisible"] < 1:
-            failures.append("edit mode: assist tools are not visible in assist mode")
-        if assist_state["navHidden"] != assist_state["navTotal"]:
-            failures.append("edit mode: navigation groups are not hidden in assist mode")
-
         # 2.6) Time menu insert/expand behavior
-        page.evaluate("""() => document.getElementById('btnEditModeAssist')?.click()""")
+        page.evaluate("""() => document.getElementById('btnEditModeEdit')?.click()""")
         page.evaluate(
             """() => {
               const ta = document.getElementById('editor');
@@ -295,7 +279,7 @@ def run(base_url: str) -> int:
             failures.append("telemetry: export button did not trigger JSON generation")
 
         # 2.9) Candidate selection (threshold/no-confidence fallback)
-        page.evaluate("""() => document.getElementById('btnEditModeAssist')?.click()""")
+        page.evaluate("""() => document.getElementById('btnEditModeEdit')?.click()""")
         page.wait_for_timeout(50)
         page.evaluate(
             """() => {

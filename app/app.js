@@ -318,9 +318,6 @@
     if (el.btnEditModeEdit) {
       el.btnEditModeEdit.addEventListener("click", () => setEditPanelMode("edit"));
     }
-    if (el.btnEditModeAssist) {
-      el.btnEditModeAssist.addEventListener("click", () => setEditPanelMode("assist"));
-    }
     if (el.editToolsPanel) {
       el.editToolsPanel.addEventListener("click", (evt) => {
         const btn = evt.target.closest("button[data-edit-mode]");
@@ -2825,13 +2822,12 @@
   }
 
   function applyEditPanelMode() {
-    const mode = ["navigation", "edit", "assist"].includes(state.editPanelMode) ? state.editPanelMode : "navigation";
+    const mode = ["navigation", "edit"].includes(state.editPanelMode) ? state.editPanelMode : "navigation";
     state.editPanelMode = mode;
     const applyModeClass = (node) => {
       const groupMode = node.dataset.editModeGroup || "navigation";
       const isToolbarGroup = node.classList?.contains("toolbar-group");
-      const isEditOrAssist = mode === "edit" || mode === "assist";
-      const visible = isToolbarGroup ? isEditOrAssist : groupMode === mode;
+      const visible = isToolbarGroup ? mode === "edit" : groupMode === mode;
       node.classList.toggle("mode-hidden", !visible);
     };
     el.editGroups.forEach(applyModeClass);
@@ -2846,18 +2842,13 @@
       el.btnEditModeEdit.classList.toggle("active", active);
       el.btnEditModeEdit.setAttribute("aria-selected", active ? "true" : "false");
     }
-    if (el.btnEditModeAssist) {
-      const active = mode === "assist";
-      el.btnEditModeAssist.classList.toggle("active", active);
-      el.btnEditModeAssist.setAttribute("aria-selected", active ? "true" : "false");
-    }
     requestAnimationFrame(updateEditPanelSize);
   }
 
   function setEditPanelMode(mode) {
-    if (!["navigation", "edit", "assist"].includes(mode)) return;
+    if (!["navigation", "edit"].includes(mode)) return;
     state.editPanelMode = mode;
-    if (mode !== "assist") {
+    if (mode !== "edit") {
       setTimeMenuOpen(false);
       hideCandidatePanel();
     }
@@ -3607,7 +3598,6 @@
       editToolsPanel: document.getElementById("editToolsPanel"),
       btnEditModeNavigation: document.getElementById("btnEditModeNavigation"),
       btnEditModeEdit: document.getElementById("btnEditModeEdit"),
-      btnEditModeAssist: document.getElementById("btnEditModeAssist"),
       editGroupToggles: Array.from(document.querySelectorAll("#editToolsPanel .edit-group-toggle[data-section]")),
       editGroups: Array.from(document.querySelectorAll("#editToolsPanel .edit-group")),
       voiceModeRadios: Array.from(document.querySelectorAll("input[name='voiceMode']")),
