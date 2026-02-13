@@ -433,7 +433,7 @@ select {
     grid-template-columns: 1fr;
   }
   .edit-toolbar-main {
-    grid-template-columns: repeat(9, minmax(0, 1fr));
+    grid-template-columns: repeat(11, minmax(0, 1fr));
   }
   .edit-toolbar-main > button { min-height: 34px; padding: 4px 2px; font-size: 11px; }
   .edit-toolbar-main > button .icon { font-size: 12px; }
@@ -562,7 +562,7 @@ select {
 .edit-toolbar-grid .chip { justify-content: center; }
 .edit-toolbar-main {
   display: grid;
-  grid-template-columns: repeat(9, minmax(0, 1fr));
+  grid-template-columns: repeat(11, minmax(0, 1fr));
   gap: 6px;
 }
 .edit-toolbar-main > button {
@@ -573,9 +573,8 @@ select {
   font-size: 11px;
   white-space: nowrap;
 }
-.edit-toolbar-main > #btnPuncMode {
-  width: 100%;
-}
+.edit-toolbar-main > .time-menu-wrap { min-width: 0; }
+.edit-toolbar-main > .time-menu-wrap > #btnTimeMenu { width: 100%; min-height: 36px; }
 .line-delete-row {
   display: grid;
   grid-template-columns: 1fr 1fr;

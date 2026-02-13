@@ -249,6 +249,13 @@
         </div>
       </fieldset>
       <fieldset class="segment">
+        <legend>句読点スタイル</legend>
+        <div class="option-row">
+          <label class="option-chip"><input type="radio" name="punctuationMode" value="jp" />JP（、。）</label>
+          <label class="option-chip"><input type="radio" name="punctuationMode" value="en" />EN（,.）</label>
+        </div>
+      </fieldset>
+      <fieldset class="segment">
         <legend>候補設定</legend>
         <div class="candidate-settings-row">
           <label>候補しきい値<input id="candidateThreshold" type="number" min="0" max="1" step="0.05" value="0.65" /></label>
@@ -369,7 +376,23 @@
             <button id="btnComma" type="button">、</button>
             <button id="btnPeriod" type="button">。</button>
             <button id="btnNewline" type="button" class="icon-only" aria-label="改行"><span class="icon">↵</span></button>
-            <button id="btnPuncMode" type="button" class="chip">JP</button>
+            <div class="time-menu-wrap" data-edit-mode-group="edit">
+              <button id="btnTimeMenu" type="button" class="line-delete"><span class="icon">🕒</span>Time</button>
+              <div id="timeMenuPanel" class="time-menu-panel hidden" aria-hidden="true">
+                <div class="time-menu-section">
+                  <strong>挿入</strong>
+                  <button type="button" data-time-action="insert-today">(今日)</button>
+                  <button type="button" data-time-action="insert-now">(今)</button>
+                  <button type="button" data-time-action="insert-datetime">(日時)</button>
+                </div>
+                <div class="time-menu-section">
+                  <strong>展開</strong>
+                  <button type="button" data-time-action="expand-today">日付</button>
+                  <button type="button" data-time-action="expand-now">時刻</button>
+                  <button type="button" data-time-action="expand-datetime">日時</button>
+                </div>
+              </div>
+            </div>
             <button id="btnUndo" type="button" class="chip">↶ Undo</button>
             <button id="btnRedo" type="button" class="chip">↷ Redo</button>
           </div>
@@ -382,23 +405,6 @@
           <div id="candidatePanel" class="candidate-panel hidden" aria-hidden="true" data-edit-mode-group="edit" data-advanced-group="candidate">
             <strong>候補選択</strong>
             <div id="candidateList" class="candidate-list"></div>
-          </div>
-          <div class="time-menu-wrap" data-edit-mode-group="edit">
-            <button id="btnTimeMenu" type="button" class="line-delete"><span class="icon">🕒</span>Time</button>
-            <div id="timeMenuPanel" class="time-menu-panel hidden" aria-hidden="true">
-              <div class="time-menu-section">
-                <strong>挿入</strong>
-                <button type="button" data-time-action="insert-today">(今日)</button>
-                <button type="button" data-time-action="insert-now">(今)</button>
-                <button type="button" data-time-action="insert-datetime">(日時)</button>
-              </div>
-              <div class="time-menu-section">
-                <strong>展開</strong>
-                <button type="button" data-time-action="expand-today">日付</button>
-                <button type="button" data-time-action="expand-now">時刻</button>
-                <button type="button" data-time-action="expand-datetime">日時</button>
-              </div>
-            </div>
           </div>
           </div>
         </div>

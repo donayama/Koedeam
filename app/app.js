@@ -514,7 +514,6 @@
     el.btnMoveDown.addEventListener("click", () => moveCursorLine(1));
     el.btnMoveLeft.addEventListener("click", () => moveCursorChar(-1));
     el.btnMoveRight.addEventListener("click", () => moveCursorChar(1));
-    el.btnPuncMode.addEventListener("click", togglePunctuationMode);
     el.btnComma.addEventListener("click", () => insertPunctuation("comma"));
     el.btnPeriod.addEventListener("click", () => insertPunctuation("period"));
     el.btnNewline.addEventListener("click", () => insertTextAtCursor("\n"));
@@ -668,6 +667,14 @@
         if (!radio.checked) return;
         state.settings.fontFace = radio.value;
         applyTypography();
+        saveSettings();
+      });
+    });
+    el.punctuationModeRadios.forEach((radio) => {
+      radio.addEventListener("change", () => {
+        if (!radio.checked) return;
+        state.settings.punctuationMode = radio.value === "en" ? "en" : "jp";
+        applyPunctuationUI();
         saveSettings();
       });
     });
@@ -2544,17 +2551,13 @@
     saveSettings();
   }
 
-  function togglePunctuationMode() {
-    state.settings.punctuationMode = state.settings.punctuationMode === "jp" ? "en" : "jp";
-    saveSettings();
-    applyPunctuationUI();
-  }
-
   function applyPunctuationUI() {
     const jp = state.settings.punctuationMode !== "en";
-    el.btnPuncMode.textContent = jp ? "JP" : "EN";
     el.btnComma.textContent = jp ? "、" : ",";
     el.btnPeriod.textContent = jp ? "。" : ".";
+    el.punctuationModeRadios.forEach((radio) => {
+      radio.checked = radio.value === (jp ? "jp" : "en");
+    });
   }
 
   function insertPunctuation(kind) {
@@ -3555,7 +3558,7 @@
       btnMoveDown: document.getElementById("btnMoveDown"),
       btnMoveLeft: document.getElementById("btnMoveLeft"),
       btnMoveRight: document.getElementById("btnMoveRight"),
-      btnPuncMode: document.getElementById("btnPuncMode"),
+      punctuationModeRadios: Array.from(document.querySelectorAll("input[name='punctuationMode']")),
       btnUndo: document.getElementById("btnUndo"),
       btnRedo: document.getElementById("btnRedo"),
       btnTimeMenu: document.getElementById("btnTimeMenu"),
