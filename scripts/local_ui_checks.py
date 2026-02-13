@@ -105,10 +105,6 @@ def run(base_url: str) -> int:
             "btnEditModeAssist",
             "btnTimeMenu",
             "timeMenuPanel",
-            "btnChunkDelete",
-            "btnChunkSplit",
-            "btnChunkMerge",
-            "btnChunkFormat",
             "btnUndo",
             "btnRedo",
             "undoDepth",
@@ -240,75 +236,6 @@ def run(base_url: str) -> int:
         report["time_insert"] = time_insert
         if "(日時)" not in time_insert["value"]:
             failures.append("time menu: insert-datetime did not insert token")
-
-        # 2.7) Chunk operations (delete/split/merge/format)
-        page.evaluate("""() => document.getElementById('btnEditModeAssist')?.click()""")
-        page.evaluate(
-            """() => {
-              const radio = document.querySelector('input[name="speechUnitMode"][value="chunk"]');
-              if (radio) {
-                radio.checked = true;
-                radio.dispatchEvent(new Event('change', { bubbles: true }));
-              }
-            }"""
-        )
-        page.wait_for_timeout(50)
-        page.evaluate(
-            """() => {
-              const ta = document.getElementById('editor');
-              ta.value = 'A\\n\\n――\\n\\nB';
-              const pos = ta.value.length;
-              ta.focus();
-              ta.setSelectionRange(pos, pos);
-            }"""
-        )
-        page.click("#btnChunkDelete")
-        chunk_delete = page.evaluate("""() => document.getElementById('editor').value""")
-        report["chunk_delete"] = chunk_delete
-        if "――" in chunk_delete or chunk_delete != "A":
-            failures.append("chunk: delete did not remove current chunk")
-
-        page.evaluate(
-            """() => {
-              const ta = document.getElementById('editor');
-              ta.value = 'ABCD';
-              ta.focus();
-              ta.setSelectionRange(2, 2);
-            }"""
-        )
-        page.click("#btnChunkSplit")
-        chunk_split = page.evaluate("""() => document.getElementById('editor').value""")
-        report["chunk_split"] = chunk_split
-        if "――" not in chunk_split:
-            failures.append("chunk: split did not create chunk boundary")
-
-        page.evaluate(
-            """() => {
-              const ta = document.getElementById('editor');
-              ta.value = 'A\\n\\n――\\n\\nB';
-              ta.focus();
-              ta.setSelectionRange(ta.value.length, ta.value.length);
-            }"""
-        )
-        page.click("#btnChunkMerge")
-        chunk_merge = page.evaluate("""() => document.getElementById('editor').value""")
-        report["chunk_merge"] = chunk_merge
-        if "――" in chunk_merge:
-            failures.append("chunk: merge did not remove chunk boundary")
-
-        page.evaluate(
-            """() => {
-              const ta = document.getElementById('editor');
-              ta.value = '  A   B  ';
-              ta.focus();
-              ta.setSelectionRange(ta.value.length, ta.value.length);
-            }"""
-        )
-        page.click("#btnChunkFormat")
-        chunk_format = page.evaluate("""() => document.getElementById('editor').value""")
-        report["chunk_format"] = chunk_format
-        if chunk_format != "A B":
-            failures.append("chunk: format did not normalize chunk text")
 
         # 2.75) Undo/Redo restore (including selection)
         page.evaluate("""() => document.getElementById('btnEditModeEdit')?.click()""")
@@ -489,7 +416,6 @@ def run(base_url: str) -> int:
     print(f"Keyboard Proxy: {as_bool('keyboard proxy: bottombar did not move with --kb-offset' not in failures and 'keyboard proxy: edit panel did not move with --kb-offset' not in failures)}")
     print(f"Edit Mode Split: {as_bool(all(not f.startswith('edit mode:') for f in failures))}")
     print(f"Time Menu: {as_bool(all(not f.startswith('time menu:') for f in failures))}")
-    print(f"Chunk Ops: {as_bool(all(not f.startswith('chunk:') for f in failures))}")
     print(f"Undo/Redo: {as_bool(all(not f.startswith('undo:') and not f.startswith('redo:') for f in failures))}")
     print(f"Telemetry Export: {as_bool(all(not f.startswith('telemetry:') for f in failures))}")
     print(f"Candidate Select: {as_bool(all(not f.startswith('candidate:') for f in failures))}")

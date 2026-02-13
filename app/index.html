@@ -193,6 +193,7 @@
       </fieldset>
       <fieldset class="segment">
         <legend>音声認識</legend>
+        <p class="hint">連続認識と言語を切り替えます。稼働中に変更した場合は再起動して反映します。</p>
         <div class="option-row">
           <label class="option-chip"><input type="radio" name="voiceContinuous" value="true" />連続ON</label>
           <label class="option-chip"><input type="radio" name="voiceContinuous" value="false" />連続OFF</label>
@@ -201,13 +202,10 @@
           <label class="option-chip"><input type="radio" name="voiceLang" value="auto" />言語AUTO</label>
           <label class="option-chip"><input type="radio" name="voiceLang" value="ja-JP" />言語ja-JP</label>
         </div>
-        <div class="option-row">
-          <label class="option-chip"><input type="radio" name="speechUnitMode" value="sentence" />文単位</label>
-          <label class="option-chip"><input type="radio" name="speechUnitMode" value="chunk" />チャンク単位</label>
-        </div>
       </fieldset>
       <fieldset class="segment">
         <legend>音声プリセット</legend>
+        <p class="hint">用途別の推奨組み合わせを一括で適用します。必要に応じて後から個別調整できます。</p>
         <div class="option-row">
           <button id="btnVoicePresetWalk" type="button">散歩モード</button>
           <button id="btnVoicePresetFocus" type="button">確定モード</button>
@@ -215,6 +213,7 @@
       </fieldset>
       <fieldset class="segment">
         <legend>品質比較（4条件）</legend>
+        <p class="hint">同じ発話を4条件で比較し、文字数・欠落・語尾消失・停止頻度の差を確認します。</p>
         <div class="option-row">
           <button id="btnVoiceCase1" type="button">1) OFF+AUTO</button>
           <button id="btnVoiceCase2" type="button">2) ON+AUTO</button>
@@ -269,7 +268,6 @@
       <fieldset class="segment">
         <legend>編集ツール表示</legend>
         <div class="option-row">
-          <label class="option-chip"><input id="optShowChunkTools" type="checkbox" checked />チャンク操作を表示</label>
           <label class="option-chip"><input id="optShowCandidateTools" type="checkbox" checked />候補設定を表示</label>
         </div>
       </fieldset>
@@ -396,12 +394,6 @@
             <button id="btnDeleteToLineEnd" type="button" class="line-delete"><span class="icon">|⌦</span>行末まで削除</button>
             <button id="btnDeleteLine" type="button" class="line-delete"><span class="icon">⌧</span>行削除</button>
             <button id="btnDeleteParagraph" type="button" class="line-delete"><span class="icon">¶</span>段落削除</button>
-          </div>
-          <div class="chunk-tools-row" data-edit-mode-group="assist" data-advanced-group="chunk">
-            <button id="btnChunkDelete" type="button" class="line-delete"><span class="icon">🧩</span>チャンク削除</button>
-            <button id="btnChunkSplit" type="button" class="line-delete"><span class="icon">✂</span>チャンク分割</button>
-            <button id="btnChunkMerge" type="button" class="line-delete"><span class="icon">🔗</span>チャンク結合</button>
-            <button id="btnChunkFormat" type="button" class="line-delete"><span class="icon">≋</span>チャンク整形</button>
           </div>
           <div class="telemetry-tools-row" data-edit-mode-group="assist">
             <button id="btnTelemetryExportJson" type="button" class="line-delete"><span class="icon">📥</span>Telemetry JSON</button>

@@ -9,7 +9,6 @@
     settings: "koedeam.settings"
   };
   const MAX_SHARE_SHORTCUTS = 8;
-  const CHUNK_SEPARATOR = "\n\n――\n\n";
 
   const DEFAULT_TEMPLATES = [
     { id: uid(), name: "AI整理依頼", text: "次のメモを、目的・要点・次アクションの3項目で整理してください。\n\n[メモ]\n", updatedAt: Date.now() },
@@ -28,7 +27,6 @@
     voiceInsertMode: "cursor",
     voiceContinuous: false,
     voiceLang: "ja-JP",
-    speechUnitMode: "sentence",
     autoSnapshotMinutes: 0,
     searchHistory: [],
     searchOptions: {
@@ -80,7 +78,6 @@
       idleMs: 3500
     },
     advancedTools: {
-      chunk: true,
       candidate: true
     },
     voiceEval: {
@@ -171,10 +168,6 @@
       state.settings.voiceLang = "ja-JP";
       saveSettings();
     }
-    if (!["sentence", "chunk"].includes(state.settings.speechUnitMode)) {
-      state.settings.speechUnitMode = "sentence";
-      saveSettings();
-    }
     if (!state.settings.candidate || typeof state.settings.candidate !== "object") {
       state.settings.candidate = { ...DEFAULT_SETTINGS.candidate };
       saveSettings();
@@ -184,7 +177,6 @@
       saveSettings();
     }
     state.settings.advancedTools = {
-      chunk: state.settings.advancedTools.chunk !== false,
       candidate: state.settings.advancedTools.candidate !== false
     };
     if (!state.settings.voiceEval || typeof state.settings.voiceEval !== "object") {
@@ -572,10 +564,6 @@
         runTimeMenuAction(btn.dataset.timeAction || "");
       });
     }
-    if (el.btnChunkDelete) el.btnChunkDelete.addEventListener("click", deleteCurrentChunk);
-    if (el.btnChunkSplit) el.btnChunkSplit.addEventListener("click", splitCurrentChunk);
-    if (el.btnChunkMerge) el.btnChunkMerge.addEventListener("click", mergeCurrentChunk);
-    if (el.btnChunkFormat) el.btnChunkFormat.addEventListener("click", formatCurrentChunk);
     if (el.btnTelemetryExportJson) el.btnTelemetryExportJson.addEventListener("click", exportTelemetryJson);
     if (el.btnTelemetryCopyJson) el.btnTelemetryCopyJson.addEventListener("click", copyTelemetryJson);
     if (el.btnUndo) el.btnUndo.addEventListener("click", undoEdit);
@@ -607,15 +595,6 @@
     if (el.candidateIdleBehavior) {
       el.candidateIdleBehavior.addEventListener("change", () => {
         state.settings.candidate.idleBehavior = el.candidateIdleBehavior.value === "hold" ? "hold" : "auto";
-        saveSettings();
-      });
-    }
-    if (el.optShowChunkTools) {
-      el.optShowChunkTools.addEventListener("change", () => {
-        state.settings.advancedTools.chunk = !!el.optShowChunkTools.checked;
-        if (!state.settings.advancedTools.chunk) state.settings.speechUnitMode = "sentence";
-        applyAdvancedToolVisibility();
-        applyVoiceModeUI();
         saveSettings();
       });
     }
@@ -680,16 +659,6 @@
         applyVoiceModeUI();
         saveSettings();
         if (state.speaking) restartVoiceForSettingChange();
-      });
-    });
-    el.speechUnitModeRadios.forEach((radio) => {
-      radio.addEventListener("change", () => {
-        if (!radio.checked) return;
-        state.settings.speechUnitMode = radio.value === "chunk" ? "chunk" : "sentence";
-        if (state.settings.speechUnitMode !== "chunk") hideCandidatePanel();
-        applyAdvancedToolVisibility();
-        applyVoiceModeUI();
-        saveSettings();
       });
     });
     if (el.btnVoicePresetWalk) {
@@ -1626,15 +1595,10 @@
   }
 
   function applyAdvancedToolVisibility() {
-    const chunkOn = state.settings.advancedTools?.chunk !== false && state.settings.speechUnitMode === "chunk";
     const candidateOn = state.settings.advancedTools?.candidate !== false;
-    document.querySelectorAll("[data-advanced-group='chunk']").forEach((node) => {
-      node.classList.toggle("hidden", !chunkOn);
-    });
     document.querySelectorAll("[data-advanced-group='candidate']").forEach((node) => {
       node.classList.toggle("hidden", !candidateOn);
     });
-    if (el.optShowChunkTools) el.optShowChunkTools.checked = chunkOn;
     if (el.optShowCandidateTools) el.optShowCandidateTools.checked = candidateOn;
   }
 
@@ -1759,7 +1723,6 @@
         restartStartedAt: null,
         voiceLang: state.settings.voiceLang,
         voiceContinuous: !!state.settings.voiceContinuous,
-        speechUnitMode: state.settings.speechUnitMode,
         candidateThreshold: Number(state.settings.candidate?.threshold || 0),
         finalCharsTotal: 0,
         finalResultCount: 0,
@@ -1950,72 +1913,6 @@
     };
   }
 
-  function splitChunks(text) {
-    if (!text) return [""];
-    return String(text).split(CHUNK_SEPARATOR);
-  }
-
-  function joinChunks(chunks) {
-    return chunks.join(CHUNK_SEPARATOR);
-  }
-
-  function getChunkIndexAtCursor(text, cursorPos) {
-    const chunks = splitChunks(text);
-    let offset = 0;
-    for (let i = 0; i < chunks.length; i += 1) {
-      const end = offset + chunks[i].length;
-      if (cursorPos <= end) return i;
-      offset = end + CHUNK_SEPARATOR.length;
-    }
-    return chunks.length - 1;
-  }
-
-  function getChunkCursorOffset(text, cursorPos, chunkIndex) {
-    const chunks = splitChunks(text);
-    let offset = 0;
-    for (let i = 0; i < chunkIndex; i += 1) {
-      offset += chunks[i].length + CHUNK_SEPARATOR.length;
-    }
-    return Math.max(0, Math.min(chunks[chunkIndex].length, cursorPos - offset));
-  }
-
-  function applyChunksAndSelection(chunks, chunkIndex, inChunkOffset) {
-    const normalized = chunks.map((chunk) => String(chunk));
-    const value = joinChunks(normalized);
-    el.editor.value = value;
-    const idx = Math.max(0, Math.min(normalized.length - 1, chunkIndex));
-    let cursor = 0;
-    for (let i = 0; i < idx; i += 1) {
-      cursor += normalized[i].length + CHUNK_SEPARATOR.length;
-    }
-    cursor += Math.max(0, Math.min(normalized[idx].length, inChunkOffset));
-    el.editor.setSelectionRange(cursor, cursor);
-    triggerInput("voice-final");
-    updateCaretUI();
-  }
-
-  function insertVoiceChunk(text) {
-    const mode = state.settings.voiceInsertMode;
-    const cleaned = String(text || "").trim();
-    if (!cleaned) return;
-    const source = el.editor.value || "";
-    const chunks = splitChunks(source);
-    if (chunks.length === 1 && !chunks[0]) {
-      chunks[0] = cleaned;
-      applyChunksAndSelection(chunks, 0, cleaned.length);
-      return;
-    }
-    if (mode === "append") {
-      chunks.push(cleaned);
-      applyChunksAndSelection(chunks, chunks.length - 1, cleaned.length);
-      return;
-    }
-    const pos = el.editor.selectionStart;
-    const idx = getChunkIndexAtCursor(source, pos);
-    chunks.splice(idx + 1, 0, cleaned);
-    applyChunksAndSelection(chunks, idx + 1, cleaned.length);
-  }
-
   function insertVoicePlain(text) {
     const mode = state.settings.voiceInsertMode;
     const cleaned = String(text || "").trim();
@@ -2043,74 +1940,7 @@
     updateCaretUI();
   }
 
-  function getActiveChunkContext() {
-    const value = el.editor.value || "";
-    const chunks = splitChunks(value);
-    const cursorPos = el.editor.selectionStart;
-    const idx = getChunkIndexAtCursor(value, cursorPos);
-    const inOffset = getChunkCursorOffset(value, cursorPos, idx);
-    return { value, chunks, idx, inOffset };
-  }
-
-  function deleteCurrentChunk() {
-    focusEditorForEditAction();
-    const { chunks, idx } = getActiveChunkContext();
-    if (chunks.length <= 1) {
-      el.editor.value = "";
-      el.editor.setSelectionRange(0, 0);
-      triggerInput();
-      return;
-    }
-    chunks.splice(idx, 1);
-    const next = Math.max(0, idx - 1);
-    applyChunksAndSelection(chunks, next, chunks[next].length);
-  }
-
-  function splitCurrentChunk() {
-    focusEditorForEditAction();
-    const { chunks, idx, inOffset } = getActiveChunkContext();
-    const current = chunks[idx] || "";
-    if (inOffset <= 0 || inOffset >= current.length) {
-      toast("チャンク内の中間位置で分割してください");
-      return;
-    }
-    const left = current.slice(0, inOffset);
-    const right = current.slice(inOffset);
-    chunks.splice(idx, 1, left, right);
-    applyChunksAndSelection(chunks, idx + 1, 0);
-  }
-
-  function mergeCurrentChunk() {
-    focusEditorForEditAction();
-    const { chunks, idx } = getActiveChunkContext();
-    if (idx <= 0) {
-      toast("先頭チャンクは結合できません");
-      return;
-    }
-    chunks[idx - 1] = `${chunks[idx - 1]} ${chunks[idx]}`.trim();
-    chunks.splice(idx, 1);
-    applyChunksAndSelection(chunks, idx - 1, chunks[idx - 1].length);
-  }
-
-  function formatCurrentChunk() {
-    focusEditorForEditAction();
-    const { chunks, idx, inOffset } = getActiveChunkContext();
-    const before = chunks[idx] || "";
-    const formatted = before
-      .split("\n")
-      .map((line) => line.trim())
-      .join("\n")
-      .replace(/[ \t]{2,}/g, " ")
-      .trim();
-    chunks[idx] = formatted;
-    applyChunksAndSelection(chunks, idx, Math.min(inOffset, formatted.length));
-  }
-
   function insertByVoiceMode(text) {
-    if (state.settings.speechUnitMode === "chunk") {
-      insertVoiceChunk(text);
-      return;
-    }
     insertVoicePlain(text);
   }
 
@@ -2461,9 +2291,6 @@
     el.voiceLangRadios.forEach((radio) => {
       radio.checked = radio.value === state.settings.voiceLang;
     });
-    el.speechUnitModeRadios.forEach((radio) => {
-      radio.checked = radio.value === state.settings.speechUnitMode;
-    });
     if (el.voiceEvalLabel) el.voiceEvalLabel.value = state.settings.voiceEval?.label || "";
     if (el.voiceEvalExpectedChars) el.voiceEvalExpectedChars.value = String(state.settings.voiceEval?.expectedChars || "");
     if (el.voiceEvalExpectedTail) el.voiceEvalExpectedTail.value = state.settings.voiceEval?.expectedTail || "";
@@ -2489,20 +2316,17 @@
       state.settings.voiceContinuous = true;
       state.settings.voiceInsertMode = "append";
       state.settings.voiceLang = "auto";
-      state.settings.speechUnitMode = "sentence";
       state.settings.candidate.threshold = 0.55;
       state.settings.candidate.noConfidenceRule = "show";
     } else {
       state.settings.voiceContinuous = false;
       state.settings.voiceInsertMode = "cursor";
       state.settings.voiceLang = "ja-JP";
-      state.settings.speechUnitMode = "sentence";
       state.settings.candidate.threshold = 0.65;
       state.settings.candidate.noConfidenceRule = "direct";
     }
     applyVoiceModeUI();
     applyCandidateSettingsUI();
-    applyAdvancedToolVisibility();
     saveSettings();
     if (state.speaking) restartVoiceForSettingChange();
     toast(kind === "walk" ? "散歩モードを適用しました" : "確定モードを適用しました");
@@ -2517,7 +2341,6 @@
     state.settings.voiceLang = langAuto ? "auto" : "ja-JP";
     applyVoiceModeUI();
     applyCandidateSettingsUI();
-    applyAdvancedToolVisibility();
     saveSettings();
     if (state.speaking) restartVoiceForSettingChange();
     toast(`比較条件${c}を適用しました`);
@@ -2611,10 +2434,9 @@
       share: "⇪"
     };
     const allowed = Object.keys(DEFAULT_SETTINGS.toolbar);
-    const toolbarState = getEffectiveToolbarSettings();
     const order = (state.settings.toolbarOrder || DEFAULT_SETTINGS.toolbarOrder)
       .filter((k) => allowed.includes(k));
-    const menuTools = order.filter((tool) => toolbarState[tool] && tool !== "voiceMode");
+    const menuTools = order;
     el.overflowMenuItems.innerHTML = "";
     menuTools.forEach((tool) => {
       const btn = document.createElement("button");
@@ -3791,7 +3613,6 @@
       voiceModeRadios: Array.from(document.querySelectorAll("input[name='voiceMode']")),
       voiceContinuousRadios: Array.from(document.querySelectorAll("input[name='voiceContinuous']")),
       voiceLangRadios: Array.from(document.querySelectorAll("input[name='voiceLang']")),
-      speechUnitModeRadios: Array.from(document.querySelectorAll("input[name='speechUnitMode']")),
       btnVoicePresetWalk: document.getElementById("btnVoicePresetWalk"),
       btnVoicePresetFocus: document.getElementById("btnVoicePresetFocus"),
       btnVoiceCase1: document.getElementById("btnVoiceCase1"),
@@ -3830,16 +3651,11 @@
       btnRedo: document.getElementById("btnRedo"),
       btnTimeMenu: document.getElementById("btnTimeMenu"),
       timeMenuPanel: document.getElementById("timeMenuPanel"),
-      btnChunkDelete: document.getElementById("btnChunkDelete"),
-      btnChunkSplit: document.getElementById("btnChunkSplit"),
-      btnChunkMerge: document.getElementById("btnChunkMerge"),
-      btnChunkFormat: document.getElementById("btnChunkFormat"),
       btnTelemetryExportJson: document.getElementById("btnTelemetryExportJson"),
       btnTelemetryCopyJson: document.getElementById("btnTelemetryCopyJson"),
       candidateThreshold: document.getElementById("candidateThreshold"),
       candidateNoConfidenceRule: document.getElementById("candidateNoConfidenceRule"),
       candidateIdleBehavior: document.getElementById("candidateIdleBehavior"),
-      optShowChunkTools: document.getElementById("optShowChunkTools"),
       optShowCandidateTools: document.getElementById("optShowCandidateTools"),
       undoDepth: document.getElementById("undoDepth"),
       candidatePanel: document.getElementById("candidatePanel"),

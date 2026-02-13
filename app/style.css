@@ -493,8 +493,6 @@ select {
 .edit-mode-switch .chip.active { background: var(--accent); color: #fff; border-color: transparent; }
 .edit-group.mode-hidden { display: none; }
 .edit-toolbar-grid [data-edit-mode-group].mode-hidden { display: none; }
-.chunk-tools-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-top: 6px; }
-.chunk-tools-row button { min-height: 34px; }
 .telemetry-tools-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-top: 6px; }
 .telemetry-tools-row button { min-height: 34px; }
 .candidate-settings-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: 6px; }
