@@ -345,7 +345,8 @@ select {
   top: 0;
   z-index: 2;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
+  flex-wrap: wrap;
   gap: 8px;
   padding-bottom: 8px;
   background: var(--surface-strong);
@@ -359,16 +360,20 @@ select {
 .settings-tabs {
   margin-bottom: 0;
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   gap: 6px;
-  overflow-x: auto;
+  overflow: visible;
+  flex: 1 1 100%;
+  min-width: 0;
 }
 .settings-tabs .tab-btn {
   color: var(--fg);
   border-color: var(--line);
   background: color-mix(in srgb, var(--surface) 92%, transparent);
   white-space: nowrap;
-  flex: 0 0 auto;
+  flex: 1 1 84px;
+  min-width: 84px;
+  text-align: center;
 }
 .settings-tabs .tab-btn.active {
   color: var(--fg);
