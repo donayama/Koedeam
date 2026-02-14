@@ -59,7 +59,7 @@ Centralize all voice event handling.
 
 ## WI-151 (implement) VoiceEngine Interface + RealVoiceEngine [doing]
 
-## WI-152 (prepare) testMode Switch Skeleton [todo]
+## WI-152 (prepare) testMode Switch Skeleton [doing]
 
 ---
 

@@ -98,6 +98,9 @@
     templates: [],
     settings: structuredClone(DEFAULT_SETTINGS),
     shareMode: "all",
+    runtime: {
+      testMode: false
+    },
     voiceEngine: null,
     recognition: null,
     speaking: false,
@@ -152,6 +155,8 @@
   init();
 
   function init() {
+    state.runtime = parseRuntimeFlags(window.location.search);
+    ensureTestBridge();
     migrateVersion();
     state.draft = safeGetString(STORAGE_KEYS.currentDraft, "");
     state.recentDrafts = safeGetArray(STORAGE_KEYS.recentDrafts, []);
@@ -234,6 +239,25 @@
     setupVersionPolling();
     setupViewportWatcher();
     seedUndoState();
+  }
+
+  function parseRuntimeFlags(search) {
+    const params = new URLSearchParams(search || "");
+    const raw = `${params.get("testMode") || ""}`.trim().toLowerCase();
+    return {
+      testMode: raw === "1" || raw === "true" || raw === "on"
+    };
+  }
+
+  function ensureTestBridge() {
+    const existing = (window.__KOEDEAM_TEST__ && typeof window.__KOEDEAM_TEST__ === "object")
+      ? window.__KOEDEAM_TEST__
+      : {};
+    window.__KOEDEAM_TEST__ = {
+      ...existing,
+      testMode: !!state.runtime.testMode,
+      voiceEngineType: "real"
+    };
   }
 
   function bindEvents() {
@@ -1726,8 +1750,17 @@
     };
   }
 
+  function selectVoiceEngine(hostWindow) {
+    const selected = "real";
+    const engine = createRealVoiceEngine(hostWindow);
+    if (window.__KOEDEAM_TEST__ && typeof window.__KOEDEAM_TEST__ === "object") {
+      window.__KOEDEAM_TEST__.voiceEngineType = selected;
+    }
+    return engine;
+  }
+
   function setupSpeech() {
-    const voiceEngine = createRealVoiceEngine(window);
+    const voiceEngine = selectVoiceEngine(window);
     if (!voiceEngine) {
       el.btnMic.disabled = true;
       toast("音声API非対応: OS音声入力キーボードをご利用ください", 3500);
