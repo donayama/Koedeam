@@ -3,6 +3,14 @@
 無料で使える、声で編む草稿エディタです。  
 `/` はLP、`/app/` はPWAエディタです。
 
+
+## 疑似Issue（Work Item）運用
+
+本リポジトリでは GitHub Issue の代わりに、`docs/roadmap.md` を疑似Issue（Work Item）の唯一の正規ソースとして運用します。  
+作業前に必ず対象の `WI-ID` を選定し、すべてのPRで `WI-ID` を明記してください。
+
+- Roadmap: `docs/roadmap.md`
+- すべてのPRは `WI-ID` 必須（例: `Implements: WI-000`）
 ## コンセプト
 
 - 音声で思考を止めずに草稿化する
@@ -158,3 +166,4 @@ python scripts/local_ui_checks.py --url http://localhost:8000/app/
 6. IME変換中にショートカットが誤発火しない
 7. `Update Banner` が `version.json` 差分で表示される
 8. iOSで入力タップ時に自動ズームしない
+
