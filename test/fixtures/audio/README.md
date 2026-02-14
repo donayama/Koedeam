@@ -21,6 +21,10 @@ This directory stores metadata and policy for optional audio fixtures used by re
   - source URL (if available)
   - license
   - attribution
+- This repository intentionally keeps one sample WAV:
+  - `koedeam_phrase_01.wav`
+  - credit: `VOICEVOX:四国めたん`
+  - keep this credit in README / LP when redistributed.
 
 ## File size guideline
 

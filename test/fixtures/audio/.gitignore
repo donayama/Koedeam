@@ -4,6 +4,7 @@
 *.flac
 *.m4a
 *.aac
+!koedeam_phrase_01.wav
 
 # Temporary processing outputs.
 tmp/

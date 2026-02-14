@@ -188,6 +188,10 @@ flaky回避で厳格判定を一時的に緩めたい場合のみ、以下を使
 python scripts/playwright_audio_mic_check.py --url http://localhost:8000/app/ --wav test/fixtures/audio/converted/koedeam_phrase_01.wav --allow-no-recognition
 ```
 
+## Audio Sample Credit
+
+- Test audio sample (`test/fixtures/audio/koedeam_phrase_01.wav`) credit: `VOICEVOX:四国めたん`
+
 ## 検証チェックリスト
 
 1. `MOBILE` 幅で `Tool Bar` が2段化しない
