@@ -34,7 +34,14 @@ def origin_of(url: str) -> str:
     return f"{parsed.scheme}://{parsed.netloc}"
 
 
-def run(base_url: str, wav_path: Path | None, timeout_ms: int, trace_path: Path, allow_no_recognition: bool) -> int:
+def run(
+    base_url: str,
+    wav_path: Path | None,
+    timeout_ms: int,
+    trace_path: Path,
+    allow_no_recognition: bool,
+    expected_text: str,
+) -> int:
     wav_local = wav_path
     temp_dir: tempfile.TemporaryDirectory[str] | None = None
     if wav_local is None:
@@ -47,6 +54,7 @@ def run(base_url: str, wav_path: Path | None, timeout_ms: int, trace_path: Path,
     report = {
         "base_url": base_url,
         "wav": str(wav_local),
+        "expected_text": expected_text,
         "observed_titles": [],
         "observed_inputs": [],
         "mic_labels": [],
@@ -57,6 +65,7 @@ def run(base_url: str, wav_path: Path | None, timeout_ms: int, trace_path: Path,
         "editor_changed": False,
         "initial_editor_value": "",
         "final_editor_value": "",
+        "text_match": None,
     }
 
     with sync_playwright() as p:
@@ -123,6 +132,12 @@ def run(base_url: str, wav_path: Path | None, timeout_ms: int, trace_path: Path,
             warnings.append(msg)
         else:
             failures.append(msg)
+    else:
+        actual = str(report["final_editor_value"]).strip()
+        expected = str(expected_text).strip()
+        report["text_match"] = actual == expected
+        if actual != expected:
+            failures.append(f"text mismatch expected='{expected}' actual='{actual}'")
 
     print("== Playwright Audio Mic Check (Chromium optional) ==")
     print(json.dumps(report, ensure_ascii=True))
@@ -156,13 +171,28 @@ def main() -> int:
         help="Do not fail even if recognition evidence is not observed (flaky fallback).",
     )
     parser.add_argument(
+        "--expected-text-file",
+        default="test/fixtures/audio/expected_text.txt",
+        help="Expected text file used when recognition evidence is observed.",
+    )
+    parser.add_argument(
+        "--expected-text",
+        default="",
+        help="Expected text literal (overrides --expected-text-file when provided).",
+    )
+    parser.add_argument(
         "--trace-path",
         default="artifacts/traces/audio_mic_check_trace.zip",
         help="Playwright trace output path",
     )
     args = parser.parse_args()
     wav = Path(args.wav) if args.wav else None
-    return run(args.url, wav, args.timeout_ms, Path(args.trace_path), args.allow_no_recognition)
+    expected = args.expected_text
+    if not expected:
+        expected_path = Path(args.expected_text_file)
+        if expected_path.exists():
+            expected = expected_path.read_text(encoding="utf-8").strip()
+    return run(args.url, wav, args.timeout_ms, Path(args.trace_path), args.allow_no_recognition, expected)
 
 
 if __name__ == "__main__":

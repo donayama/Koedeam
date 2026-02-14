@@ -174,7 +174,8 @@ python scripts/playwright_audio_mic_check.py --url http://localhost:8000/app/
 ```
 
 デフォルトでは、`PERMISSION_WAIT` に加えて  
-`RUNNING/LOCKED` または `editor` 反映を「認識成立の証拠」として必須チェックします。
+`RUNNING/LOCKED` または `editor` 反映を「認識成立の証拠」として必須チェックします。  
+認識証拠が出た場合は `test/fixtures/audio/expected_text.txt` と `editor` 最終結果を突合します。
 
 任意でWAVを指定できます。
 
