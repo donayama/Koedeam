@@ -119,6 +119,7 @@
     voiceRestartTimer: null,
     voiceRestartAttempt: 0,
     voiceManualStop: false,
+    voicePending: false,
     voiceCueCtx: null,
     stopVoiceInput: null,
     startVoiceInput: null,
@@ -296,6 +297,10 @@
       }
     });
     el.editor.addEventListener("blur", () => {
+      if (state.speaking) {
+        updateCaretUI();
+        return;
+      }
       el.caretLine.classList.add("hidden");
       el.caretDot.classList.add("hidden");
     });
@@ -1648,7 +1653,15 @@
     const item = state.candidateState.list[index] || state.candidateState.list[0];
     if (!item) return;
     insertByVoiceMode(item.text);
+    setVoicePending(false);
     hideCandidatePanel();
+  }
+
+  function setVoicePending(next) {
+    const flag = !!next;
+    if (state.voicePending === flag) return;
+    state.voicePending = flag;
+    updateCaretUI();
   }
 
   function shouldShowCandidates(candidates) {
@@ -1662,6 +1675,7 @@
   }
 
   function queueCandidateSelection(candidates) {
+    setVoicePending(true);
     state.candidateState.pending = { at: Date.now() };
     renderCandidatePanel(candidates);
     clearCandidateTimer();
@@ -1824,11 +1838,13 @@
         if (!result.isFinal && session && session.firstInterimAt == null) {
           session.firstInterimAt = Date.now();
         }
+        if (!result.isFinal) setVoicePending(true);
         sessionRecord(result.isFinal ? "voice.onresult.final" : "voice.onresult.interim", {
           resultIndex: i,
           charLen: `${result[0]?.transcript || ""}`.length
         });
         if (!result.isFinal) continue;
+        setVoicePending(false);
         const candidates = [];
         for (let j = 0; j < Math.min(3, result.length || 0); j += 1) {
           const alt = result[j];
@@ -1850,6 +1866,7 @@
           queueCandidateSelection(filtered);
         } else {
           insertByVoiceMode(filtered[0].text);
+          setVoicePending(false);
         }
       }
     });
@@ -1857,10 +1874,12 @@
       state.voiceRestartAttempt = 0;
       applyVoiceSessionState("RUNNING");
       state.speaking = true;
+      setVoicePending(false);
       startTelemetrySession();
       playVoiceStartCue();
       el.btnMic.innerHTML = '<span class="icon">■</span>停止';
       applyInputState(state.settings.voiceInsertMode === "append" ? "VOICE_APPEND" : "VOICE_LOCKED");
+      updateCaretUI();
     });
     recognition.addEventListener("error", (event) => {
       const err = event?.error || "unknown";
@@ -1877,6 +1896,7 @@
       }
       toast(`音声入力エラー: ${err}`);
       state.speaking = false;
+      setVoicePending(false);
       clearRestartTimer();
       applyVoiceSessionState("STOPPED");
       applyInputState("VOICE_OFF");
@@ -1887,6 +1907,7 @@
       if (state.voiceManualStop) {
         state.voiceManualStop = false;
         state.speaking = false;
+        setVoicePending(false);
         applyVoiceSessionState("STOPPED");
         el.btnMic.innerHTML = '<span class="icon">🎤</span>音声入力';
         applyInputState("VOICE_OFF");
@@ -1895,6 +1916,7 @@
         return;
       }
       hideCandidatePanel();
+      setVoicePending(false);
       closeTelemetrySession("auto-end");
       scheduleRestart("end");
     });
@@ -2059,6 +2081,7 @@
     else document.body.classList.add("voice-off");
     enforceKeyboardPolicy();
     updateStatusIndicator();
+    updateCaretUI();
   }
 
   function applySystemState(next) {
@@ -3457,11 +3480,22 @@
   }
 
   function updateCaretUI() {
-    const coords = getCaretCoordinates();
+    if (!state.speaking && document.activeElement !== el.editor) {
+      el.caretLine.classList.add("hidden");
+      el.caretDot.classList.add("hidden");
+      return;
+    }
+    const appendMode = state.speaking && state.settings.voiceInsertMode === "append";
+    const targetPos = appendMode ? el.editor.value.length : el.editor.selectionStart;
+    const coords = getCaretCoordinates(targetPos);
     if (!coords) return;
     const { top, left, lineHeight } = coords;
     el.caretLine.classList.remove("hidden");
     el.caretDot.classList.remove("hidden");
+    el.caretLine.classList.toggle("append-target", appendMode);
+    el.caretDot.classList.toggle("append-target", appendMode);
+    el.caretLine.classList.toggle("pending", state.voicePending);
+    el.caretDot.classList.toggle("pending", state.voicePending);
     el.caretLine.style.top = `${top}px`;
     el.caretLine.style.height = `${lineHeight}px`;
     el.caretDot.style.top = `${top + Math.max(2, lineHeight * 0.15)}px`;
@@ -3469,10 +3503,12 @@
     el.caretDot.style.height = `${Math.max(2, lineHeight * 0.7)}px`;
   }
 
-  function getCaretCoordinates() {
+  function getCaretCoordinates(posOverride) {
     const ta = el.editor;
     if (!ta) return null;
-    const pos = ta.selectionStart;
+    const pos = Number.isFinite(Number(posOverride))
+      ? Math.max(0, Math.min(ta.value.length, Number(posOverride)))
+      : ta.selectionStart;
     const text = ta.value.slice(0, pos);
     const cs = window.getComputedStyle(ta);
     const mirror = document.createElement("div");

@@ -113,6 +113,23 @@ button, .btn-icon, .nav-pad, .nav-wide, .chip, .tab-btn {
   border-radius: 2px;
   pointer-events: none;
 }
+.caret-line.append-target {
+  background: rgba(245, 158, 11, 0.14);
+  border-top-color: rgba(245, 158, 11, 0.45);
+  border-bottom-color: rgba(245, 158, 11, 0.28);
+}
+.caret-dot.append-target {
+  width: 3px;
+  background: rgba(251, 191, 36, 0.95);
+}
+.caret-line.pending,
+.caret-dot.pending {
+  animation: caretPendingPulse 0.9s ease-in-out infinite;
+}
+@keyframes caretPendingPulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
 .status-row {
   position: absolute;
   left: 8px;
