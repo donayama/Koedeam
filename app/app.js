@@ -1086,12 +1086,22 @@
 
   function ensureDocuments() {
     const docs = Array.isArray(state.settings.documents) ? state.settings.documents : [];
-    if (docs.length) {
-      state.settings.documents = docs;
+    const used = new Set();
+    const normalized = docs.map((doc) => {
+      const text = typeof doc?.text === "string" ? doc.text : "";
+      const title = firstLine(text) || "無題ドキュメント";
+      const updatedAt = Number.isFinite(Number(doc?.updatedAt)) ? Number(doc.updatedAt) : Date.now();
+      let id = typeof doc?.id === "string" ? doc.id.trim() : "";
+      if (!id || used.has(id)) id = createDocId(used);
+      used.add(id);
+      return { id, title, text, updatedAt };
+    });
+    if (normalized.length) {
+      state.settings.documents = normalized;
     } else {
       const seedText = state.draft || "";
       state.settings.documents = [{
-        id: uid(),
+        id: createDocId(used),
         title: firstLine(seedText) || "無題ドキュメント",
         text: seedText,
         updatedAt: Date.now()
@@ -1118,8 +1128,9 @@
   }
 
   function createDocument() {
+    syncCurrentDocumentFromEditor();
     const doc = {
-      id: uid(),
+      id: createDocId(),
       title: "無題ドキュメント",
       text: "",
       updatedAt: Date.now()
@@ -3506,6 +3517,17 @@
 
   function capitalize(str) {
     return `${str}`.charAt(0).toUpperCase() + `${str}`.slice(1);
+  }
+
+  function createDocId(existingIds) {
+    const used = existingIds instanceof Set
+      ? existingIds
+      : new Set((state.settings.documents || []).map((doc) => doc.id));
+    let id = "";
+    do {
+      id = `doc-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+    } while (used.has(id));
+    return id;
   }
 
   function uid() {
