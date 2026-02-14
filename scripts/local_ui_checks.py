@@ -98,8 +98,8 @@ def run(base_url: str) -> int:
             "editToolsPanel",
             "btnForceReload",
             "btnUpdateApp",
-            "btnHeaderDocuments",
-            "btnHeaderSnapshot",
+            "btnBrandDocuments",
+            "btnSnapshot",
             "btnEditModeNavigation",
             "btnEditModeEdit",
             "btnTimeMenu",
@@ -230,11 +230,18 @@ def run(base_url: str) -> int:
               ta.focus();
               ta.setSelectionRange(1, 2);
               ta.dispatchEvent(new Event('input', { bubbles: true }));
+              // Ensure 'ABC' is committed as a separate undo snapshot.
+            }"""
+        )
+        page.wait_for_timeout(520)
+        page.evaluate(
+            """() => {
+              const ta = document.getElementById('editor');
               ta.setRangeText('XX', 1, 2, 'select');
               ta.dispatchEvent(new Event('input', { bubbles: true }));
             }"""
         )
-        page.wait_for_timeout(600)
+        page.wait_for_timeout(520)
         page.click("#btnUndo")
         page.wait_for_timeout(80)
         undo_state = page.evaluate(
