@@ -80,10 +80,22 @@
 ## 共有
 
 - 優先順: `navigator.share` -> `navigator.clipboard.writeText` -> `execCommand('copy')`
+- 既定ショートカット: `LINE` / `ChatGPT` / `Gemini` / `Notion` / `Discord`
 - 共有ショートカット変数:
 - `{text}`: 本文または選択範囲
 - `{title}`: 先頭行
 - `{prompt}`: `{text}` と同義
+
+## 設定カテゴリ
+
+設定ダイアログは次の6カテゴリに再分類済みです（`設定キー` は従来互換のまま）。
+
+- `音声 (Voice)`
+- `表示 (Display)`
+- `編集 (Edit)`
+- `テンプレ (Template)`
+- `共有 (Share)`
+- `その他 (Other)`
 
 ## ドキュメント管理
 
