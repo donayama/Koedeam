@@ -69,7 +69,7 @@ Centralize all voice event handling.
 
 ## WI-302 (implement) session.json v1.1 (device/os/browser/capabilities/settings/events/metrics) [doing]
 
-## WI-303 (implement) ZIP Export (session/result/commits/meta/CONSENT) [todo]
+## WI-303 (implement) ZIP Export (session/result/commits/meta/CONSENT) [doing]
 
 ---
 

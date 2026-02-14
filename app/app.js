@@ -789,6 +789,9 @@
     if (el.btnFieldTestConsent) {
       el.btnFieldTestConsent.addEventListener("click", () => openFieldTestConsentDialog());
     }
+    if (el.btnFieldTestExportZip) {
+      el.btnFieldTestExportZip.addEventListener("click", () => exportFieldTestZip());
+    }
     if (el.btnFieldTestAgree) {
       el.btnFieldTestAgree.addEventListener("click", () => acceptFieldTestConsent());
     }
@@ -3153,6 +3156,171 @@
     };
   }
 
+  function toUtf8Bytes(input) {
+    return new TextEncoder().encode(String(input || ""));
+  }
+
+  function buildCrc32Table() {
+    const table = new Uint32Array(256);
+    for (let i = 0; i < 256; i += 1) {
+      let c = i;
+      for (let j = 0; j < 8; j += 1) {
+        c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+      }
+      table[i] = c >>> 0;
+    }
+    return table;
+  }
+
+  const CRC32_TABLE = buildCrc32Table();
+
+  function crc32(bytes) {
+    let c = 0xFFFFFFFF;
+    for (let i = 0; i < bytes.length; i += 1) {
+      c = CRC32_TABLE[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
+    }
+    return (c ^ 0xFFFFFFFF) >>> 0;
+  }
+
+  function toDosDateTime(date) {
+    const d = date instanceof Date ? date : new Date(date || Date.now());
+    const year = Math.max(1980, d.getFullYear());
+    const month = d.getMonth() + 1;
+    const day = d.getDate();
+    const hours = d.getHours();
+    const mins = d.getMinutes();
+    const secs = Math.floor(d.getSeconds() / 2);
+    const dosTime = (hours << 11) | (mins << 5) | secs;
+    const dosDate = ((year - 1980) << 9) | (month << 5) | day;
+    return { dosDate, dosTime };
+  }
+
+  function writeU16(view, offset, value) {
+    view.setUint16(offset, value & 0xFFFF, true);
+  }
+
+  function writeU32(view, offset, value) {
+    view.setUint32(offset, value >>> 0, true);
+  }
+
+  function buildZipBlob(files) {
+    const localParts = [];
+    const centralParts = [];
+    let localOffset = 0;
+    let centralSize = 0;
+    const now = new Date();
+    for (const f of files) {
+      const nameBytes = toUtf8Bytes(f.name);
+      const dataBytes = f.bytes instanceof Uint8Array ? f.bytes : toUtf8Bytes(f.bytes);
+      const crc = crc32(dataBytes);
+      const { dosDate, dosTime } = toDosDateTime(now);
+
+      const localHeader = new Uint8Array(30 + nameBytes.length);
+      const lview = new DataView(localHeader.buffer);
+      writeU32(lview, 0, 0x04034B50);
+      writeU16(lview, 4, 20);
+      writeU16(lview, 6, 0);
+      writeU16(lview, 8, 0); // store
+      writeU16(lview, 10, dosTime);
+      writeU16(lview, 12, dosDate);
+      writeU32(lview, 14, crc);
+      writeU32(lview, 18, dataBytes.length);
+      writeU32(lview, 22, dataBytes.length);
+      writeU16(lview, 26, nameBytes.length);
+      writeU16(lview, 28, 0);
+      localHeader.set(nameBytes, 30);
+      localParts.push(localHeader, dataBytes);
+
+      const centralHeader = new Uint8Array(46 + nameBytes.length);
+      const cview = new DataView(centralHeader.buffer);
+      writeU32(cview, 0, 0x02014B50);
+      writeU16(cview, 4, 20);
+      writeU16(cview, 6, 20);
+      writeU16(cview, 8, 0);
+      writeU16(cview, 10, 0);
+      writeU16(cview, 12, dosTime);
+      writeU16(cview, 14, dosDate);
+      writeU32(cview, 16, crc);
+      writeU32(cview, 20, dataBytes.length);
+      writeU32(cview, 24, dataBytes.length);
+      writeU16(cview, 28, nameBytes.length);
+      writeU16(cview, 30, 0);
+      writeU16(cview, 32, 0);
+      writeU16(cview, 34, 0);
+      writeU16(cview, 36, 0);
+      writeU32(cview, 38, 0);
+      writeU32(cview, 42, localOffset);
+      centralHeader.set(nameBytes, 46);
+      centralParts.push(centralHeader);
+      centralSize += centralHeader.length;
+      localOffset += localHeader.length + dataBytes.length;
+    }
+
+    const eocd = new Uint8Array(22);
+    const eview = new DataView(eocd.buffer);
+    writeU32(eview, 0, 0x06054B50);
+    writeU16(eview, 4, 0);
+    writeU16(eview, 6, 0);
+    writeU16(eview, 8, files.length);
+    writeU16(eview, 10, files.length);
+    writeU32(eview, 12, centralSize);
+    writeU32(eview, 16, localOffset);
+    writeU16(eview, 20, 0);
+
+    return new Blob([...localParts, ...centralParts, eocd], { type: "application/zip" });
+  }
+
+  function buildFieldTestExportFiles() {
+    const session = buildSessionJsonV11();
+    const nowIso = new Date().toISOString();
+    const resultText = String(el.editor?.value || "");
+    const commits = {
+      exportedAt: nowIso,
+      undoStack: state.history.undoStack.slice(),
+      redoStack: state.history.redoStack.slice()
+    };
+    const meta = [
+      "# Koedeam Field Test Export",
+      "",
+      `- exported_at: ${nowIso}`,
+      `- app_version: ${APP_VERSION}`,
+      `- environment_tag: ${session.environment_tag || ""}`,
+      `- field_test_enabled: ${state.settings.fieldTest?.enabled ? "true" : "false"}`,
+      `- consented_at: ${state.settings.fieldTest?.consentedAt || ""}`
+    ].join("\n");
+    const consent = [
+      "Koedeam Field Test Consent Record",
+      `consented_at=${state.settings.fieldTest?.consentedAt || ""}`,
+      `environment_tag=${state.settings.fieldTest?.environmentTag || ""}`,
+      "note=User consent is required before enabling Field Test Mode."
+    ].join("\n");
+    return [
+      { name: "session.json", bytes: toUtf8Bytes(JSON.stringify(session, null, 2)) },
+      { name: "result.txt", bytes: toUtf8Bytes(resultText) },
+      { name: "commits.json", bytes: toUtf8Bytes(JSON.stringify(commits, null, 2)) },
+      { name: "meta.md", bytes: toUtf8Bytes(meta) },
+      { name: "CONSENT.txt", bytes: toUtf8Bytes(consent) }
+    ];
+  }
+
+  function exportFieldTestZip() {
+    if (!state.settings.fieldTest?.consentedAt) {
+      toast("Field Test同意後にエクスポートできます");
+      return;
+    }
+    const files = buildFieldTestExportFiles();
+    const blob = buildZipBlob(files);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `koedeam-fieldtest-${Date.now()}.zip`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    toast("Field Test ZIP を出力しました");
+  }
+
   function exportTelemetryJson() {
     const payload = buildTelemetryPayload();
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
@@ -3986,6 +4154,7 @@
       fieldTestEnvironmentTag: document.getElementById("fieldTestEnvironmentTag"),
       fieldTestConsentState: document.getElementById("fieldTestConsentState"),
       btnFieldTestConsent: document.getElementById("btnFieldTestConsent"),
+      btnFieldTestExportZip: document.getElementById("btnFieldTestExportZip"),
       dlgFieldTestConsent: document.getElementById("dlgFieldTestConsent"),
       btnFieldTestAgree: document.getElementById("btnFieldTestAgree"),
       btnFieldTestDecline: document.getElementById("btnFieldTestDecline"),
