@@ -164,35 +164,6 @@ python scripts/local_ui_checks.py --url http://localhost:8000/app/
 python scripts/playwright_replay_checks.py --url http://localhost:8000/app/
 ```
 
-### WAV偽マイク入力チェック（Playwright / Chromium / 任意）
-
-このテストは `Chromium限定` の任意実行です。  
-CI必須にはせず、ローカル/夜間検証向けに使います（flakyになり得るため）。
-
-```bash
-python scripts/playwright_audio_mic_check.py --url http://localhost:8000/app/
-```
-
-デフォルトでは、`PERMISSION_WAIT` に加えて  
-`RUNNING/LOCKED` または `editor` 反映を「認識成立の証拠」として必須チェックします。  
-認識証拠が出た場合は `test/fixtures/audio/expected_text.txt` と `editor` 最終結果を突合します。
-
-任意でWAVを指定できます。
-
-```bash
-python scripts/playwright_audio_mic_check.py --url http://localhost:8000/app/ --wav test/fixtures/audio/converted/koedeam_phrase_01.wav
-```
-
-flaky回避で厳格判定を一時的に緩めたい場合のみ、以下を使います（任意）。
-
-```bash
-python scripts/playwright_audio_mic_check.py --url http://localhost:8000/app/ --wav test/fixtures/audio/converted/koedeam_phrase_01.wav --allow-no-recognition
-```
-
-## Audio Sample Credit
-
-- Test audio sample (`test/fixtures/audio/koedeam_phrase_01.wav`) credit: `VOICEVOX:四国めたん`
-
 ## 検証チェックリスト
 
 1. `MOBILE` 幅で `Tool Bar` が2段化しない
