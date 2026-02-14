@@ -54,7 +54,7 @@ Reorganize settings into:
 
 # EPIC-1.5: VoiceEngine Abstraction
 
-## WI-150 (prepare) handleVoiceEvent Aggregation [todo]
+## WI-150 (prepare) handleVoiceEvent Aggregation [doing]
 Centralize all voice event handling.
 
 ## WI-151 (implement) VoiceEngine Interface + RealVoiceEngine [todo]

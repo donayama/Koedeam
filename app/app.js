@@ -1831,95 +1831,105 @@
       }, reason === "no-speech" ? 300 : 650);
     };
 
-    recognition.addEventListener("result", (event) => {
-      for (let i = event.resultIndex; i < event.results.length; i += 1) {
-        const result = event.results[i];
-        const session = state.telemetry.activeSession;
-        if (!result.isFinal && session && session.firstInterimAt == null) {
-          session.firstInterimAt = Date.now();
-        }
-        if (!result.isFinal) setVoicePending(true);
-        sessionRecord(result.isFinal ? "voice.onresult.final" : "voice.onresult.interim", {
-          resultIndex: i,
-          charLen: `${result[0]?.transcript || ""}`.length
-        });
-        if (!result.isFinal) continue;
-        setVoicePending(false);
-        const candidates = [];
-        for (let j = 0; j < Math.min(3, result.length || 0); j += 1) {
-          const alt = result[j];
-          candidates.push({
-            text: `${alt?.transcript || ""}`.trim(),
-            confidence: Number.isFinite(alt?.confidence) ? Number(alt.confidence) : null
+    const handleVoiceEvent = (type, event) => {
+      if (type === "result") {
+        for (let i = event.resultIndex; i < event.results.length; i += 1) {
+          const result = event.results[i];
+          const session = state.telemetry.activeSession;
+          if (!result.isFinal && session && session.firstInterimAt == null) {
+            session.firstInterimAt = Date.now();
+          }
+          if (!result.isFinal) setVoicePending(true);
+          sessionRecord(result.isFinal ? "voice.onresult.final" : "voice.onresult.interim", {
+            resultIndex: i,
+            charLen: `${result[0]?.transcript || ""}`.length
           });
-        }
-        const filtered = candidates.filter((c) => c.text);
-        if (!filtered.length) continue;
-        if (session && session.firstFinalAt == null) session.firstFinalAt = Date.now();
-        if (session) {
-          const best = filtered[0].text || "";
-          session.finalCharsTotal = Number(session.finalCharsTotal || 0) + best.length;
-          session.finalResultCount = Number(session.finalResultCount || 0) + 1;
-          session.finalText = `${session.finalText || ""}${best}`;
-        }
-        if (shouldShowCandidates(filtered)) {
-          queueCandidateSelection(filtered);
-        } else {
-          insertByVoiceMode(filtered[0].text);
+          if (!result.isFinal) continue;
           setVoicePending(false);
+          const candidates = [];
+          for (let j = 0; j < Math.min(3, result.length || 0); j += 1) {
+            const alt = result[j];
+            candidates.push({
+              text: `${alt?.transcript || ""}`.trim(),
+              confidence: Number.isFinite(alt?.confidence) ? Number(alt.confidence) : null
+            });
+          }
+          const filtered = candidates.filter((c) => c.text);
+          if (!filtered.length) continue;
+          if (session && session.firstFinalAt == null) session.firstFinalAt = Date.now();
+          if (session) {
+            const best = filtered[0].text || "";
+            session.finalCharsTotal = Number(session.finalCharsTotal || 0) + best.length;
+            session.finalResultCount = Number(session.finalResultCount || 0) + 1;
+            session.finalText = `${session.finalText || ""}${best}`;
+          }
+          if (shouldShowCandidates(filtered)) {
+            queueCandidateSelection(filtered);
+          } else {
+            insertByVoiceMode(filtered[0].text);
+            setVoicePending(false);
+          }
         }
-      }
-    });
-    recognition.addEventListener("start", () => {
-      state.voiceRestartAttempt = 0;
-      applyVoiceSessionState("RUNNING");
-      state.speaking = true;
-      setVoicePending(false);
-      startTelemetrySession();
-      playVoiceStartCue();
-      el.btnMic.innerHTML = '<span class="icon">■</span>停止';
-      applyInputState(state.settings.voiceInsertMode === "append" ? "VOICE_APPEND" : "VOICE_LOCKED");
-      updateCaretUI();
-    });
-    recognition.addEventListener("error", (event) => {
-      const err = event?.error || "unknown";
-      sessionRecord("voice.onerror", { error: err });
-      if (err === "aborted" && state.voiceManualStop) {
         return;
       }
-      if (err === "no-speech" || err === "network" || err === "audio-capture") {
-        if (err === "no-speech" && state.telemetry.activeSession) {
-          state.telemetry.activeSession.noSpeechCount = Number(state.telemetry.activeSession.noSpeechCount || 0) + 1;
-        }
-        scheduleRestart(err);
+      if (type === "start") {
+        state.voiceRestartAttempt = 0;
+        applyVoiceSessionState("RUNNING");
+        state.speaking = true;
+        setVoicePending(false);
+        startTelemetrySession();
+        playVoiceStartCue();
+        el.btnMic.innerHTML = '<span class="icon">■</span>停止';
+        applyInputState(state.settings.voiceInsertMode === "append" ? "VOICE_APPEND" : "VOICE_LOCKED");
+        updateCaretUI();
         return;
       }
-      toast(`音声入力エラー: ${err}`);
-      state.speaking = false;
-      setVoicePending(false);
-      clearRestartTimer();
-      applyVoiceSessionState("STOPPED");
-      applyInputState("VOICE_OFF");
-      closeTelemetrySession("error");
-      el.btnMic.innerHTML = '<span class="icon">🎤</span>音声入力';
-    });
-    recognition.addEventListener("end", () => {
-      if (state.voiceManualStop) {
-        state.voiceManualStop = false;
+      if (type === "error") {
+        const err = event?.error || "unknown";
+        sessionRecord("voice.onerror", { error: err });
+        if (err === "aborted" && state.voiceManualStop) {
+          return;
+        }
+        if (err === "no-speech" || err === "network" || err === "audio-capture") {
+          if (err === "no-speech" && state.telemetry.activeSession) {
+            state.telemetry.activeSession.noSpeechCount = Number(state.telemetry.activeSession.noSpeechCount || 0) + 1;
+          }
+          scheduleRestart(err);
+          return;
+        }
+        toast(`音声入力エラー: ${err}`);
         state.speaking = false;
         setVoicePending(false);
+        clearRestartTimer();
         applyVoiceSessionState("STOPPED");
-        el.btnMic.innerHTML = '<span class="icon">🎤</span>音声入力';
         applyInputState("VOICE_OFF");
-        hideCandidatePanel();
-        closeTelemetrySession("manual");
+        closeTelemetrySession("error");
+        el.btnMic.innerHTML = '<span class="icon">🎤</span>音声入力';
         return;
       }
-      hideCandidatePanel();
-      setVoicePending(false);
-      closeTelemetrySession("auto-end");
-      scheduleRestart("end");
-    });
+      if (type === "end") {
+        if (state.voiceManualStop) {
+          state.voiceManualStop = false;
+          state.speaking = false;
+          setVoicePending(false);
+          applyVoiceSessionState("STOPPED");
+          el.btnMic.innerHTML = '<span class="icon">🎤</span>音声入力';
+          applyInputState("VOICE_OFF");
+          hideCandidatePanel();
+          closeTelemetrySession("manual");
+          return;
+        }
+        hideCandidatePanel();
+        setVoicePending(false);
+        closeTelemetrySession("auto-end");
+        scheduleRestart("end");
+      }
+    };
+
+    recognition.addEventListener("result", (event) => handleVoiceEvent("result", event));
+    recognition.addEventListener("start", () => handleVoiceEvent("start"));
+    recognition.addEventListener("error", (event) => handleVoiceEvent("error", event));
+    recognition.addEventListener("end", () => handleVoiceEvent("end"));
 
     el.btnMic.addEventListener("click", () => {
       if (state.speaking) {
