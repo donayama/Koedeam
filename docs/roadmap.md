@@ -86,3 +86,5 @@ Centralize all voice event handling.
 ## WI-501 (prepare→implement) Playwright Deterministic Replay Test [doing]
 
 ## WI-503 (prepare→implement) GitHub Actions Workflow [todo]
+
+## WI-510 (prepare) Audio Fixture Foundation (WAV/MP3 metadata/convert) [doing]

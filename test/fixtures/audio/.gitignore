@@ -1,0 +1,15 @@
+# Keep fixture policy files in git, but ignore actual audio binaries by default.
+*.wav
+*.mp3
+*.flac
+*.m4a
+*.aac
+
+# Temporary processing outputs.
+tmp/
+converted/
+
+# Allow policy/metadata documents.
+!.gitignore
+!README.md
+!fixtures.meta.json

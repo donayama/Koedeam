@@ -1,0 +1,40 @@
+{
+  "schemaVersion": "1.0",
+  "licensePolicy": {
+    "allowed": [
+      "CC0",
+      "CC-BY-4.0",
+      "MIT",
+      "Public-Domain",
+      "Commercial-Use-Allowed"
+    ],
+    "notes": "Do not add assets with unclear or restricted redistribution terms."
+  },
+  "fixtures": [
+    {
+      "id": "quiet_01",
+      "speaker": "ja_female_adult_01",
+      "style": "neutral",
+      "noise": "quiet",
+      "source": {
+        "provider": "example-local-recording",
+        "url": "",
+        "license": "CC-BY-4.0",
+        "attribution": "Example Speaker"
+      },
+      "paths": {
+        "mp3": "quiet_01.mp3",
+        "wav": "converted/quiet_01.wav"
+      },
+      "audio": {
+        "sampleRateHz": 16000,
+        "channels": 1
+      },
+      "expectedText": "静かなテスト",
+      "tags": [
+        "baseline",
+        "deterministic"
+      ]
+    }
+  ]
+}
