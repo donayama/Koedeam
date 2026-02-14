@@ -173,10 +173,19 @@ CI必須にはせず、ローカル/夜間検証向けに使います（flakyに
 python scripts/playwright_audio_mic_check.py --url http://localhost:8000/app/
 ```
 
+デフォルトでは、`PERMISSION_WAIT` に加えて  
+`RUNNING/LOCKED` または `editor` 反映を「認識成立の証拠」として必須チェックします。
+
 任意でWAVを指定できます。
 
 ```bash
-python scripts/playwright_audio_mic_check.py --url http://localhost:8000/app/ --wav test/fixtures/audio/converted/quiet_01.wav
+python scripts/playwright_audio_mic_check.py --url http://localhost:8000/app/ --wav test/fixtures/audio/converted/koedeam_phrase_01.wav
+```
+
+flaky回避で厳格判定を一時的に緩めたい場合のみ、以下を使います（任意）。
+
+```bash
+python scripts/playwright_audio_mic_check.py --url http://localhost:8000/app/ --wav test/fixtures/audio/converted/koedeam_phrase_01.wav --allow-no-recognition
 ```
 
 ## 検証チェックリスト

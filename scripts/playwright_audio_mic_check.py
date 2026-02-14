@@ -34,7 +34,7 @@ def origin_of(url: str) -> str:
     return f"{parsed.scheme}://{parsed.netloc}"
 
 
-def run(base_url: str, wav_path: Path | None, timeout_ms: int, trace_path: Path) -> int:
+def run(base_url: str, wav_path: Path | None, timeout_ms: int, trace_path: Path, allow_no_recognition: bool) -> int:
     wav_local = wav_path
     temp_dir: tempfile.TemporaryDirectory[str] | None = None
     if wav_local is None:
@@ -54,6 +54,9 @@ def run(base_url: str, wav_path: Path | None, timeout_ms: int, trace_path: Path)
         "console_errors": [],
         "attempted_start": False,
         "progress_observed": False,
+        "editor_changed": False,
+        "initial_editor_value": "",
+        "final_editor_value": "",
     }
 
     with sync_playwright() as p:
@@ -74,6 +77,8 @@ def run(base_url: str, wav_path: Path | None, timeout_ms: int, trace_path: Path)
         page.on("console", lambda m: report["console_errors"].append(m.text) if m.type == "error" else None)
 
         page.goto(base_url, wait_until="networkidle")
+        initial_value = page.evaluate("() => document.getElementById('editor')?.value || ''")
+        report["initial_editor_value"] = initial_value
         page.click("#btnMic")
 
         steps = max(1, timeout_ms // 200)
@@ -97,7 +102,11 @@ def run(base_url: str, wav_path: Path | None, timeout_ms: int, trace_path: Path)
                 or "VOICE:LOCKED" in snap["input"]
             ):
                 report["progress_observed"] = True
+            if snap["value"] != initial_value:
+                report["editor_changed"] = True
             page.wait_for_timeout(200)
+
+        report["final_editor_value"] = page.evaluate("() => document.getElementById('editor')?.value || ''")
 
         trace_path.parent.mkdir(parents=True, exist_ok=True)
         context.tracing.stop(path=str(trace_path))
@@ -107,8 +116,13 @@ def run(base_url: str, wav_path: Path | None, timeout_ms: int, trace_path: Path)
         failures.append("page error occurred")
     if not report["attempted_start"]:
         failures.append("voice start attempt was not observed (PERMISSION_WAIT missing)")
-    if not report["progress_observed"]:
-        warnings.append("voice progress was not observed (RUNNING/LOCKED missing)")
+    recognition_observed = bool(report["progress_observed"] or report["editor_changed"])
+    if not recognition_observed:
+        msg = "recognition evidence not observed (RUNNING/LOCKED or editor change missing)"
+        if allow_no_recognition:
+            warnings.append(msg)
+        else:
+            failures.append(msg)
 
     print("== Playwright Audio Mic Check (Chromium optional) ==")
     print(json.dumps(report, ensure_ascii=True))
@@ -137,13 +151,18 @@ def main() -> int:
     parser.add_argument("--wav", default="", help="WAV file path for fake microphone (optional)")
     parser.add_argument("--timeout-ms", type=int, default=5000, help="Observation timeout in ms")
     parser.add_argument(
+        "--allow-no-recognition",
+        action="store_true",
+        help="Do not fail even if recognition evidence is not observed (flaky fallback).",
+    )
+    parser.add_argument(
         "--trace-path",
         default="artifacts/traces/audio_mic_check_trace.zip",
         help="Playwright trace output path",
     )
     args = parser.parse_args()
     wav = Path(args.wav) if args.wav else None
-    return run(args.url, wav, args.timeout_ms, Path(args.trace_path))
+    return run(args.url, wav, args.timeout_ms, Path(args.trace_path), args.allow_no_recognition)
 
 
 if __name__ == "__main__":
