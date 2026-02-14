@@ -6,6 +6,7 @@ This directory stores metadata and policy for optional audio fixtures used by re
 
 - Audio binaries (`.wav`, `.mp3`, etc.) are ignored by default via `.gitignore`.
 - Keep fixture metadata in `fixtures.meta.json`.
+- Canonical expected text is stored in `expected_text.txt` (single phrase policy).
 - Do not commit large binaries directly. Use local/private artifact storage for heavy assets.
 
 ## License and OSS compliance
@@ -32,7 +33,7 @@ This directory stores metadata and policy for optional audio fixtures used by re
 Use the local tool:
 
 ```bash
-python tools/convert_mp3_to_wav.py --input test/fixtures/audio/quiet_01.mp3 --output test/fixtures/audio/converted/quiet_01.wav
+python tools/convert_mp3_to_wav.py --input test/fixtures/audio/koedeam_phrase_01.mp3 --output test/fixtures/audio/converted/koedeam_phrase_01.wav
 ```
 
 Requirements:
