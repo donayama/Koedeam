@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import tempfile
+import zipfile
+from pathlib import Path
 from typing import Dict, List
 
 from playwright.sync_api import sync_playwright
@@ -88,7 +91,8 @@ def run(base_url: str) -> int:
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
-        page = browser.new_page(viewport={"width": 1100, "height": 700})
+        context = browser.new_context(accept_downloads=True, viewport={"width": 1100, "height": 700})
+        page = context.new_page()
         page.add_init_script(SPEECH_STUB)
         page.goto(base_url, wait_until="networkidle")
 
@@ -109,6 +113,7 @@ def run(base_url: str) -> int:
             "undoDepth",
             "btnTelemetryExportJson",
             "btnTelemetryCopyJson",
+            "btnFieldTestExportZip",
             "candidateThreshold",
             "candidateNoConfidenceRule",
             "candidateIdleBehavior",
@@ -285,6 +290,46 @@ def run(base_url: str) -> int:
         if not telemetry_export["called"]:
             failures.append("telemetry: export button did not trigger JSON generation")
 
+        # 2.85) Field Test ZIP export (download + archive content)
+        field_zip = {
+            "downloaded": False,
+            "files": [],
+            "has_required_files": False,
+            "schema_version": "",
+        }
+        required_zip_entries = {"session.json", "result.txt", "commits.json", "meta.md", "CONSENT.txt"}
+        try:
+            page.click("#btnMenu")
+            page.click("button[data-menu='settings']")
+            page.click("#dlgSettings .tab-btn[data-tab='other']")
+            if not page.is_checked("#optFieldTestMode"):
+                page.click("#optFieldTestMode")
+                if page.locator("#dlgFieldTestConsent").evaluate("e => !!e && e.open"):
+                    page.click("#btnFieldTestAgree")
+            page.wait_for_timeout(120)
+            with page.expect_download(timeout=6000) as dl_info:
+                page.click("#btnFieldTestExportZip")
+            download = dl_info.value
+            field_zip["downloaded"] = True
+            with tempfile.TemporaryDirectory() as tmp:
+                zip_path = Path(tmp) / "fieldtest.zip"
+                download.save_as(str(zip_path))
+                with zipfile.ZipFile(zip_path, "r") as zf:
+                    names = zf.namelist()
+                    field_zip["files"] = sorted(names)
+                    field_zip["has_required_files"] = required_zip_entries.issubset(set(names))
+                    session = json.loads(zf.read("session.json").decode("utf-8"))
+                    field_zip["schema_version"] = str(session.get("schema_version", ""))
+            if not field_zip["has_required_files"]:
+                failures.append("field test zip: required files are missing")
+            if field_zip["schema_version"] != "1.1":
+                failures.append("field test zip: session.json schema_version is not 1.1")
+            if page.locator("#btnCloseSettings").count():
+                page.click("#btnCloseSettings")
+        except Exception as exc:
+            failures.append(f"field test zip: export check failed ({exc})")
+        report["field_test_zip"] = field_zip
+
         # 2.9) Candidate selection (threshold/no-confidence fallback)
         page.evaluate("""() => document.getElementById('btnEditModeEdit')?.click()""")
         page.wait_for_timeout(50)
@@ -409,6 +454,7 @@ def run(base_url: str) -> int:
     print(f"Time Menu: {as_bool(all(not f.startswith('time menu:') for f in failures))}")
     print(f"Undo/Redo: {as_bool(all(not f.startswith('undo:') and not f.startswith('redo:') for f in failures))}")
     print(f"Telemetry Export: {as_bool(all(not f.startswith('telemetry:') for f in failures))}")
+    print(f"Field Test ZIP: {as_bool(all(not f.startswith('field test zip:') for f in failures))}")
     print(f"Candidate Select: {as_bool(all(not f.startswith('candidate:') for f in failures))}")
     print(f"Voice Recovery: {as_bool(all(not f.startswith('voice:') for f in failures))}")
     print(f"Force Reload Preconditions: {as_bool(all(not f.startswith('force reload precondition') for f in failures))}")
