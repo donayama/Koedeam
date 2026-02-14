@@ -77,7 +77,7 @@ Centralize all voice event handling.
 
 ## WI-401 (implement) ReplayVoiceEngine (realtime) [doing]
 
-## WI-420 (prepare→implement) Synthetic Generator (seed-fixed) [todo]
+## WI-420 (prepare→implement) Synthetic Generator (seed-fixed) [doing]
 
 ---
 

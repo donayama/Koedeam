@@ -108,7 +108,10 @@
       testMode: false,
       voiceEngine: "real",
       replayMode: "realtime",
-      replayEventsUrl: ""
+      replayEventsUrl: "",
+      synthetic: false,
+      syntheticSeed: "koedeam-seed",
+      syntheticText: "これは合成音声イベントの再生テストです。"
     },
     voiceEngine: null,
     recognition: null,
@@ -273,12 +276,18 @@
     const replayMode = replayModeRaw === "fast" ? "fast" : "realtime";
     const replayEventsUrl = `${params.get("eventsUrl") || params.get("replayUrl") || ""}`.trim();
     const voiceEngineRaw = `${params.get("voiceEngine") || ""}`.trim().toLowerCase();
-    const replayOn = voiceEngineRaw === "replay" || `${params.get("replay") || ""}`.trim() === "1";
+    const syntheticOn = `${params.get("synthetic") || ""}`.trim() === "1" || voiceEngineRaw === "synthetic";
+    const replayOn = voiceEngineRaw === "replay" || syntheticOn || `${params.get("replay") || ""}`.trim() === "1";
+    const syntheticSeed = `${params.get("seed") || params.get("syntheticSeed") || "koedeam-seed"}`.trim() || "koedeam-seed";
+    const syntheticText = `${params.get("syntheticText") || ""}`.trim();
     return {
       testMode: raw === "1" || raw === "true" || raw === "on",
       voiceEngine: replayOn ? "replay" : "real",
       replayMode,
-      replayEventsUrl
+      replayEventsUrl,
+      synthetic: syntheticOn,
+      syntheticSeed,
+      syntheticText: syntheticText || "これは合成音声イベントの再生テストです。"
     };
   }
 
@@ -291,7 +300,10 @@
       testMode: !!state.runtime.testMode,
       voiceEngineType: state.runtime.voiceEngine || "real",
       replayMode: state.runtime.replayMode || "realtime",
-      replayEventsUrl: state.runtime.replayEventsUrl || ""
+      replayEventsUrl: state.runtime.replayEventsUrl || "",
+      synthetic: !!state.runtime.synthetic,
+      syntheticSeed: state.runtime.syntheticSeed || "koedeam-seed",
+      syntheticText: state.runtime.syntheticText || ""
     };
   }
 
@@ -1868,6 +1880,108 @@
     return parsed.map((e, i) => ({ ...e, atMs: i * 10 })).sort((a, b) => a.atMs - b.atMs || a.idx - b.idx);
   }
 
+  function hashSeed(seedText) {
+    let h = 2166136261 >>> 0;
+    for (const ch of `${seedText || ""}`) {
+      h ^= ch.codePointAt(0) || 0;
+      h = Math.imul(h, 16777619) >>> 0;
+    }
+    return h >>> 0;
+  }
+
+  function createSeededRandom(seedText) {
+    let t = hashSeed(seedText) >>> 0;
+    return () => {
+      t += 0x6D2B79F5;
+      let x = Math.imul(t ^ (t >>> 15), 1 | t);
+      x ^= x + Math.imul(x ^ (x >>> 7), 61 | x);
+      return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function splitTextForSynthetic(text, rand) {
+    const out = [];
+    let i = 0;
+    const src = `${text || ""}`;
+    while (i < src.length) {
+      const span = 3 + Math.floor(rand() * 5); // split final
+      out.push(src.slice(i, i + span));
+      i += span;
+    }
+    return out.filter((s) => s);
+  }
+
+  function applyTailDrop(chunks, rand) {
+    if (!chunks.length) return chunks;
+    const out = chunks.slice();
+    const idx = out.length - 1;
+    const last = `${out[idx] || ""}`;
+    if (last.length < 2) return out;
+    if (rand() < 0.35) {
+      const dropCount = 1 + Math.floor(rand() * Math.min(2, last.length - 1)); // tail drop
+      out[idx] = last.slice(0, Math.max(1, last.length - dropCount));
+    }
+    return out;
+  }
+
+  function injectTypo(text, rand) {
+    const src = `${text || ""}`;
+    if (src.length < 2) return src;
+    if (rand() >= 0.4) return src; // typo混入
+    const pos = Math.floor(rand() * src.length);
+    const map = {
+      "は": "わ",
+      "を": "お",
+      "じ": "ぢ",
+      "ず": "づ",
+      "ゃ": "や",
+      "ゅ": "ゆ",
+      "ょ": "よ",
+      "。": "、",
+      "、": "。"
+    };
+    const curr = src[pos];
+    const fallback = ["あ", "い", "う", "え", "お", "ん"];
+    let rep = map[curr];
+    if (!rep) rep = fallback[Math.floor(rand() * fallback.length)];
+    if (rep === curr) rep = fallback[(Math.floor(rand() * fallback.length) + 1) % fallback.length];
+    return `${src.slice(0, pos)}${rep}${src.slice(pos + 1)}`;
+  }
+
+  function generateSyntheticReplayEvents(options = {}) {
+    const seed = `${options.seed || "koedeam-seed"}`;
+    const text = `${options.text || "これは合成音声イベントの再生テストです。"}`.trim();
+    const rand = createSeededRandom(seed);
+    const baseChunks = splitTextForSynthetic(text, rand);
+    const finalChunks = applyTailDrop(baseChunks, rand);
+    const events = [{ type: "start", atMs: 0, source: "synthetic", seed }];
+    let at = 140;
+    finalChunks.forEach((chunk, i) => {
+      const interim = chunk.length > 1 ? chunk.slice(0, Math.max(1, Math.floor(chunk.length * 0.6))) : chunk;
+      events.push({
+        type: "result",
+        atMs: at,
+        isFinal: false,
+        text: interim,
+        source: "synthetic",
+        chunkIndex: i
+      });
+      at += 90 + Math.floor(rand() * 120);
+      const finalText = injectTypo(chunk, rand);
+      events.push({
+        type: "result",
+        atMs: at,
+        isFinal: true,
+        text: finalText,
+        source: "synthetic",
+        chunkIndex: i
+      });
+      at += 140 + Math.floor(rand() * 160);
+    });
+    events.push({ type: "end", atMs: at + 120, source: "synthetic", seed });
+    return events;
+  }
+
   function buildReplayResultEvent(payload = {}) {
     const toAlt = (alt) => ({
       transcript: `${alt?.transcript || alt?.text || ""}`,
@@ -1927,6 +2041,18 @@
         const bridge = hostWindow.__KOEDEAM_TEST__;
         if (Array.isArray(bridge?.replayEvents)) {
           stateReplay.events = normalizeReplayEventList(bridge.replayEvents);
+          stateReplay.loaded = true;
+          return;
+        }
+        if (options.synthetic) {
+          const generated = generateSyntheticReplayEvents({
+            seed: options.syntheticSeed,
+            text: options.syntheticText
+          });
+          stateReplay.events = normalizeReplayEventList(generated);
+          if (bridge && typeof bridge === "object") {
+            bridge.syntheticEvents = generated;
+          }
           stateReplay.loaded = true;
           return;
         }
@@ -2048,6 +2174,13 @@
         stateReplay.events = normalizeReplayEventList(payload);
         stateReplay.loaded = true;
       };
+      hostWindow.__KOEDEAM_TEST__.setSyntheticSeed = (seed, text) => {
+        stateReplay.events = normalizeReplayEventList(generateSyntheticReplayEvents({
+          seed: `${seed || options.syntheticSeed || "koedeam-seed"}`,
+          text: `${text || options.syntheticText || "これは合成音声イベントの再生テストです。"}`
+        }));
+        stateReplay.loaded = true;
+      };
     }
     return api;
   }
@@ -2057,13 +2190,19 @@
     const engine = selected === "replay"
       ? createReplayVoiceEngine(hostWindow, {
           replayMode: state.runtime.replayMode,
-          replayEventsUrl: state.runtime.replayEventsUrl
+          replayEventsUrl: state.runtime.replayEventsUrl,
+          synthetic: !!state.runtime.synthetic,
+          syntheticSeed: state.runtime.syntheticSeed,
+          syntheticText: state.runtime.syntheticText
         })
       : createRealVoiceEngine(hostWindow);
     if (window.__KOEDEAM_TEST__ && typeof window.__KOEDEAM_TEST__ === "object") {
       window.__KOEDEAM_TEST__.voiceEngineType = selected;
       window.__KOEDEAM_TEST__.replayMode = state.runtime.replayMode || "realtime";
       window.__KOEDEAM_TEST__.replayEventsUrl = state.runtime.replayEventsUrl || "";
+      window.__KOEDEAM_TEST__.synthetic = !!state.runtime.synthetic;
+      window.__KOEDEAM_TEST__.syntheticSeed = state.runtime.syntheticSeed || "koedeam-seed";
+      window.__KOEDEAM_TEST__.syntheticText = state.runtime.syntheticText || "";
     }
     return engine;
   }
