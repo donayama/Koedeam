@@ -89,6 +89,11 @@
       expectedChars: 0,
       expectedTail: ""
     },
+    fieldTest: {
+      enabled: false,
+      consentedAt: "",
+      environmentTag: "local-dev"
+    },
     undoDepth: 3
   };
 
@@ -201,6 +206,19 @@
       expectedChars: Number.isFinite(Number(state.settings.voiceEval.expectedChars)) ? Math.max(0, Number(state.settings.voiceEval.expectedChars)) : 0,
       expectedTail: String(state.settings.voiceEval.expectedTail || "")
     };
+    if (!state.settings.fieldTest || typeof state.settings.fieldTest !== "object") {
+      state.settings.fieldTest = { ...DEFAULT_SETTINGS.fieldTest };
+      saveSettings();
+    }
+    state.settings.fieldTest = {
+      enabled: !!state.settings.fieldTest.enabled,
+      consentedAt: String(state.settings.fieldTest.consentedAt || ""),
+      environmentTag: String(state.settings.fieldTest.environmentTag || DEFAULT_SETTINGS.fieldTest.environmentTag)
+    };
+    if (state.settings.fieldTest.enabled && !state.settings.fieldTest.consentedAt) {
+      state.settings.fieldTest.enabled = false;
+      saveSettings();
+    }
     state.settings.undoDepth = Number.isFinite(Number(state.settings.undoDepth))
       ? Math.max(1, Math.min(5, Number(state.settings.undoDepth)))
       : DEFAULT_SETTINGS.undoDepth;
@@ -211,6 +229,7 @@
     el.editor.value = state.draft;
     applySidebar();
     applyVoiceModeUI();
+    applyFieldTestUI();
     applyPunctuationUI();
     applyTypography();
     applyInstallHints();
@@ -751,6 +770,32 @@
     }
     el.apiKeyOpenAI.addEventListener("change", () => saveApiKeys());
     el.apiKeyOther.addEventListener("change", () => saveApiKeys());
+    if (el.optFieldTestMode) {
+      el.optFieldTestMode.addEventListener("change", () => {
+        setFieldTestEnabled(!!el.optFieldTestMode.checked);
+      });
+    }
+    if (el.fieldTestEnvironmentTag) {
+      el.fieldTestEnvironmentTag.addEventListener("change", () => {
+        state.settings.fieldTest.environmentTag = el.fieldTestEnvironmentTag.value.trim() || DEFAULT_SETTINGS.fieldTest.environmentTag;
+        saveSettings();
+        applyFieldTestUI();
+      });
+    }
+    if (el.btnFieldTestConsent) {
+      el.btnFieldTestConsent.addEventListener("click", () => openFieldTestConsentDialog());
+    }
+    if (el.btnFieldTestAgree) {
+      el.btnFieldTestAgree.addEventListener("click", () => acceptFieldTestConsent());
+    }
+    if (el.btnFieldTestDecline) {
+      el.btnFieldTestDecline.addEventListener("click", () => {
+        state.settings.fieldTest.enabled = false;
+        saveSettings();
+        applyFieldTestUI();
+        el.dlgFieldTestConsent?.close();
+      });
+    }
     el.btnCloseSettings.addEventListener("click", () => el.dlgSettings.close());
     el.dlgSettings.addEventListener("close", () => applyPrimary("EDIT"));
     el.btnResetApp.addEventListener("click", resetApp);
@@ -824,7 +869,7 @@
   }
 
   function setupDialogDismiss() {
-    [el.dlgHelp, el.dlgShare, el.dlgSettings, el.dlgDocuments, el.dlgSearch].forEach((dialog) => {
+    [el.dlgHelp, el.dlgShare, el.dlgSettings, el.dlgDocuments, el.dlgSearch, el.dlgFieldTestConsent].forEach((dialog) => {
       if (!dialog) return;
       dialog.addEventListener("click", (evt) => {
         if (evt.target !== dialog) return;
@@ -840,7 +885,8 @@
       share: el.dlgShare,
       settings: el.dlgSettings,
       documents: el.dlgDocuments,
-      search: el.dlgSearch
+      search: el.dlgSearch,
+      fieldTestConsent: el.dlgFieldTestConsent
     };
     Object.entries(map).forEach(([key, dialog]) => {
       if (!dialog || key === kind) return;
@@ -849,7 +895,7 @@
   }
 
   function isDialogLayerOpen() {
-    return !!(el.dlgHelp?.open || el.dlgShare?.open || el.dlgSettings?.open || el.dlgDocuments?.open);
+    return !!(el.dlgHelp?.open || el.dlgShare?.open || el.dlgSettings?.open || el.dlgDocuments?.open || el.dlgFieldTestConsent?.open);
   }
 
   function setupMenuOverlay() {
@@ -2136,7 +2182,7 @@
 
   function closeOpenDialog() {
     let closed = false;
-    [el.dlgHelp, el.dlgShare, el.dlgSettings, el.dlgDocuments, el.dlgSearch].forEach((d) => {
+    [el.dlgHelp, el.dlgShare, el.dlgSettings, el.dlgDocuments, el.dlgSearch, el.dlgFieldTestConsent].forEach((d) => {
       if (!d) return;
       if (d.open) {
         d.close();
@@ -2437,6 +2483,46 @@
     }
   }
 
+  function applyFieldTestUI() {
+    if (el.optFieldTestMode) {
+      el.optFieldTestMode.checked = !!state.settings.fieldTest?.enabled;
+    }
+    if (el.fieldTestEnvironmentTag) {
+      el.fieldTestEnvironmentTag.value = state.settings.fieldTest?.environmentTag || "";
+    }
+    if (el.fieldTestConsentState) {
+      el.fieldTestConsentState.textContent = state.settings.fieldTest?.consentedAt
+        ? `同意状態: 同意済み（${new Date(state.settings.fieldTest.consentedAt).toLocaleString()}）`
+        : "同意状態: 未同意";
+    }
+  }
+
+  function openFieldTestConsentDialog() {
+    if (!el.dlgFieldTestConsent || el.dlgFieldTestConsent.open) return;
+    el.dlgFieldTestConsent.showModal();
+  }
+
+  function setFieldTestEnabled(nextEnabled) {
+    const next = !!nextEnabled;
+    if (next && !state.settings.fieldTest?.consentedAt) {
+      openFieldTestConsentDialog();
+      applyFieldTestUI();
+      return;
+    }
+    state.settings.fieldTest.enabled = next;
+    saveSettings();
+    applyFieldTestUI();
+  }
+
+  function acceptFieldTestConsent() {
+    state.settings.fieldTest.consentedAt = new Date().toISOString();
+    state.settings.fieldTest.enabled = true;
+    saveSettings();
+    applyFieldTestUI();
+    el.dlgFieldTestConsent?.close();
+    toast("Field Test Mode を有効化しました");
+  }
+
   function playVoiceStartCue() {
     if (state.settings.voiceStartTone === false) return;
     try {
@@ -2699,6 +2785,7 @@
     renderTemplates();
     renderShareShortcuts();
     loadApiKeys();
+    applyFieldTestUI();
     applyEditPanelPosition();
     applySettingsTab(section || "voice");
   }
@@ -3728,6 +3815,13 @@
       toolbarButtons: Array.from(document.querySelectorAll(".toolbar-item")),
       btnResetApp: document.getElementById("btnResetApp"),
       btnForceReload: document.getElementById("btnForceReload"),
+      optFieldTestMode: document.getElementById("optFieldTestMode"),
+      fieldTestEnvironmentTag: document.getElementById("fieldTestEnvironmentTag"),
+      fieldTestConsentState: document.getElementById("fieldTestConsentState"),
+      btnFieldTestConsent: document.getElementById("btnFieldTestConsent"),
+      dlgFieldTestConsent: document.getElementById("dlgFieldTestConsent"),
+      btnFieldTestAgree: document.getElementById("btnFieldTestAgree"),
+      btnFieldTestDecline: document.getElementById("btnFieldTestDecline"),
       toolbarOrderList: document.getElementById("toolbarOrderList"),
       bottombar: document.querySelector(".bottombar"),
       apiKeyOpenAI: document.getElementById("apiKeyOpenAI"),

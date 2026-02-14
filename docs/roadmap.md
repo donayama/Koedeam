@@ -65,7 +65,7 @@ Centralize all voice event handling.
 
 # EPIC-3: Field Test Mode
 
-## WI-301 (implement) Consent + Field Test UI [todo]
+## WI-301 (implement) Consent + Field Test UI [doing]
 
 ## WI-302 (implement) session.json v1.1 (device/os/browser/capabilities/settings/events/metrics) [todo]
 

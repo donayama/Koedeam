@@ -318,6 +318,18 @@
         <p class="hint">Service Worker とキャッシュを解除して再読み込みします。</p>
       </div>
       <div class="settings-section">
+        <h3>Field Test</h3>
+        <fieldset class="segment">
+          <label class="option-chip"><input id="optFieldTestMode" type="checkbox" />Field Test Mode を有効化</label>
+          <p id="fieldTestConsentState" class="hint">同意状態: 未同意</p>
+          <button id="btnFieldTestConsent" type="button">同意内容を確認</button>
+        </fieldset>
+        <label>environment_tag
+          <input id="fieldTestEnvironmentTag" type="text" placeholder="local-dev" />
+        </label>
+        <p class="hint">例: office-a / home / local-dev</p>
+      </div>
+      <div class="settings-section">
         <h3>Telemetry</h3>
         <p class="hint">音声認識セッションの検証ログをJSONとして出力/コピーします。</p>
         <div class="telemetry-tools-row">
@@ -326,6 +338,16 @@
         </div>
       </div>
     </section>
+  </dialog>
+
+  <dialog id="dlgFieldTestConsent">
+    <h3>Field Test 同意</h3>
+    <p>Field Test Modeでは、検証目的の動作ログを端末内に保持します。</p>
+    <p class="hint">同意後にのみField Test Modeを有効化できます。</p>
+    <div class="dialog-actions">
+      <button id="btnFieldTestDecline" type="button">同意しない</button>
+      <button id="btnFieldTestAgree" type="button">同意して有効化</button>
+    </div>
   </dialog>
 
   <section id="editToolsPanel" class="edit-tools" aria-label="edit tools">
