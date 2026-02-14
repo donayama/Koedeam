@@ -88,3 +88,5 @@ Centralize all voice event handling.
 ## WI-503 (prepare→implement) GitHub Actions Workflow [todo]
 
 ## WI-510 (prepare) Audio Fixture Foundation (WAV/MP3 metadata/convert) [doing]
+
+## WI-511 (prepare→implement) Playwright fake-mic WAV input (Chromium optional) [doing]

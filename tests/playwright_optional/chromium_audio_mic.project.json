@@ -1,0 +1,12 @@
+{
+  "id": "chromium-audio-mic-optional",
+  "title": "Chromium Fake Microphone WAV Check",
+  "type": "optional",
+  "requiredInCI": false,
+  "command": "python scripts/playwright_audio_mic_check.py --url http://localhost:8000/app/",
+  "notes": [
+    "Chromium only",
+    "May be flaky depending on local audio stack and browser version",
+    "Use for local/manual/nightly validation, not required for PR green"
+  ]
+}

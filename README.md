@@ -164,6 +164,21 @@ python scripts/local_ui_checks.py --url http://localhost:8000/app/
 python scripts/playwright_replay_checks.py --url http://localhost:8000/app/
 ```
 
+### WAV偽マイク入力チェック（Playwright / Chromium / 任意）
+
+このテストは `Chromium限定` の任意実行です。  
+CI必須にはせず、ローカル/夜間検証向けに使います（flakyになり得るため）。
+
+```bash
+python scripts/playwright_audio_mic_check.py --url http://localhost:8000/app/
+```
+
+任意でWAVを指定できます。
+
+```bash
+python scripts/playwright_audio_mic_check.py --url http://localhost:8000/app/ --wav test/fixtures/audio/converted/quiet_01.wav
+```
+
 ## 検証チェックリスト
 
 1. `MOBILE` 幅で `Tool Bar` が2段化しない
