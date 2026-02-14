@@ -156,6 +156,14 @@ python -m http.server 8000
 python scripts/local_ui_checks.py --url http://localhost:8000/app/
 ```
 
+### Replay deterministic チェック（Playwright / Python）
+
+`quiet_01` fixture を `ReplayVoiceEngine` で `realtime/fast` 再生し、出力一致とトレース保存を確認します。
+
+```bash
+python scripts/playwright_replay_checks.py --url http://localhost:8000/app/
+```
+
 ## 検証チェックリスト
 
 1. `MOBILE` 幅で `Tool Bar` が2段化しない

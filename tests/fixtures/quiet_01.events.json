@@ -1,0 +1,45 @@
+{
+  "id": "quiet_01",
+  "description": "Quiet baseline replay fixture for deterministic regression.",
+  "expectedText": "静かなテスト",
+  "events": [
+    { "type": "start", "atMs": 0 },
+    {
+      "type": "result",
+      "atMs": 120,
+      "results": [
+        {
+          "isFinal": false,
+          "alternatives": [
+            { "transcript": "静かな", "confidence": 0.9 }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "result",
+      "atMs": 260,
+      "results": [
+        {
+          "isFinal": true,
+          "alternatives": [
+            { "transcript": "静かな", "confidence": 0.91 }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "result",
+      "atMs": 410,
+      "results": [
+        {
+          "isFinal": true,
+          "alternatives": [
+            { "transcript": "テスト", "confidence": 0.93 }
+          ]
+        }
+      ]
+    },
+    { "type": "end", "atMs": 620 }
+  ]
+}

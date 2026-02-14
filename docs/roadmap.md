@@ -83,6 +83,6 @@ Centralize all voice event handling.
 
 # EPIC-5: CI with Playwright
 
-## WI-501 (prepare→implement) Playwright Deterministic Replay Test [todo]
+## WI-501 (prepare→implement) Playwright Deterministic Replay Test [doing]
 
 ## WI-503 (prepare→implement) GitHub Actions Workflow [todo]
