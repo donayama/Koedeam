@@ -75,7 +75,7 @@ Centralize all voice event handling.
 
 # EPIC-4: Replay & Synthetic
 
-## WI-401 (implement) ReplayVoiceEngine (realtime) [todo]
+## WI-401 (implement) ReplayVoiceEngine (realtime) [doing]
 
 ## WI-420 (prepare→implement) Synthetic Generator (seed-fixed) [todo]
 

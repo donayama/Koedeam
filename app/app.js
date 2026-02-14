@@ -105,7 +105,10 @@
     settings: structuredClone(DEFAULT_SETTINGS),
     shareMode: "all",
     runtime: {
-      testMode: false
+      testMode: false,
+      voiceEngine: "real",
+      replayMode: "realtime",
+      replayEventsUrl: ""
     },
     voiceEngine: null,
     recognition: null,
@@ -266,8 +269,16 @@
   function parseRuntimeFlags(search) {
     const params = new URLSearchParams(search || "");
     const raw = `${params.get("testMode") || ""}`.trim().toLowerCase();
+    const replayModeRaw = `${params.get("replayMode") || ""}`.trim().toLowerCase();
+    const replayMode = replayModeRaw === "fast" ? "fast" : "realtime";
+    const replayEventsUrl = `${params.get("eventsUrl") || params.get("replayUrl") || ""}`.trim();
+    const voiceEngineRaw = `${params.get("voiceEngine") || ""}`.trim().toLowerCase();
+    const replayOn = voiceEngineRaw === "replay" || `${params.get("replay") || ""}`.trim() === "1";
     return {
-      testMode: raw === "1" || raw === "true" || raw === "on"
+      testMode: raw === "1" || raw === "true" || raw === "on",
+      voiceEngine: replayOn ? "replay" : "real",
+      replayMode,
+      replayEventsUrl
     };
   }
 
@@ -278,7 +289,9 @@
     window.__KOEDEAM_TEST__ = {
       ...existing,
       testMode: !!state.runtime.testMode,
-      voiceEngineType: "real"
+      voiceEngineType: state.runtime.voiceEngine || "real",
+      replayMode: state.runtime.replayMode || "realtime",
+      replayEventsUrl: state.runtime.replayEventsUrl || ""
     };
   }
 
@@ -1808,11 +1821,249 @@
     };
   }
 
+  function normalizeReplayEventList(raw) {
+    const source = Array.isArray(raw) ? raw : (Array.isArray(raw?.events) ? raw.events : []);
+    if (!source.length) return [];
+    const parsed = source.map((item, idx) => {
+      const rec = (item && typeof item === "object") ? item : {};
+      const name = `${rec.type || rec.event || ""}`.trim();
+      const mapped = name === "voice.onstart" ? "start"
+        : (name === "voice.onend" ? "end"
+          : (name === "voice.onerror" ? "error"
+            : ((name === "voice.onresult.final" || name === "voice.onresult.interim") ? "result" : name)));
+      const finalFlag = name === "voice.onresult.final" ? true
+        : (name === "voice.onresult.interim" ? false : null);
+      return {
+        idx,
+        type: mapped || "result",
+        t: Number.isFinite(Number(rec.atMs)) ? Number(rec.atMs)
+          : (Number.isFinite(Number(rec.t)) ? Number(rec.t) : null),
+        ts: rec.ts || rec.timestamp || null,
+        payload: {
+          ...rec,
+          isFinal: typeof rec.isFinal === "boolean" ? rec.isFinal : finalFlag
+        }
+      };
+    });
+    const hasAt = parsed.some((e) => Number.isFinite(e.t));
+    if (hasAt) {
+      const withTime = parsed.map((e, i) => ({
+        ...e,
+        atMs: Number.isFinite(e.t) ? Math.max(0, Number(e.t)) : (i * 10)
+      }));
+      withTime.sort((a, b) => a.atMs - b.atMs || a.idx - b.idx);
+      return withTime;
+    }
+    const tsList = parsed
+      .map((e) => Date.parse(`${e.ts || ""}`))
+      .filter((v) => Number.isFinite(v));
+    if (tsList.length === parsed.length) {
+      const base = tsList[0];
+      return parsed.map((e, i) => ({
+        ...e,
+        atMs: Math.max(0, Date.parse(`${e.ts}`) - base),
+        idx: i
+      })).sort((a, b) => a.atMs - b.atMs || a.idx - b.idx);
+    }
+    return parsed.map((e, i) => ({ ...e, atMs: i * 10 })).sort((a, b) => a.atMs - b.atMs || a.idx - b.idx);
+  }
+
+  function buildReplayResultEvent(payload = {}) {
+    const toAlt = (alt) => ({
+      transcript: `${alt?.transcript || alt?.text || ""}`,
+      confidence: Number.isFinite(Number(alt?.confidence)) ? Number(alt.confidence) : 0.9
+    });
+    const toResult = (src, defaultFinal) => {
+      const isFinal = typeof src?.isFinal === "boolean" ? src.isFinal : !!defaultFinal;
+      const altsSrc = Array.isArray(src?.alternatives) ? src.alternatives
+        : (Array.isArray(src?.alts) ? src.alts : null);
+      const alts = (altsSrc && altsSrc.length ? altsSrc : [src]).map(toAlt).filter((a) => a.transcript);
+      const arr = { isFinal, length: alts.length || 1 };
+      (alts.length ? alts : [toAlt(src)]).forEach((a, i) => {
+        arr[i] = a;
+      });
+      return arr;
+    };
+    const resultsSrc = Array.isArray(payload.results) ? payload.results : null;
+    const results = resultsSrc && resultsSrc.length
+      ? resultsSrc.map((r) => toResult(r, payload.isFinal))
+      : [toResult(payload, payload.isFinal)];
+    return {
+      resultIndex: Number.isFinite(Number(payload.resultIndex)) ? Number(payload.resultIndex) : 0,
+      results
+    };
+  }
+
+  function createReplayVoiceEngine(hostWindow, options = {}) {
+    const listeners = new Map();
+    const mode = options.replayMode === "fast" ? "fast" : "realtime";
+    const stateReplay = {
+      events: [],
+      timers: [],
+      loaded: false,
+      playing: false,
+      loading: null
+    };
+
+    const emit = (type, payload = {}) => {
+      const arr = listeners.get(type) || [];
+      const ev = { type, ...payload };
+      arr.forEach((cb) => cb(ev));
+    };
+
+    const clearTimers = () => {
+      while (stateReplay.timers.length) {
+        clearTimeout(stateReplay.timers.pop());
+      }
+    };
+
+    const loadEventsIfNeeded = async () => {
+      if (stateReplay.loaded) return;
+      if (stateReplay.loading) {
+        await stateReplay.loading;
+        return;
+      }
+      const task = (async () => {
+        const bridge = hostWindow.__KOEDEAM_TEST__;
+        if (Array.isArray(bridge?.replayEvents)) {
+          stateReplay.events = normalizeReplayEventList(bridge.replayEvents);
+          stateReplay.loaded = true;
+          return;
+        }
+        const replayUrl = `${options.replayEventsUrl || ""}`.trim();
+        if (replayUrl) {
+          const res = await hostWindow.fetch(replayUrl, { cache: "no-store" });
+          if (!res.ok) throw new Error(`replay events fetch failed: ${res.status}`);
+          const json = await res.json();
+          stateReplay.events = normalizeReplayEventList(json);
+          stateReplay.loaded = true;
+          return;
+        }
+        stateReplay.events = [];
+        stateReplay.loaded = true;
+      })();
+      stateReplay.loading = task;
+      try {
+        await task;
+      } finally {
+        stateReplay.loading = null;
+      }
+    };
+
+    const replayOne = (item) => {
+      if (item.type === "start") {
+        emit("start");
+        return;
+      }
+      if (item.type === "end") {
+        emit("end");
+        return;
+      }
+      if (item.type === "error") {
+        emit("error", { error: item.payload?.error || "unknown" });
+        return;
+      }
+      if (item.type === "result") {
+        emit("result", buildReplayResultEvent(item.payload));
+      }
+    };
+
+    const replayAllFast = (items) => {
+      const run = (i) => {
+        if (!stateReplay.playing) return;
+        if (i >= items.length) {
+          stateReplay.playing = false;
+          return;
+        }
+        replayOne(items[i]);
+        const tid = setTimeout(() => run(i + 1), 0);
+        stateReplay.timers.push(tid);
+      };
+      run(0);
+    };
+
+    const replayAllRealtime = (items) => {
+      const base = items.length ? Number(items[0].atMs || 0) : 0;
+      items.forEach((item, i) => {
+        const delay = Math.max(0, Number(item.atMs || 0) - base);
+        const tid = setTimeout(() => {
+          if (!stateReplay.playing) return;
+          replayOne(item);
+          if (i === items.length - 1) stateReplay.playing = false;
+        }, delay);
+        stateReplay.timers.push(tid);
+      });
+    };
+
+    const api = {
+      on(eventName, handler) {
+        const arr = listeners.get(eventName) || [];
+        arr.push(handler);
+        listeners.set(eventName, arr);
+      },
+      configure() {
+        // Replay engine uses pre-recorded events; runtime recognition settings are ignored.
+      },
+      start() {
+        loadEventsIfNeeded().then(() => {
+          clearTimers();
+          stateReplay.playing = true;
+          if (!stateReplay.events.length) {
+            emit("start");
+            const tid = setTimeout(() => {
+              if (!stateReplay.playing) return;
+              emit("end");
+              stateReplay.playing = false;
+            }, 0);
+            stateReplay.timers.push(tid);
+            return;
+          }
+          const items = stateReplay.events.slice();
+          const hasStart = items.some((e) => e.type === "start");
+          const hasEnd = items.some((e) => e.type === "end");
+          if (!hasStart) items.unshift({ idx: -1, type: "start", atMs: Number(items[0]?.atMs || 0), payload: {} });
+          if (!hasEnd) {
+            const lastAt = Number(items[items.length - 1]?.atMs || 0);
+            items.push({ idx: 999999, type: "end", atMs: lastAt + 10, payload: {} });
+          }
+          if (mode === "fast") replayAllFast(items);
+          else replayAllRealtime(items);
+        }).catch((err) => {
+          emit("error", { error: `${err?.message || "replay-load-failed"}` });
+        });
+      },
+      stop() {
+        clearTimers();
+        if (!stateReplay.playing) return;
+        stateReplay.playing = false;
+        emit("end");
+      },
+      getNative() {
+        return null;
+      }
+    };
+
+    if (hostWindow.__KOEDEAM_TEST__ && typeof hostWindow.__KOEDEAM_TEST__ === "object") {
+      hostWindow.__KOEDEAM_TEST__.setReplayEvents = (payload) => {
+        stateReplay.events = normalizeReplayEventList(payload);
+        stateReplay.loaded = true;
+      };
+    }
+    return api;
+  }
+
   function selectVoiceEngine(hostWindow) {
-    const selected = "real";
-    const engine = createRealVoiceEngine(hostWindow);
+    const selected = state.runtime.voiceEngine === "replay" ? "replay" : "real";
+    const engine = selected === "replay"
+      ? createReplayVoiceEngine(hostWindow, {
+          replayMode: state.runtime.replayMode,
+          replayEventsUrl: state.runtime.replayEventsUrl
+        })
+      : createRealVoiceEngine(hostWindow);
     if (window.__KOEDEAM_TEST__ && typeof window.__KOEDEAM_TEST__ === "object") {
       window.__KOEDEAM_TEST__.voiceEngineType = selected;
+      window.__KOEDEAM_TEST__.replayMode = state.runtime.replayMode || "realtime";
+      window.__KOEDEAM_TEST__.replayEventsUrl = state.runtime.replayEventsUrl || "";
     }
     return engine;
   }
@@ -1922,6 +2173,7 @@
     };
 
     const canAutoRestart = () => {
+      if (state.runtime.voiceEngine === "replay") return false;
       if (!state.speaking) return false;
       if (state.primary !== "EDIT") return false;
       return true;

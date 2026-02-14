@@ -1,0 +1,18 @@
+{
+  "events": [
+    { "type": "start", "atMs": 0 },
+    {
+      "type": "result",
+      "atMs": 300,
+      "results": [
+        {
+          "isFinal": true,
+          "alternatives": [
+            { "transcript": "リプレイ音声テスト", "confidence": 0.9 }
+          ]
+        }
+      ]
+    },
+    { "type": "end", "atMs": 550 }
+  ]
+}
