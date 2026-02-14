@@ -57,7 +57,7 @@ Reorganize settings into:
 ## WI-150 (prepare) handleVoiceEvent Aggregation [doing]
 Centralize all voice event handling.
 
-## WI-151 (implement) VoiceEngine Interface + RealVoiceEngine [todo]
+## WI-151 (implement) VoiceEngine Interface + RealVoiceEngine [doing]
 
 ## WI-152 (prepare) testMode Switch Skeleton [todo]
 

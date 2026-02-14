@@ -98,6 +98,7 @@
     templates: [],
     settings: structuredClone(DEFAULT_SETTINGS),
     shareMode: "all",
+    voiceEngine: null,
     recognition: null,
     speaking: false,
     activeMatchIndex: -1,
@@ -1686,19 +1687,60 @@
     }
   }
 
+  /**
+   * @typedef {Object} VoiceEngine
+   * @property {(eventName:string, handler:Function) => void} on
+   * @property {(options:{interimResults?:boolean, continuous?:boolean, lang?:string}) => void} configure
+   * @property {() => void} start
+   * @property {() => void} stop
+   * @property {() => SpeechRecognition|null} getNative
+   */
+  function createRealVoiceEngine(hostWindow) {
+    const SR = hostWindow.SpeechRecognition || hostWindow.webkitSpeechRecognition;
+    if (!SR) return null;
+    const recognition = new SR();
+    return {
+      on(eventName, handler) {
+        recognition.addEventListener(eventName, handler);
+      },
+      configure(options = {}) {
+        if (Object.prototype.hasOwnProperty.call(options, "interimResults")) {
+          recognition.interimResults = !!options.interimResults;
+        }
+        if (Object.prototype.hasOwnProperty.call(options, "continuous")) {
+          recognition.continuous = !!options.continuous;
+        }
+        if (Object.prototype.hasOwnProperty.call(options, "lang")) {
+          recognition.lang = options.lang || "";
+        }
+      },
+      start() {
+        recognition.start();
+      },
+      stop() {
+        recognition.stop();
+      },
+      getNative() {
+        return recognition;
+      }
+    };
+  }
+
   function setupSpeech() {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) {
+    const voiceEngine = createRealVoiceEngine(window);
+    if (!voiceEngine) {
       el.btnMic.disabled = true;
       toast("音声API非対応: OS音声入力キーボードをご利用ください", 3500);
       return;
     }
-    const recognition = new SR();
-    state.recognition = recognition;
+    state.voiceEngine = voiceEngine;
+    state.recognition = voiceEngine.getNative();
     const applyRecognitionRuntimeSettings = () => {
-      recognition.interimResults = true;
-      recognition.continuous = !!state.settings.voiceContinuous;
-      recognition.lang = state.settings.voiceLang === "auto" ? "" : state.settings.voiceLang;
+      voiceEngine.configure({
+        interimResults: true,
+        continuous: !!state.settings.voiceContinuous,
+        lang: state.settings.voiceLang === "auto" ? "" : state.settings.voiceLang
+      });
     };
     applyRecognitionRuntimeSettings();
 
@@ -1797,7 +1839,7 @@
       state.speaking = false;
       applyVoiceSessionState("STOPPED");
       sessionRecord("voice.stop.requested", { reason: "manual" });
-      recognition.stop();
+      voiceEngine.stop();
     };
 
     const scheduleRestart = (reason) => {
@@ -1820,7 +1862,7 @@
           applyVoiceSessionState("PERMISSION_WAIT");
           if (state.telemetry.activeSession) state.telemetry.activeSession.restartStartedAt = Date.now();
           sessionRecord("voice.restart.started", { attempt: state.voiceRestartAttempt });
-          recognition.start();
+          voiceEngine.start();
         } catch {
           toast("音声入力の再開に失敗しました");
           state.speaking = false;
@@ -1926,10 +1968,10 @@
       }
     };
 
-    recognition.addEventListener("result", (event) => handleVoiceEvent("result", event));
-    recognition.addEventListener("start", () => handleVoiceEvent("start"));
-    recognition.addEventListener("error", (event) => handleVoiceEvent("error", event));
-    recognition.addEventListener("end", () => handleVoiceEvent("end"));
+    voiceEngine.on("result", (event) => handleVoiceEvent("result", event));
+    voiceEngine.on("start", () => handleVoiceEvent("start"));
+    voiceEngine.on("error", (event) => handleVoiceEvent("error", event));
+    voiceEngine.on("end", () => handleVoiceEvent("end"));
 
     el.btnMic.addEventListener("click", () => {
       if (state.speaking) {
@@ -1941,7 +1983,7 @@
         clearRestartTimer();
         applyVoiceSessionState("PERMISSION_WAIT");
         state.voiceManualStop = false;
-        recognition.start();
+        voiceEngine.start();
       } catch {
         applyVoiceSessionState("STOPPED");
         toast("音声入力を開始できませんでした");
@@ -1954,7 +1996,7 @@
       clearRestartTimer();
       applyVoiceSessionState("PERMISSION_WAIT");
       state.voiceManualStop = false;
-      recognition.start();
+      voiceEngine.start();
     };
   }
 
