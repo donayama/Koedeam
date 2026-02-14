@@ -8,7 +8,19 @@
     templates: "koedeam.templates",
     settings: "koedeam.settings"
   };
-  const MAX_SHARE_SHORTCUTS = 8;
+  const MAX_SHARE_SHORTCUTS = 12;
+  const DEFAULT_SHARE_SHORTCUT_DEFS = [
+    { name: "メール", urlTemplate: "mailto:?subject={title}&body={text}" },
+    { name: "LINE", urlTemplate: "https://line.me/R/share?text={prompt}" },
+    { name: "ChatGPT", urlTemplate: "https://chatgpt.com/?q={prompt}" },
+    { name: "Gemini", urlTemplate: "https://gemini.google.com/app?q={prompt}" },
+    { name: "X", urlTemplate: "https://x.com/intent/tweet?text={prompt}" },
+    { name: "Google翻訳", urlTemplate: "https://translate.google.com/?sl=auto&tl=en&text={prompt}&op=translate" },
+    { name: "DeepL", urlTemplate: "https://www.deepl.com/translator#ja/en/{prompt}" },
+    { name: "GitHub Issue", urlTemplate: "https://github.com/issues/new?title={title}&body={text}" },
+    { name: "Notion", urlTemplate: "https://www.notion.so/new" },
+    { name: "Discord", urlTemplate: "https://discord.com/channels/@me" }
+  ];
 
   const DEFAULT_TEMPLATES = [
     { id: uid(), name: "AI整理依頼", text: "次のメモを、目的・要点・次アクションの3項目で整理してください。\n\n[メモ]\n", updatedAt: Date.now() },
@@ -59,16 +71,7 @@
       openai: "",
       other: ""
     },
-    shareShortcuts: [
-      { id: uid(), name: "メール", urlTemplate: "mailto:?subject={title}&body={text}" },
-      { id: uid(), name: "LINE", urlTemplate: "https://line.me/R/share?text={prompt}" },
-      { id: uid(), name: "ChatGPT", urlTemplate: "https://chatgpt.com/?q={prompt}" },
-      { id: uid(), name: "Gemini", urlTemplate: "https://gemini.google.com/app?q={prompt}" },
-      { id: uid(), name: "X", urlTemplate: "https://x.com/intent/tweet?text={prompt}" },
-      { id: uid(), name: "Google翻訳", urlTemplate: "https://translate.google.com/?sl=auto&tl=en&text={prompt}&op=translate" },
-      { id: uid(), name: "DeepL", urlTemplate: "https://www.deepl.com/translator#ja/en/{prompt}" },
-      { id: uid(), name: "GitHub Issue", urlTemplate: "https://github.com/issues/new?title={title}&body={text}" }
-    ],
+    shareShortcuts: buildDefaultShareShortcuts(),
     documents: [],
     currentDocId: "",
     ui: { sidebar: false },
@@ -170,6 +173,7 @@
       saveSettings();
     }
     state.settings.voiceStartTone = state.settings.voiceStartTone !== false;
+    ensureDefaultShareShortcuts();
     if (!state.settings.candidate || typeof state.settings.candidate !== "object") {
       state.settings.candidate = { ...DEFAULT_SETTINGS.candidate };
       saveSettings();
@@ -1466,6 +1470,41 @@
     el.shortcutId.value = "";
     el.shortcutName.value = "";
     el.shortcutUrl.value = "";
+  }
+
+  function buildDefaultShareShortcuts() {
+    return DEFAULT_SHARE_SHORTCUT_DEFS.map((item) => ({
+      id: uid(),
+      name: item.name,
+      urlTemplate: item.urlTemplate
+    }));
+  }
+
+  function ensureDefaultShareShortcuts() {
+    if (!Array.isArray(state.settings.shareShortcuts)) {
+      state.settings.shareShortcuts = buildDefaultShareShortcuts().slice(0, MAX_SHARE_SHORTCUTS);
+      saveSettings();
+      return;
+    }
+    const keyOf = (item) => `${item?.name || ""}::${item?.urlTemplate || ""}`;
+    const existing = new Set(state.settings.shareShortcuts.map((item) => keyOf(item)));
+    let changed = false;
+    for (const def of DEFAULT_SHARE_SHORTCUT_DEFS) {
+      const key = `${def.name}::${def.urlTemplate}`;
+      if (existing.has(key)) continue;
+      state.settings.shareShortcuts.push({
+        id: uid(),
+        name: def.name,
+        urlTemplate: def.urlTemplate
+      });
+      existing.add(key);
+      changed = true;
+    }
+    if (state.settings.shareShortcuts.length > MAX_SHARE_SHORTCUTS) {
+      state.settings.shareShortcuts = state.settings.shareShortcuts.slice(0, MAX_SHARE_SHORTCUTS);
+      changed = true;
+    }
+    if (changed) saveSettings();
   }
 
   function applySidebar() {
