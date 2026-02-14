@@ -147,6 +147,14 @@
   </dialog>
 
   <dialog id="dlgSettings">
+    <!-- WI-104 settings category mapping (move-only, no key changes):
+      Voice: voiceMode / voiceContinuous / voiceLang / voiceStartTone / presets / quality compare
+      Display: fontSize / fontFace / editPanelPosition / toolbar visibility
+      Edit: punctuationMode / candidate settings / undoDepth
+      Template: template list + save/reset form
+      Share: share shortcut list + save/reset form
+      Other: API keys / reset / force reload / field test / telemetry
+    -->
     <div class="settings-bar">
       <h2>設定</h2>
       <div class="side-tabs settings-tabs" role="tablist" aria-label="settings tabs">
@@ -286,6 +294,7 @@
       </form>
     </section>
     <section id="panelSettingsShare" class="tab-panel settings-section">
+      <h3>共有</h3>
       <div id="settingsShareList" class="dialog-list dialog-body"></div>
       <form id="shareShortcutForm" class="template-form">
         <input id="shortcutId" type="hidden" />
@@ -299,14 +308,17 @@
       </form>
     </section>
     <section id="panelSettingsOther" class="tab-panel settings-section">
-      <h3>APIキー（端末内保存）</h3>
-      <label>OpenAI API Key
-        <input id="apiKeyOpenAI" type="password" placeholder="sk-..." />
-      </label>
-      <label>Other API Key
-        <input id="apiKeyOther" type="password" placeholder="任意" />
-      </label>
-      <p class="hint">キーは端末内のみ保存され、外部送信は行いません。</p>
+      <h3>その他</h3>
+      <div class="settings-section">
+        <h3>APIキー（端末内保存）</h3>
+        <label>OpenAI API Key
+          <input id="apiKeyOpenAI" type="password" placeholder="sk-..." />
+        </label>
+        <label>Other API Key
+          <input id="apiKeyOther" type="password" placeholder="任意" />
+        </label>
+        <p class="hint">キーは端末内のみ保存され、外部送信は行いません。</p>
+      </div>
       <div class="settings-section">
         <h3>初期化</h3>
         <button id="btnResetApp" type="button">設定と下書きを初期化</button>
