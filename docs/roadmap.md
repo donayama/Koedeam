@@ -35,7 +35,7 @@ Every PR must include:
 Ensure new documents are immediately persisted and survive reload.
 - merged to main: `cd73e37`
 
-## WI-102 (implement) Insert Position Indicator [todo]
+## WI-102 (implement) Insert Position Indicator [doing]
 Display clear insert preview and commit feedback.
 
 ## WI-103 (implement) Settings Layout Fix [todo]
