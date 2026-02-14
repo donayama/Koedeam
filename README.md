@@ -6,10 +6,10 @@
 
 ## 疑似Issue（Work Item）運用
 
-本リポジトリでは GitHub Issue の代わりに、`docs/roadmap.md` を疑似Issue（Work Item）の唯一の正規ソースとして運用します。  
+本リポジトリでは GitHub Issue の代わりに、`docs/roadmaps/product-roadmap.md` を疑似Issue（Work Item）の唯一の正規ソースとして運用します。  
 作業前に必ず対象の `WI-ID` を選定し、すべてのPRで `WI-ID` を明記してください。
 
-- Roadmap: `docs/roadmap.md`
+- Roadmap: `docs/roadmaps/product-roadmap.md`
 - すべてのPRは `WI-ID` 必須（例: `Implements: WI-000`）
 ## コンセプト
 

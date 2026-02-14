@@ -1,7 +1,7 @@
 # Koedeam Roadmap (Pseudo-Issue Based)
 
 ## Governance Rule
-This file (`docs/roadmap.md`) is the single source of truth for pseudo-issues (Work Items).
+This file (`docs/roadmaps/product-roadmap.md`) is the single source of truth for pseudo-issues (Work Items).
 All development must reference a WI-ID (Work Item ID) defined in this document.
 Every PR must include:
 - Implements: WI-xxx

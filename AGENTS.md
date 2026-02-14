@@ -98,9 +98,9 @@ No Server / Static / PWA 前提で運用する。
 
 ## Work Item 運用
 
-このリポジトリでは GitHub Issue の代わりに、`docs/roadmap.md` の Work Item（WI）をタスク単位として扱う。
+このリポジトリでは GitHub Issue の代わりに、`docs/roadmaps/product-roadmap.md` の Work Item（WI）をタスク単位として扱う。
 
-- 作業開始前に `docs/roadmap.md` から WI を1つ選ぶ
+- 作業開始前に `docs/roadmaps/product-roadmap.md` から WI を1つ選ぶ
 - WI が未選定の状態では実装に着手しない
 - すべての出力（計画、コミット、PR）で `WI-ID`（例: `WI-101`）を明示する
 - WI の選定誤りに気づいた場合は、無言で進めず停止して `WI-ID` の再マッピング案を提示する
@@ -141,7 +141,7 @@ No Server / Static / PWA 前提で運用する。
 
 ## 推奨作業手順
 
-1. `docs/roadmap.md` を読み、対象 WI を1つ選ぶ
+1. `docs/roadmaps/product-roadmap.md` を読み、対象 WI を1つ選ぶ
 2. 関連仕様を `docs/` から確認する
 3. 最小差分で実装し、必要テストを実行する
 4. 挙動変更があればドキュメントを更新する
