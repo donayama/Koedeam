@@ -129,6 +129,141 @@ def run(base_url: str) -> int:
             if not ok:
                 failures.append(f"missing element: {key}")
 
+        # 1.5) Settings category tabs/panels structure
+        page.click("#btnMenu")
+        page.click("button[data-menu='settings']")
+        settings_tabs = page.evaluate(
+            """() => {
+              const tabs = ["voice", "display", "edit", "templates", "share", "other"];
+              const out = {};
+              for (const t of tabs) {
+                out[t] = {
+                  tab: !!document.querySelector(`#dlgSettings .tab-btn[data-tab="${t}"]`),
+                  panel: !!document.getElementById(`panelSettings${t.charAt(0).toUpperCase()}${t.slice(1)}`)
+                };
+              }
+              return out;
+            }"""
+        )
+        report["settings_categories"] = settings_tabs
+        for tab, state in settings_tabs.items():
+            if not state["tab"] or not state["panel"]:
+                failures.append(f"settings category: missing tab/panel for {tab}")
+
+        settings_switch = page.evaluate(
+            """() => {
+              const tabs = ["voice", "display", "edit", "templates", "share", "other"];
+              const results = {};
+              const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+              for (const t of tabs) {
+                const btn = document.querySelector(`#dlgSettings .tab-btn[data-tab="${t}"]`);
+                if (btn) btn.click();
+                const panelId = `panelSettings${cap(t)}`;
+                const panel = document.getElementById(panelId);
+                results[t] = {
+                  active: !!(panel && panel.classList.contains("active")),
+                };
+              }
+              return results;
+            }"""
+        )
+        report["settings_switch"] = settings_switch
+        for tab, state in settings_switch.items():
+            if not state["active"]:
+                failures.append(f"settings category: tab switch failed for {tab}")
+
+        # 1.6) canOpen suppression while settings dialog is open
+        blocked_state = page.evaluate(
+            """() => {
+              document.getElementById('btnMenu')?.click();
+              const menuVisible = !document.getElementById('menuOverlay')?.classList.contains('hidden');
+              document.getElementById('btnReplace')?.click();
+              document.getElementById('btnBrandDocuments')?.click();
+              return {
+                menuVisible,
+                searchOpen: !!document.getElementById('dlgSearch')?.open,
+                documentsOpen: !!document.getElementById('dlgDocuments')?.open,
+                settingsOpen: !!document.getElementById('dlgSettings')?.open
+              };
+            }"""
+        )
+        report["can_open_suppression"] = blocked_state
+        if blocked_state["menuVisible"]:
+            failures.append("canOpen: menu opened while settings dialog is active")
+        if blocked_state["searchOpen"]:
+            failures.append("canOpen: search dialog opened while settings dialog is active")
+        if blocked_state["documentsOpen"]:
+            failures.append("canOpen: document list opened while settings dialog is active")
+
+        # 1.7) Settings persistence (save -> reload -> restore)
+        page.evaluate(
+            """() => {
+              const pick = (sel) => document.querySelector(sel)?.click();
+              pick("#dlgSettings .tab-btn[data-tab='voice']");
+              pick("input[name='voiceContinuous'][value='true']");
+              pick("input[name='voiceLang'][value='auto']");
+              const tone = document.getElementById('optVoiceStartTone');
+              if (tone) { tone.checked = false; tone.dispatchEvent(new Event('change', { bubbles: true })); }
+
+              pick("#dlgSettings .tab-btn[data-tab='display']");
+              pick("input[name='fontFace'][value='mono']");
+              pick("input[name='editPanelPos'][value='right']");
+
+              pick("#dlgSettings .tab-btn[data-tab='edit']");
+              pick("input[name='punctuationMode'][value='en']");
+              const th = document.getElementById('candidateThreshold');
+              const nc = document.getElementById('candidateNoConfidenceRule');
+              const ib = document.getElementById('candidateIdleBehavior');
+              const ud = document.getElementById('undoDepth');
+              if (th) { th.value = '0.77'; th.dispatchEvent(new Event('change', { bubbles: true })); }
+              if (nc) { nc.value = 'direct'; nc.dispatchEvent(new Event('change', { bubbles: true })); }
+              if (ib) { ib.value = 'hold'; ib.dispatchEvent(new Event('change', { bubbles: true })); }
+              if (ud) { ud.value = '5'; ud.dispatchEvent(new Event('change', { bubbles: true })); }
+            }"""
+        )
+        page.click("#btnCloseSettings")
+        page.wait_for_timeout(120)
+        page.reload(wait_until="networkidle")
+        page.click("#btnMenu")
+        page.click("button[data-menu='settings']")
+        settings_persist = page.evaluate(
+            """() => ({
+              voiceContinuous: document.querySelector("input[name='voiceContinuous'][value='true']")?.checked || false,
+              voiceLang: document.querySelector("input[name='voiceLang'][value='auto']")?.checked || false,
+              voiceStartTone: document.getElementById('optVoiceStartTone')?.checked ?? null,
+              fontFaceMono: document.querySelector("input[name='fontFace'][value='mono']")?.checked || false,
+              editPanelRight: document.querySelector("input[name='editPanelPos'][value='right']")?.checked || false,
+              punctuationEn: document.querySelector("input[name='punctuationMode'][value='en']")?.checked || false,
+              candidateThreshold: document.getElementById('candidateThreshold')?.value || '',
+              candidateNoConfidenceRule: document.getElementById('candidateNoConfidenceRule')?.value || '',
+              candidateIdleBehavior: document.getElementById('candidateIdleBehavior')?.value || '',
+              undoDepth: document.getElementById('undoDepth')?.value || ''
+            })"""
+        )
+        report["settings_persistence"] = settings_persist
+        if not settings_persist["voiceContinuous"]:
+            failures.append("settings persist: voiceContinuous did not restore")
+        if not settings_persist["voiceLang"]:
+            failures.append("settings persist: voiceLang did not restore")
+        if settings_persist["voiceStartTone"] is not False:
+            failures.append("settings persist: voiceStartTone did not restore")
+        if not settings_persist["fontFaceMono"]:
+            failures.append("settings persist: fontFace did not restore")
+        if not settings_persist["editPanelRight"]:
+            failures.append("settings persist: editPanelPos did not restore")
+        if not settings_persist["punctuationEn"]:
+            failures.append("settings persist: punctuationMode did not restore")
+        if settings_persist["candidateThreshold"] != "0.77":
+            failures.append("settings persist: candidateThreshold did not restore")
+        if settings_persist["candidateNoConfidenceRule"] != "direct":
+            failures.append("settings persist: candidateNoConfidenceRule did not restore")
+        if settings_persist["candidateIdleBehavior"] != "hold":
+            failures.append("settings persist: candidateIdleBehavior did not restore")
+        if settings_persist["undoDepth"] != "5":
+            failures.append("settings persist: undoDepth did not restore")
+        page.click("#btnCloseSettings")
+        page.wait_for_timeout(80)
+
         # 2) Keyboard behavior proxy (non-device simulation)
         page.click("#btnEditTools")
         keyboard_proxy = page.evaluate(
@@ -449,6 +584,9 @@ def run(base_url: str) -> int:
     print("== Koedeam Local UI Checks ==")
     print(f"Base URL: {base_url}")
     print(f"UI Exists: {as_bool(len([k for k,v in report['ui_exists'].items() if v]) == len(report['ui_exists']))}")
+    print(f"Settings Categories: {as_bool(all(not f.startswith('settings category:') for f in failures))}")
+    print(f"canOpen Suppression: {as_bool(all(not f.startswith('canOpen:') for f in failures))}")
+    print(f"Settings Persistence: {as_bool(all(not f.startswith('settings persist:') for f in failures))}")
     print(f"Keyboard Proxy: {as_bool('keyboard proxy: bottombar did not move with --kb-offset' not in failures and 'keyboard proxy: edit panel did not move with --kb-offset' not in failures)}")
     print(f"Edit Mode Split: {as_bool(all(not f.startswith('edit mode:') for f in failures))}")
     print(f"Time Menu: {as_bool(all(not f.startswith('time menu:') for f in failures))}")
