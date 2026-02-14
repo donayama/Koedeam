@@ -352,6 +352,22 @@ select {
   background: var(--surface-strong);
   backdrop-filter: blur(6px);
 }
+/* Keep Settings header actions reachable; scroll only inside the content panel. */
+#dlgSettings {
+  width: min(680px, 94vw);
+  max-height: min(84vh, calc(100dvh - 20px));
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  overscroll-behavior: contain;
+}
+#dlgSettings .settings-bar { flex: 0 0 auto; }
+#dlgSettings > .tab-panel.active {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  overflow-x: hidden;
+}
 #dlgSettings h2 {
   margin: 0;
   font-size: 14px;
@@ -362,7 +378,8 @@ select {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  overflow: visible;
+  overflow-x: hidden;
+  overflow-y: visible;
   flex: 1 1 100%;
   min-width: 0;
 }
@@ -430,6 +447,12 @@ select {
   display: block;
 }
 @media (max-width: 520px) {
+  #dlgSettings {
+    width: min(680px, 96vw);
+    max-height: min(88vh, calc(100dvh - 10px));
+    padding: 10px;
+  }
+  #dlgSettings > .tab-panel.active { padding-bottom: 6px; }
   .edit-tools.pos-bottom .edit-tools-block,
   .edit-tools.pos-top .edit-tools-block {
     grid-template-columns: 1fr;
