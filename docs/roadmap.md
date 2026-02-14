@@ -67,7 +67,7 @@ Centralize all voice event handling.
 
 ## WI-301 (implement) Consent + Field Test UI [doing]
 
-## WI-302 (implement) session.json v1.1 (device/os/browser/capabilities/settings/events/metrics) [todo]
+## WI-302 (implement) session.json v1.1 (device/os/browser/capabilities/settings/events/metrics) [doing]
 
 ## WI-303 (implement) ZIP Export (session/result/commits/meta/CONSENT) [todo]
 

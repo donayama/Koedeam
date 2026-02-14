@@ -6,7 +6,8 @@
     currentDraft: "koedeam.currentDraft",
     recentDrafts: "koedeam.recentDrafts",
     templates: "koedeam.templates",
-    settings: "koedeam.settings"
+    settings: "koedeam.settings",
+    fieldTestSession: "koedeam.fieldTestSession"
   };
   const MAX_SHARE_SHORTCUTS = 12;
   const DEFAULT_SHARE_SHORTCUT_DEFS = [
@@ -153,6 +154,7 @@
       applying: false,
       maxDepth: 3
     },
+    fieldTestPersistTimer: null,
     nextInputReason: ""
   };
 
@@ -258,6 +260,7 @@
     setupVersionPolling();
     setupViewportWatcher();
     seedUndoState();
+    persistSessionJsonNow();
   }
 
   function parseRuntimeFlags(search) {
@@ -780,6 +783,7 @@
         state.settings.fieldTest.environmentTag = el.fieldTestEnvironmentTag.value.trim() || DEFAULT_SETTINGS.fieldTest.environmentTag;
         saveSettings();
         applyFieldTestUI();
+        scheduleSessionJsonPersist();
       });
     }
     if (el.btnFieldTestConsent) {
@@ -793,6 +797,11 @@
         state.settings.fieldTest.enabled = false;
         saveSettings();
         applyFieldTestUI();
+        try {
+          localStorage.removeItem(STORAGE_KEYS.fieldTestSession);
+        } catch {
+          // ignore
+        }
         el.dlgFieldTestConsent?.close();
       });
     }
@@ -1851,6 +1860,7 @@
       if (state.telemetry.events.length > 2000) {
         state.telemetry.events.splice(0, state.telemetry.events.length - 2000);
       }
+      scheduleSessionJsonPersist();
     };
 
     const startTelemetrySession = () => {
@@ -1884,6 +1894,7 @@
         state.telemetry.sessions.splice(0, state.telemetry.sessions.length - state.telemetry.maxSessions);
       }
       sessionRecord("voice.onstart");
+      scheduleSessionJsonPersist();
     };
 
     const closeTelemetrySession = (reason) => {
@@ -1904,6 +1915,7 @@
       sessionRecord("voice.onend", { reason: reason || "end" });
       state.telemetry.activeSession = null;
       state.voiceEvalActive = null;
+      scheduleSessionJsonPersist();
     };
 
     const canAutoRestart = () => {
@@ -2512,6 +2524,15 @@
     state.settings.fieldTest.enabled = next;
     saveSettings();
     applyFieldTestUI();
+    if (next) {
+      persistSessionJsonNow();
+    } else {
+      try {
+        localStorage.removeItem(STORAGE_KEYS.fieldTestSession);
+      } catch {
+        // ignore
+      }
+    }
   }
 
   function acceptFieldTestConsent() {
@@ -2519,6 +2540,7 @@
     state.settings.fieldTest.enabled = true;
     saveSettings();
     applyFieldTestUI();
+    persistSessionJsonNow();
     el.dlgFieldTestConsent?.close();
     toast("Field Test Mode を有効化しました");
   }
@@ -2965,6 +2987,148 @@
     triggerInput();
   }
 
+  function normalizeOsName(ua, platform) {
+    const p = `${platform || ""}`.toLowerCase();
+    const s = `${ua || ""}`.toLowerCase();
+    if (s.includes("windows")) return "Windows";
+    if (s.includes("android")) return "Android";
+    if (s.includes("iphone") || s.includes("ipad") || s.includes("ipod")) return "iOS";
+    if (s.includes("mac os x") || p.includes("mac")) return "macOS";
+    if (s.includes("linux") || p.includes("linux")) return "Linux";
+    return "Unknown";
+  }
+
+  function normalizeBrowserName(ua) {
+    const s = `${ua || ""}`;
+    if (/Edg\//i.test(s)) return "Edge";
+    if (/OPR\//i.test(s) || /Opera/i.test(s)) return "Opera";
+    if (/Firefox\//i.test(s)) return "Firefox";
+    if (/Chrome\//i.test(s)) return "Chrome";
+    if (/Safari\//i.test(s) && !/Chrome\//i.test(s)) return "Safari";
+    return "Unknown";
+  }
+
+  function normalizeBrowserVersion(ua, name) {
+    const s = `${ua || ""}`;
+    const map = {
+      Edge: /Edg\/([0-9.]+)/i,
+      Opera: /(?:OPR|Opera)\/([0-9.]+)/i,
+      Firefox: /Firefox\/([0-9.]+)/i,
+      Chrome: /Chrome\/([0-9.]+)/i,
+      Safari: /Version\/([0-9.]+)/i
+    };
+    const m = map[name]?.exec(s);
+    return m?.[1] || "";
+  }
+
+  function normalizeDeviceType(ua, maxTouchPoints) {
+    const s = `${ua || ""}`.toLowerCase();
+    if (s.includes("ipad")) return "tablet";
+    if (s.includes("iphone") || s.includes("ipod") || s.includes("android") || s.includes("mobile")) return "mobile";
+    if (Number(maxTouchPoints || 0) > 1 && (s.includes("macintosh") || s.includes("tablet"))) return "tablet";
+    return "desktop";
+  }
+
+  function getRuntimeCapabilities() {
+    return {
+      speechRecognition: !!(window.SpeechRecognition || window.webkitSpeechRecognition),
+      serviceWorker: "serviceWorker" in navigator,
+      clipboardRead: !!navigator.clipboard?.readText,
+      clipboardWrite: !!navigator.clipboard?.writeText,
+      webShare: !!navigator.share,
+      caches: typeof window.caches !== "undefined"
+    };
+  }
+
+  function buildSessionMetricsV11(sessions, events) {
+    const completed = sessions.filter((s) => Number(s.startedAt || 0) > 0 && Number(s.endedAt || 0) >= Number(s.startedAt || 0));
+    const durations = completed
+      .map((s) => Number(s.endedAt || 0) - Number(s.startedAt || 0))
+      .filter((ms) => ms >= 0);
+    const totalDurationMs = durations.reduce((a, b) => a + b, 0);
+    const finalChars = sessions.reduce((acc, s) => acc + Number(s.finalCharsTotal || 0), 0);
+    return {
+      session_count: sessions.length,
+      completed_session_count: completed.length,
+      event_count: events.length,
+      final_chars_total: finalChars,
+      avg_session_duration_ms: durations.length ? Math.round(totalDurationMs / durations.length) : null
+    };
+  }
+
+  function buildSessionSettingsV11() {
+    return {
+      voice: {
+        insertMode: state.settings.voiceInsertMode,
+        continuous: !!state.settings.voiceContinuous,
+        lang: state.settings.voiceLang,
+        startTone: state.settings.voiceStartTone !== false
+      },
+      candidate: {
+        threshold: Number(state.settings.candidate?.threshold || 0),
+        noConfidenceRule: state.settings.candidate?.noConfidenceRule || "show",
+        idleBehavior: state.settings.candidate?.idleBehavior || "auto",
+        idleMs: Number(state.settings.candidate?.idleMs || 0)
+      },
+      punctuationMode: state.settings.punctuationMode === "en" ? "en" : "jp",
+      undoDepth: Number(state.settings.undoDepth || DEFAULT_SETTINGS.undoDepth),
+      fieldTest: {
+        enabled: !!state.settings.fieldTest?.enabled,
+        consentedAt: state.settings.fieldTest?.consentedAt || "",
+        environment_tag: state.settings.fieldTest?.environmentTag || DEFAULT_SETTINGS.fieldTest.environmentTag
+      }
+    };
+  }
+
+  function buildSessionJsonV11() {
+    const ua = navigator.userAgent || "";
+    const platform = navigator.platform || "";
+    const browserName = normalizeBrowserName(ua);
+    const sessions = state.telemetry.sessions.map((s) => ({
+      ...s,
+      finalText: undefined
+    }));
+    const events = state.telemetry.events.slice();
+    return {
+      schema_version: "1.1",
+      generated_at: new Date().toISOString(),
+      app_version: APP_VERSION,
+      environment_tag: state.settings.fieldTest?.environmentTag || DEFAULT_SETTINGS.fieldTest.environmentTag,
+      device: {
+        type: normalizeDeviceType(ua, navigator.maxTouchPoints || 0),
+        platform,
+        language: navigator.language || "",
+        maxTouchPoints: Number(navigator.maxTouchPoints || 0)
+      },
+      os: {
+        name: normalizeOsName(ua, platform)
+      },
+      browser: {
+        name: browserName,
+        version: normalizeBrowserVersion(ua, browserName)
+      },
+      capabilities: getRuntimeCapabilities(),
+      settings: buildSessionSettingsV11(),
+      sessions,
+      events,
+      metrics: buildSessionMetricsV11(sessions, events)
+    };
+  }
+
+  function persistSessionJsonNow() {
+    if (!state.settings.fieldTest?.enabled) return;
+    safeSet(STORAGE_KEYS.fieldTestSession, buildSessionJsonV11());
+  }
+
+  function scheduleSessionJsonPersist() {
+    if (!state.settings.fieldTest?.enabled) return;
+    if (state.fieldTestPersistTimer) return;
+    state.fieldTestPersistTimer = setTimeout(() => {
+      state.fieldTestPersistTimer = null;
+      persistSessionJsonNow();
+    }, 250);
+  }
+
   function buildTelemetryPayload() {
     const sessions = state.telemetry.sessions.map((s) => {
       const start = s.startedAt || 0;
@@ -3182,6 +3346,7 @@
       localStorage.removeItem(STORAGE_KEYS.recentDrafts);
       localStorage.removeItem(STORAGE_KEYS.templates);
       localStorage.removeItem(STORAGE_KEYS.settings);
+      localStorage.removeItem(STORAGE_KEYS.fieldTestSession);
       localStorage.setItem(STORAGE_KEYS.version, "1");
     } catch {
       // ignore
@@ -3194,6 +3359,7 @@
     ensureDocuments();
     applySidebar();
     applyVoiceModeUI();
+    applyFieldTestUI();
     applyPunctuationUI();
     applyTypography();
     applyEditPanelPosition();
@@ -3228,6 +3394,7 @@
 
   function saveSettings() {
     safeSet(STORAGE_KEYS.settings, state.settings);
+    scheduleSessionJsonPersist();
   }
 
   function persistTemplates() {
