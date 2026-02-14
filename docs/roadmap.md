@@ -40,7 +40,7 @@ Display clear insert preview and commit feedback.
 
 ## WI-103 (implement) Settings Layout Fix [doing]
 Fix wrapping/overflow in settings dialog.
-- in progress on `feature/WI-103-settings-layout`: `30bc7e2`
+- in progress on `feature/WI-103-settings-layout`: `30bc7e2`, `0a51330`
 
 ## WI-104 (implement) Settings Reclassification [todo]
 Reorganize settings into:
