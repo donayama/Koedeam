@@ -1,7 +1,7 @@
 # Koedeam Roadmap (Pseudo-Issue Based)
 
 ## Governance Rule
-This file (docs/roadmap.md) is the single source of truth for pseudo-issues (Work Items).
+This file (`docs/roadmap.md`) is the single source of truth for pseudo-issues (Work Items).
 All development must reference a WI-ID (Work Item ID) defined in this document.
 Every PR must include:
 - Implements: WI-xxx
@@ -14,19 +14,34 @@ Every PR must include:
 2. Keep one PR mapped to one WI-ID.
 3. If WI-ID mapping is wrong, stop and remap before coding.
 
+## Status Legend
+- `[todo]`: not started
+- `[doing]`: in progress
+- `[done]`: completed (merged to main)
+
 ---
+
+# EPIC-0: Process Foundation
+
+## WI-000 (prepare) Pseudo-Issue (WI) Operation Foundation [done]
+- README / AGENTS / PR Template / Roadmap guidance aligned
+- merged to main: `5d7d932`, `519c0bb`
+
+---
+
 # EPIC-1: Dogfooding Improvements
 
-## WI-101 (implement) New Document Persistence
+## WI-101 (implement) New Document Persistence [done]
 Ensure new documents are immediately persisted and survive reload.
+- merged to main: `cd73e37`
 
-## WI-102 (implement) Insert Position Indicator
+## WI-102 (implement) Insert Position Indicator [todo]
 Display clear insert preview and commit feedback.
 
-## WI-103 (implement) Settings Layout Fix
+## WI-103 (implement) Settings Layout Fix [todo]
 Fix wrapping/overflow in settings dialog.
 
-## WI-104 (implement) Settings Reclassification
+## WI-104 (implement) Settings Reclassification [todo]
 Reorganize settings into:
 - Voice
 - Display
@@ -39,36 +54,35 @@ Reorganize settings into:
 
 # EPIC-1.5: VoiceEngine Abstraction
 
-## WI-150 (prepare) handleVoiceEvent Aggregation
+## WI-150 (prepare) handleVoiceEvent Aggregation [todo]
 Centralize all voice event handling.
 
-## WI-151 (implement) VoiceEngine Interface + RealVoiceEngine
+## WI-151 (implement) VoiceEngine Interface + RealVoiceEngine [todo]
 
-## WI-152 (prepare) testMode Switch Skeleton
+## WI-152 (prepare) testMode Switch Skeleton [todo]
 
 ---
 
 # EPIC-3: Field Test Mode
 
-## WI-301 (implement) Consent + Field Test UI
+## WI-301 (implement) Consent + Field Test UI [todo]
 
-## WI-302 (implement) session.json v1.1 (device/os/browser/capabilities/settings/events/metrics)
+## WI-302 (implement) session.json v1.1 (device/os/browser/capabilities/settings/events/metrics) [todo]
 
-## WI-303 (implement) ZIP Export (session/result/commits/meta/CONSENT)
+## WI-303 (implement) ZIP Export (session/result/commits/meta/CONSENT) [todo]
 
 ---
 
 # EPIC-4: Replay & Synthetic
 
-## WI-401 (implement) ReplayVoiceEngine (realtime)
+## WI-401 (implement) ReplayVoiceEngine (realtime) [todo]
 
-## WI-420 (prepare→implement) Synthetic Generator (seed-fixed)
+## WI-420 (prepare→implement) Synthetic Generator (seed-fixed) [todo]
 
 ---
 
 # EPIC-5: CI with Playwright
 
-## WI-501 (prepare→implement) Playwright Deterministic Replay Test
+## WI-501 (prepare→implement) Playwright Deterministic Replay Test [todo]
 
-## WI-503 (prepare→implement) GitHub Actions Workflow
-
+## WI-503 (prepare→implement) GitHub Actions Workflow [todo]
