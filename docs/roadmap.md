@@ -18,6 +18,7 @@ Every PR must include:
 - `[todo]`: not started
 - `[doing]`: in progress
 - `[done]`: completed (merged to main)
+- `[rejected]`: intentionally closed without merge
 
 ---
 
@@ -35,14 +36,15 @@ Every PR must include:
 Ensure new documents are immediately persisted and survive reload.
 - merged to main: `cd73e37`
 
-## WI-102 (implement) Insert Position Indicator [doing]
+## WI-102 (implement) Insert Position Indicator [done]
 Display clear insert preview and commit feedback.
+- merged to main: `a7bbf5d`
 
-## WI-103 (implement) Settings Layout Fix [doing]
+## WI-103 (implement) Settings Layout Fix [done]
 Fix wrapping/overflow in settings dialog.
-- in progress on `feature/WI-103-settings-layout`: `30bc7e2`, `0a51330`
+- merged to main: `0a51330`, `9a1a0f0`, `a876887`
 
-## WI-104 (implement) Settings Reclassification [doing]
+## WI-104 (implement) Settings Reclassification [done]
 Reorganize settings into:
 - Voice
 - Display
@@ -50,43 +52,56 @@ Reorganize settings into:
 - Template
 - Share
 - Other
-- in progress on `feature/WI-104-settings-reclass`
+- merged to main: `955d8b9`
 
 ---
 
 # EPIC-1.5: VoiceEngine Abstraction
 
-## WI-150 (prepare) handleVoiceEvent Aggregation [doing]
+## WI-150 (prepare) handleVoiceEvent Aggregation [done]
 Centralize all voice event handling.
+- merged to main: `b678139`
 
-## WI-151 (implement) VoiceEngine Interface + RealVoiceEngine [doing]
+## WI-151 (implement) VoiceEngine Interface + RealVoiceEngine [done]
+- merged to main: `8ac81c6`
 
-## WI-152 (prepare) testMode Switch Skeleton [doing]
+## WI-152 (prepare) testMode Switch Skeleton [done]
+- merged to main: `27bb3a8`
 
 ---
 
 # EPIC-3: Field Test Mode
 
-## WI-301 (implement) Consent + Field Test UI [doing]
+## WI-301 (implement) Consent + Field Test UI [done]
+- merged to main: `ef08ee3`
 
-## WI-302 (implement) session.json v1.1 (device/os/browser/capabilities/settings/events/metrics) [doing]
+## WI-302 (implement) session.json v1.1 (device/os/browser/capabilities/settings/events/metrics) [done]
+- merged to main: `57ad98a`
 
-## WI-303 (implement) ZIP Export (session/result/commits/meta/CONSENT) [doing]
+## WI-303 (implement) ZIP Export (session/result/commits/meta/CONSENT) [done]
+- merged to main: `9ca0c03`, `2671cc4`
 
 ---
 
 # EPIC-4: Replay & Synthetic
 
-## WI-401 (implement) ReplayVoiceEngine (realtime) [doing]
+## WI-401 (implement) ReplayVoiceEngine (realtime) [done]
+- merged to main: `9790b56`
 
-## WI-420 (prepare→implement) Synthetic Generator (seed-fixed) [doing]
+## WI-420 (prepare→implement) Synthetic Generator (seed-fixed) [done]
+- merged to main: `1f88de1`
 
 ---
 
 # EPIC-5: CI with Playwright
 
-## WI-501 (prepare→implement) Playwright Deterministic Replay Test [doing]
+## WI-501 (prepare→implement) Playwright Deterministic Replay Test [done]
+- merged to main: `074c521`
 
 ## WI-503 (prepare→implement) GitHub Actions Workflow [todo]
 
-## WI-510 (prepare) Audio Fixture Foundation (WAV/MP3 metadata/convert) [doing]
+## WI-510 (prepare) Audio Fixture Foundation (WAV/MP3 metadata/convert) [done]
+- merged to main: `a5b5eb2`
+
+## WI-511 (prepare→implement) Playwright fake-mic WAV input (Chromium optional) [rejected]
+- closed without merge: fake-mic WAV path proved unstable for deterministic verification in current environment.
