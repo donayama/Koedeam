@@ -220,6 +220,9 @@ def run(base_url: str) -> int:
               if (nc) { nc.value = 'direct'; nc.dispatchEvent(new Event('change', { bubbles: true })); }
               if (ib) { ib.value = 'hold'; ib.dispatchEvent(new Event('change', { bubbles: true })); }
               if (ud) { ud.value = '5'; ud.dispatchEvent(new Event('change', { bubbles: true })); }
+
+              pick("#dlgSettings .tab-btn[data-tab='templates']");
+              pick("input[name='templateInsertMode'][value='head']");
             }"""
         )
         page.click("#btnCloseSettings")
@@ -258,7 +261,8 @@ def run(base_url: str) -> int:
               candidateThreshold: document.getElementById('candidateThreshold')?.value || '',
               candidateNoConfidenceRule: document.getElementById('candidateNoConfidenceRule')?.value || '',
               candidateIdleBehavior: document.getElementById('candidateIdleBehavior')?.value || '',
-              undoDepth: document.getElementById('undoDepth')?.value || ''
+              undoDepth: document.getElementById('undoDepth')?.value || '',
+              templateInsertHead: document.querySelector("input[name='templateInsertMode'][value='head']")?.checked || false
             })"""
         )
         report["settings_persistence"] = settings_persist
@@ -282,6 +286,8 @@ def run(base_url: str) -> int:
             failures.append("settings persist: candidateIdleBehavior did not restore")
         if settings_persist["undoDepth"] != "5":
             failures.append("settings persist: undoDepth did not restore")
+        if not settings_persist["templateInsertHead"]:
+            failures.append("settings persist: templateInsertMode did not restore")
         page.click("#btnCloseSettings")
         page.wait_for_timeout(80)
 
@@ -650,6 +656,56 @@ def run(base_url: str) -> int:
         report["voice_restart_on_no_speech"] = {"startCount": no_speech_state}
         if no_speech_state < 3:
             failures.append("voice: no-speech did not trigger recovery restart")
+
+        voice_counts_before_docs = page.evaluate(
+            """() => ({
+              startCount: window.__speechMock.startCount,
+              stopCount: window.__speechMock.stopCount
+            })"""
+        )
+        page.evaluate("() => document.getElementById('btnBrandDocuments')?.click()")
+        page.wait_for_timeout(120)
+        voice_on_documents = page.evaluate(
+            """() => ({
+              stopCount: window.__speechMock.stopCount,
+              statusInput: document.getElementById('statusInput')?.textContent || ''
+            })"""
+        )
+        report["voice_keep_on_documents"] = voice_on_documents
+        if voice_on_documents["stopCount"] != voice_counts_before_docs["stopCount"]:
+            failures.append("voice: opening documents sidebar unexpectedly stopped speech")
+        if "VOICE:OFF" in voice_on_documents["statusInput"]:
+            failures.append("voice: opening documents sidebar moved input to VOICE_OFF unexpectedly")
+
+        page.click("#btnReplace")
+        page.wait_for_timeout(120)
+        voice_on_search = page.evaluate(
+            """() => ({
+              stopCount: window.__speechMock.stopCount,
+              statusInput: document.getElementById('statusInput')?.textContent || ''
+            })"""
+        )
+        report["voice_stop_on_search"] = voice_on_search
+        if voice_on_search["stopCount"] <= voice_counts_before_docs["stopCount"]:
+            failures.append("voice: opening search dialog should stop speech but did not")
+        if "VOICE:OFF" not in voice_on_search["statusInput"]:
+            failures.append("voice: input state did not move to VOICE_OFF on search open")
+        page.click("#btnCloseSearch")
+        page.wait_for_timeout(80)
+
+        page.click("#btnMic")
+        page.wait_for_timeout(50)
+        aborted_before = page.evaluate("window.__speechMock.startCount")
+        page.evaluate("window.__speechMock.emitError('aborted')")
+        page.wait_for_timeout(900)
+        aborted_state = page.evaluate(
+            """() => ({
+              startCount: window.__speechMock.startCount
+            })"""
+        )
+        report["voice_restart_on_aborted"] = aborted_state
+        if aborted_state["startCount"] <= aborted_before:
+            failures.append("voice: aborted did not trigger recovery restart")
 
         page.click("#btnMic")
         page.wait_for_timeout(50)

@@ -38,6 +38,7 @@
 
   const DEFAULT_SETTINGS = {
     voiceInsertMode: "cursor",
+    templateInsertMode: "tail",
     voiceContinuous: false,
     voiceLang: "ja-JP",
     voiceStartTone: true,
@@ -191,6 +192,10 @@
       state.settings.voiceInsertMode = "cursor";
       saveSettings();
     }
+    if (!["cursor", "head", "tail"].includes(state.settings.templateInsertMode)) {
+      state.settings.templateInsertMode = "tail";
+      saveSettings();
+    }
     state.settings.voiceContinuous = !!state.settings.voiceContinuous;
     if (!["auto", "ja-JP"].includes(state.settings.voiceLang)) {
       state.settings.voiceLang = "ja-JP";
@@ -241,6 +246,7 @@
     el.editor.value = state.draft;
     applySidebar();
     applyVoiceModeUI();
+    applyTemplateInsertModeUI();
     applyFieldTestUI();
     applyPunctuationUI();
     applyTypography();
@@ -686,6 +692,14 @@
         if (state.speaking) {
           applyInputState(radio.value === "append" ? "VOICE_APPEND" : "VOICE_LOCKED");
         }
+        saveSettings();
+      });
+    });
+    el.templateInsertModeRadios.forEach((radio) => {
+      radio.addEventListener("change", () => {
+        if (!radio.checked) return;
+        state.settings.templateInsertMode = ["cursor", "head", "tail"].includes(radio.value) ? radio.value : "tail";
+        applyTemplateInsertModeUI();
         saveSettings();
       });
     });
@@ -1712,12 +1726,33 @@
         if (type === "template") {
           const t = state.templates.find((x) => x.id === id);
           if (t) {
-            el.editor.value = `${el.editor.value}\n${t.text}`.trimStart();
-            triggerInput();
+            insertTemplateText(t.text);
           }
         }
       });
     });
+  }
+
+  function insertTemplateText(rawText) {
+    const text = String(rawText || "");
+    if (!text) return;
+    const mode = ["cursor", "head", "tail"].includes(state.settings.templateInsertMode) ? state.settings.templateInsertMode : "tail";
+    const current = el.editor.value || "";
+    if (mode === "cursor") {
+      insertTextAtCursor(text);
+      return;
+    }
+    if (mode === "head") {
+      const sep = current ? "\n" : "";
+      el.editor.value = `${text}${sep}${current}`;
+      triggerInput();
+      updateCaretUI();
+      return;
+    }
+    const sep = current && !current.endsWith("\n") ? "\n" : "";
+    el.editor.value = `${current}${sep}${text}`;
+    triggerInput();
+    updateCaretUI();
   }
 
   function applyCandidateSettingsUI() {
@@ -2328,7 +2363,7 @@
     const canAutoRestart = () => {
       if (state.runtime.voiceEngine === "replay") return false;
       if (!state.speaking) return false;
-      if (state.primary !== "EDIT") return false;
+      if (shouldStopVoiceOnPrimary(state.primary)) return false;
       return true;
     };
 
@@ -2431,7 +2466,7 @@
         if (err === "aborted" && state.voiceManualStop) {
           return;
         }
-        if (err === "no-speech" || err === "network" || err === "audio-capture") {
+        if (err === "no-speech" || err === "network" || err === "audio-capture" || err === "aborted") {
           if (err === "no-speech" && state.telemetry.activeSession) {
             state.telemetry.activeSession.noSpeechCount = Number(state.telemetry.activeSession.noSpeechCount || 0) + 1;
           }
@@ -2617,7 +2652,7 @@
     state.primary = next;
     document.body.classList.remove("primary-edit", "primary-search", "primary-manage", "primary-config");
     document.body.classList.add(`primary-${next.toLowerCase()}`);
-    if (next !== "EDIT" && state.speaking && state.recognition) {
+    if (shouldStopVoiceOnPrimary(next) && state.speaking && state.recognition) {
       state.stopVoiceInput?.();
     }
     enforceKeyboardPolicy();
@@ -2901,6 +2936,14 @@
     if (el.optVoiceStartTone) {
       el.optVoiceStartTone.checked = state.settings.voiceStartTone !== false;
     }
+  }
+
+  function applyTemplateInsertModeUI() {
+    const mode = ["cursor", "head", "tail"].includes(state.settings.templateInsertMode) ? state.settings.templateInsertMode : "tail";
+    state.settings.templateInsertMode = mode;
+    el.templateInsertModeRadios.forEach((radio) => {
+      radio.checked = radio.value === mode;
+    });
   }
 
   function applyFieldTestUI() {
@@ -3220,6 +3263,10 @@
     applyFieldTestUI();
     applyEditPanelPosition();
     applySettingsTab(section || "voice");
+  }
+
+  function shouldStopVoiceOnPrimary(primary) {
+    return primary === "SEARCH" || primary === "CONFIG";
   }
 
   function closeSettingsDialog() {
@@ -3930,6 +3977,7 @@
     ensureDocuments();
     applySidebar();
     applyVoiceModeUI();
+    applyTemplateInsertModeUI();
     applyFieldTestUI();
     applyPunctuationUI();
     applyTypography();
@@ -4602,6 +4650,7 @@
       editGroupToggles: Array.from(document.querySelectorAll("#editToolsPanel .edit-group-toggle[data-section]")),
       editGroups: Array.from(document.querySelectorAll("#editToolsPanel .edit-group")),
       voiceModeRadios: Array.from(document.querySelectorAll("input[name='voiceMode']")),
+      templateInsertModeRadios: Array.from(document.querySelectorAll("input[name='templateInsertMode']")),
       voiceContinuousRadios: Array.from(document.querySelectorAll("input[name='voiceContinuous']")),
       voiceLangRadios: Array.from(document.querySelectorAll("input[name='voiceLang']")),
       optVoiceStartTone: document.getElementById("optVoiceStartTone"),

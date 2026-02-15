@@ -57,6 +57,15 @@ Reorganize settings into:
 ## WI-105 (implement) Settings Dialog Open/Close Stabilization [doing]
 Stabilize Settings dialog close behavior to avoid intermittent non-close/reopen symptoms.
 
+## WI-106 (implement) Voice Keep-Alive on Non-Blocking Panels [doing]
+Keep voice input active when opening non-blocking side panels (documents/history/templates) and stop only on blocking contexts like search/settings.
+
+## WI-107 (implement) Template Insert Position Option [doing]
+Allow selecting template insertion target: caret / document head / document tail.
+
+## WI-108 (implement) Voice `aborted` Recovery Guard [doing]
+Recover automatically from non-manual `aborted` voice errors to avoid stuck sessions.
+
 ---
 
 # EPIC-1.5: VoiceEngine Abstraction
