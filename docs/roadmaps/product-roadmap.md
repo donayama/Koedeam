@@ -57,14 +57,17 @@ Reorganize settings into:
 ## WI-105 (implement) Settings Dialog Open/Close Stabilization [doing]
 Stabilize Settings dialog close behavior to avoid intermittent non-close/reopen symptoms.
 
-## WI-106 (implement) Voice Keep-Alive on Non-Blocking Panels [doing]
+## WI-106 (implement) Voice Keep-Alive on Non-Blocking Panels [done]
 Keep voice input active when opening non-blocking side panels (documents/history/templates) and stop only on blocking contexts like search/settings.
+- merged to main: `d445dd8`
 
-## WI-107 (implement) Template Insert Position Option [doing]
+## WI-107 (implement) Template Insert Position Option [done]
 Allow selecting template insertion target: caret / document head / document tail.
+- merged to main: `d445dd8`
 
-## WI-108 (implement) Voice `aborted` Recovery Guard [doing]
+## WI-108 (implement) Voice `aborted` Recovery Guard [done]
 Recover automatically from non-manual `aborted` voice errors to avoid stuck sessions.
+- merged to main: `d445dd8`
 
 ---
 
