@@ -47,10 +47,17 @@
         <h3>テンプレ</h3>
         <div id="sidebarTemplates" class="sidebar-list"></div>
       </section>
+      <section id="panelDocuments" class="sidebar-section hidden">
+        <h3>文書一覧</h3>
+        <div class="dialog-actions">
+          <button id="btnNewDoc" type="button">新規ドキュメント</button>
+        </div>
+        <div id="documentsList" class="dialog-list dialog-body"></div>
+      </section>
       <section id="panelHistory" class="sidebar-section">
         <h3>スナップショット</h3>
         <div class="dialog-actions">
-          <button id="btnOpenDocuments" type="button">ドキュメント一覧</button>
+          <button id="btnOpenDocuments" type="button">文書一覧へ</button>
           <button id="btnSnapshot" type="button">スナップショット保存</button>
         </div>
         <label>自動スナップショット（分）
@@ -135,15 +142,6 @@
       <button id="btnReplaceInSelection" type="button">選択範囲のみ全置換</button>
     </div>
     <div class="dialog-footer"><button id="btnCloseSearch" type="button">Close</button></div>
-  </dialog>
-
-  <dialog id="dlgDocuments">
-    <h2>ドキュメント一覧</h2>
-    <div class="dialog-actions">
-      <button id="btnNewDoc" type="button">新規ドキュメント</button>
-    </div>
-    <div id="documentsList" class="dialog-list dialog-body"></div>
-    <div class="dialog-footer"><button id="btnCloseDocuments" type="button">Close</button></div>
   </dialog>
 
   <dialog id="dlgSettings">

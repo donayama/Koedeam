@@ -179,6 +179,10 @@
       state.settings.sidebarTab = "templates";
       saveSettings();
     }
+    if (!["templates", "documents", "history"].includes(state.settings.sidebarTab)) {
+      state.settings.sidebarTab = "templates";
+      saveSettings();
+    }
     if (state.settings.voiceInsertMode === "replace" || state.settings.voiceInsertMode === "off") {
       state.settings.voiceInsertMode = "cursor";
       saveSettings();
@@ -531,12 +535,6 @@
       saveSettings();
       setupAutoSnapshot();
     });
-    if (el.btnCloseDocuments) {
-      el.btnCloseDocuments.addEventListener("click", () => el.dlgDocuments.close());
-    }
-    if (el.dlgDocuments) {
-      el.dlgDocuments.addEventListener("close", () => applyPrimary("EDIT"));
-    }
     if (el.btnCloseSearch) {
       el.btnCloseSearch.addEventListener("click", () => el.dlgSearch.close());
     }
@@ -906,7 +904,7 @@
   }
 
   function setupDialogDismiss() {
-    [el.dlgHelp, el.dlgShare, el.dlgSettings, el.dlgDocuments, el.dlgSearch, el.dlgFieldTestConsent].forEach((dialog) => {
+    [el.dlgHelp, el.dlgShare, el.dlgSettings, el.dlgSearch, el.dlgFieldTestConsent].forEach((dialog) => {
       if (!dialog) return;
       dialog.addEventListener("click", (evt) => {
         if (evt.target !== dialog) return;
@@ -921,7 +919,6 @@
       help: el.dlgHelp,
       share: el.dlgShare,
       settings: el.dlgSettings,
-      documents: el.dlgDocuments,
       search: el.dlgSearch,
       fieldTestConsent: el.dlgFieldTestConsent
     };
@@ -932,7 +929,7 @@
   }
 
   function isDialogLayerOpen() {
-    return !!(el.dlgHelp?.open || el.dlgShare?.open || el.dlgSettings?.open || el.dlgDocuments?.open || el.dlgFieldTestConsent?.open);
+    return !!(el.dlgHelp?.open || el.dlgShare?.open || el.dlgSettings?.open || el.dlgFieldTestConsent?.open);
   }
 
   function setupMenuOverlay() {
@@ -1314,11 +1311,21 @@
     const docs = state.settings.documents || [];
     const html = docs.map((doc) => {
       const active = doc.id === state.settings.currentDocId;
+      const text = String(doc.text || "");
+      const chars = text.length;
+      const lines = text ? text.split("\n").length : 0;
+      const snippet = preview(text);
       return `<div class="dialog-item">
         <div class="dialog-item-head">
           <strong>${active ? "● " : ""}${escapeHtml(doc.title || "無題ドキュメント")}</strong>
           <small>${new Date(doc.updatedAt || Date.now()).toLocaleString()}</small>
         </div>
+        <div class="doc-meta">
+          <span>${chars}字</span>
+          <span>${lines}行</span>
+          <span>ID:${escapeHtml(doc.id.slice(-6))}</span>
+        </div>
+        <p class="compact-preview">${escapeHtml(snippet || "（本文なし）")}</p>
         <div class="dialog-actions">
           <button type="button" data-doc-act="open" data-id="${doc.id}">開く</button>
           <button type="button" data-doc-act="delete" data-id="${doc.id}">削除</button>
@@ -1667,11 +1674,14 @@
   function scrollSidebarSection(tab) {
     if (!el.sidebar) return;
     const showHistory = tab === "history";
+    const showDocuments = tab === "documents";
     const templateSection = document.getElementById("panelTemplates");
+    const documentsSection = document.getElementById("panelDocuments");
     const historySection = document.getElementById("panelHistory");
-    if (templateSection) templateSection.classList.toggle("hidden", showHistory);
+    if (templateSection) templateSection.classList.toggle("hidden", showHistory || showDocuments);
+    if (documentsSection) documentsSection.classList.toggle("hidden", !showDocuments);
     if (historySection) historySection.classList.toggle("hidden", !showHistory);
-    const section = showHistory ? historySection : templateSection;
+    const section = showHistory ? historySection : (showDocuments ? documentsSection : templateSection);
     if (section) section.scrollIntoView({ block: "start", inline: "nearest" });
   }
 
@@ -2588,7 +2598,7 @@
 
   function closeOpenDialog() {
     let closed = false;
-    [el.dlgHelp, el.dlgShare, el.dlgSettings, el.dlgDocuments, el.dlgSearch, el.dlgFieldTestConsent].forEach((d) => {
+    [el.dlgHelp, el.dlgShare, el.dlgSettings, el.dlgSearch, el.dlgFieldTestConsent].forEach((d) => {
       if (!d) return;
       if (d.open) {
         d.close();
@@ -3220,22 +3230,7 @@
   }
 
   function openDocumentListPanel() {
-    if (!canOpen("documents")) {
-      toast("現在のダイアログを閉じてからドキュメント一覧を開いてください");
-      return;
-    }
-    pushUiHistory();
-    closeDialogsExcept("documents");
-    if (state.settings.ui.sidebar) {
-      state.settings.ui.sidebar = false;
-      applySidebar();
-      saveSettings();
-    }
-    setEditToolsVisible(false);
-    renderDocumentLists();
-    applyPrimary("MANAGE");
-    enforceKeyboardPolicy();
-    if (el.dlgDocuments && !el.dlgDocuments.open) el.dlgDocuments.showModal();
+    openSidebarPanel("documents");
   }
 
   function openSnapshotPanel() {
@@ -3253,11 +3248,12 @@
     if (isMobileLayout()) setEditToolsVisible(false);
     state.settings.ui.sidebar = true;
     applySidebar();
-    state.settings.sidebarTab = tab === "history" ? "history" : "templates";
+    state.settings.sidebarTab = (tab === "history" || tab === "documents") ? tab : "templates";
     scrollSidebarSection(state.settings.sidebarTab);
     saveSettings();
     if (tab === "history") renderHistory();
     if (tab === "templates") renderSidebar();
+    if (tab === "documents") renderDocumentLists();
     if (tab === "replace") refreshMatches();
   }
 
@@ -4568,8 +4564,6 @@
       documentsList: document.getElementById("documentsList"),
       autoSnapshotSelect: document.getElementById("autoSnapshotSelect"),
       historyList: document.getElementById("historyList"),
-      dlgDocuments: document.getElementById("dlgDocuments"),
-      btnCloseDocuments: document.getElementById("btnCloseDocuments"),
 
       dlgShare: document.getElementById("dlgShare"),
       btnOpenSettingsShare: document.getElementById("btnOpenSettingsShare"),

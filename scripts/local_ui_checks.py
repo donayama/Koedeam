@@ -182,7 +182,8 @@ def run(base_url: str) -> int:
               return {
                 menuVisible,
                 searchOpen: !!document.getElementById('dlgSearch')?.open,
-                documentsOpen: !!document.getElementById('dlgDocuments')?.open,
+                sidebarOpen: !!document.body.classList.contains('with-sidebar'),
+                documentsVisible: !(document.getElementById('panelDocuments')?.classList.contains('hidden') ?? true),
                 settingsOpen: !!document.getElementById('dlgSettings')?.open
               };
             }"""
@@ -192,7 +193,7 @@ def run(base_url: str) -> int:
             failures.append("canOpen: menu opened while settings dialog is active")
         if blocked_state["searchOpen"]:
             failures.append("canOpen: search dialog opened while settings dialog is active")
-        if blocked_state["documentsOpen"]:
+        if blocked_state["sidebarOpen"] or blocked_state["documentsVisible"]:
             failures.append("canOpen: document list opened while settings dialog is active")
 
         # 1.7) Settings persistence (save -> reload -> restore)
