@@ -223,8 +223,8 @@ def run(base_url: str) -> int:
               if (ib) { ib.value = 'hold'; ib.dispatchEvent(new Event('change', { bubbles: true })); }
               if (ud) { ud.value = '5'; ud.dispatchEvent(new Event('change', { bubbles: true })); }
 
-              pick("#dlgSettings .tab-btn[data-tab='templates']");
-              pick("input[name='templateInsertMode'][value='head']");
+              const mode = document.querySelector("input[name='templateInsertMode'][value='head']");
+              if (mode) { mode.checked = true; mode.dispatchEvent(new Event('change', { bubbles: true })); }
             }"""
         )
         page.click("#btnCloseSettings")
@@ -263,8 +263,7 @@ def run(base_url: str) -> int:
               candidateThreshold: document.getElementById('candidateThreshold')?.value || '',
               candidateNoConfidenceRule: document.getElementById('candidateNoConfidenceRule')?.value || '',
               candidateIdleBehavior: document.getElementById('candidateIdleBehavior')?.value || '',
-              undoDepth: document.getElementById('undoDepth')?.value || '',
-              templateInsertHead: document.querySelector("input[name='templateInsertMode'][value='head']")?.checked || false
+              undoDepth: document.getElementById('undoDepth')?.value || ''
             })"""
         )
         report["settings_persistence"] = settings_persist
@@ -288,10 +287,17 @@ def run(base_url: str) -> int:
             failures.append("settings persist: candidateIdleBehavior did not restore")
         if settings_persist["undoDepth"] != "5":
             failures.append("settings persist: undoDepth did not restore")
-        if not settings_persist["templateInsertHead"]:
-            failures.append("settings persist: templateInsertMode did not restore")
         page.click("#btnCloseSettings")
         page.wait_for_timeout(80)
+
+        template_insert_mode_persist = page.evaluate(
+            """() => ({
+              templateInsertHead: document.querySelector("input[name='templateInsertMode'][value='head']")?.checked || false
+            })"""
+        )
+        report["template_insert_mode_persistence"] = template_insert_mode_persist
+        if not template_insert_mode_persist["templateInsertHead"]:
+            failures.append("template insert: mode did not restore")
 
         # 1.8) Dialog/Panel transition matrix (regression guard)
         transition_matrix = {}
@@ -933,6 +939,7 @@ def run(base_url: str) -> int:
     print(f"Settings Categories: {as_bool(all(not f.startswith('settings category:') for f in failures))}")
     print(f"canOpen Suppression: {as_bool(all(not f.startswith('canOpen:') for f in failures))}")
     print(f"Settings Persistence: {as_bool(all(not f.startswith('settings persist:') for f in failures))}")
+    print(f"Template Insert Persistence: {as_bool(all(not f.startswith('template insert:') for f in failures))}")
     print(f"Transition Matrix: {as_bool(all(not f.startswith('transition:') for f in failures))}")
     print(f"Keyboard Proxy: {as_bool('keyboard proxy: bottombar did not move with --kb-offset' not in failures and 'keyboard proxy: edit panel did not move with --kb-offset' not in failures)}")
     print(f"Edit Mode Split: {as_bool(all(not f.startswith('edit mode:') for f in failures))}")

@@ -45,6 +45,11 @@
       </div>
       <section id="panelTemplates" class="sidebar-section">
         <h3>テンプレ</h3>
+        <div class="option-row">
+          <label class="option-chip"><input type="radio" name="templateInsertMode" value="cursor" />カーソル位置</label>
+          <label class="option-chip"><input type="radio" name="templateInsertMode" value="head" />文頭</label>
+          <label class="option-chip"><input type="radio" name="templateInsertMode" value="tail" />文末</label>
+        </div>
         <div id="sidebarTemplates" class="sidebar-list"></div>
       </section>
       <section id="panelDocuments" class="sidebar-section hidden">
@@ -280,14 +285,6 @@
     </section>
     <section id="panelSettingsTemplates" class="tab-panel settings-section">
       <h3>テンプレ</h3>
-      <fieldset class="segment">
-        <legend>テンプレ挿入位置</legend>
-        <div class="option-row">
-          <label class="option-chip"><input type="radio" name="templateInsertMode" value="cursor" />カーソル位置</label>
-          <label class="option-chip"><input type="radio" name="templateInsertMode" value="head" />文頭</label>
-          <label class="option-chip"><input type="radio" name="templateInsertMode" value="tail" />文末</label>
-        </div>
-      </fieldset>
       <div id="templateList" class="dialog-list dialog-body"></div>
       <form id="templateForm" class="template-form">
         <input id="templateId" type="hidden" />
