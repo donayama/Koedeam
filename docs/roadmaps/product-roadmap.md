@@ -69,11 +69,13 @@ Allow selecting template insertion target: caret / document head / document tail
 Recover automatically from non-manual `aborted` voice errors to avoid stuck sessions.
 - merged to main: `d445dd8`
 
-## WI-109 (implement) Range Selection Cut/Paste Toolbar [doing]
+## WI-109 (implement) Range Selection Cut/Paste Toolbar [done]
 Add Cut/Paste controls to `Edit Panel > Navigation > 範囲選択` for selection workflow continuity.
+- merged to main: `717e60c`
 
-## WI-110 (implement) VoiceEngine Overlap Behavior Matrix Test [doing]
+## WI-110 (implement) VoiceEngine Overlap Behavior Matrix Test [done]
 Use pseudo VoiceEngine (`testMode + replay/synthetic`) to verify overlap behavior across voice input, panel transitions, and insert patterns.
+- merged to main: `717e60c`
 
 ---
 
