@@ -669,6 +669,8 @@
     el.btnCopySel.addEventListener("click", copySelection);
     el.btnCutSel.addEventListener("click", cutSelection);
     el.btnPasteSel.addEventListener("click", pasteClipboard);
+    if (el.btnRangeCutSel) el.btnRangeCutSel.addEventListener("click", cutSelection);
+    if (el.btnRangePasteSel) el.btnRangePasteSel.addEventListener("click", pasteClipboard);
     el.btnBackspace.addEventListener("click", () => deleteByDirection(-1));
     el.btnDelete.addEventListener("click", () => deleteByDirection(1));
     if (el.btnVoiceMode) {
@@ -2652,7 +2654,7 @@
     state.primary = next;
     document.body.classList.remove("primary-edit", "primary-search", "primary-manage", "primary-config");
     document.body.classList.add(`primary-${next.toLowerCase()}`);
-    if (shouldStopVoiceOnPrimary(next) && state.speaking && state.recognition) {
+    if (shouldStopVoiceOnPrimary(next) && state.speaking) {
       state.stopVoiceInput?.();
     }
     enforceKeyboardPolicy();
@@ -4708,6 +4710,8 @@
       btnCopySel: document.getElementById("btnCopySel"),
       btnCutSel: document.getElementById("btnCutSel"),
       btnPasteSel: document.getElementById("btnPasteSel"),
+      btnRangeCutSel: document.getElementById("btnRangeCutSel"),
+      btnRangePasteSel: document.getElementById("btnRangePasteSel"),
       btnBackspace: document.getElementById("btnBackspace"),
       btnDelete: document.getElementById("btnDelete"),
 

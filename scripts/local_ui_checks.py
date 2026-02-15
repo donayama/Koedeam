@@ -119,6 +119,8 @@ def run(base_url: str) -> int:
             "candidateIdleBehavior",
             "candidatePanel",
             "candidateList",
+            "btnRangeCutSel",
+            "btnRangePasteSel",
         ]
         exists = page.evaluate(
             "(ids) => Object.fromEntries(ids.map(id => [id, !!document.getElementById(id)]))",
@@ -442,6 +444,31 @@ def run(base_url: str) -> int:
         if nav_state["editHidden"] < 1:
             failures.append("edit mode: edit group is not hidden in navigation mode")
 
+        # 2.55) Range selection toolbar (cut/paste)
+        page.evaluate(
+            """() => {
+              const ta = document.getElementById('editor');
+              ta.value = 'HELLO WORLD';
+              ta.focus();
+              ta.setSelectionRange(6, 11);
+            }"""
+        )
+        page.click("#btnRangeCutSel")
+        page.wait_for_timeout(80)
+        page.evaluate(
+            """() => {
+              const ta = document.getElementById('editor');
+              const end = ta.value.length;
+              ta.setSelectionRange(end, end);
+            }"""
+        )
+        page.click("#btnRangePasteSel")
+        page.wait_for_timeout(80)
+        range_toolbar_state = page.evaluate("() => ({ value: document.getElementById('editor').value })")
+        report["range_toolbar_cut_paste"] = range_toolbar_state
+        if range_toolbar_state["value"] != "HELLO WORLD":
+            failures.append("range toolbar: cut/paste buttons did not restore expected text")
+
         # 2.6) Time menu insert/expand behavior
         page.evaluate("""() => document.getElementById('btnEditModeEdit')?.click()""")
         page.evaluate(
@@ -721,6 +748,154 @@ def run(base_url: str) -> int:
         if "VOICE:OFF" not in stopped_state["statusInput"]:
             failures.append("voice: input state did not return to VOICE_OFF on stop")
 
+        # 3.5) Replay VoiceEngine overlap matrix (pseudo voice engine path)
+        replay_report: Dict[str, object] = {}
+        replay_context = browser.new_context(accept_downloads=False, viewport={"width": 1100, "height": 700})
+        replay_page = replay_context.new_page()
+        sep = "&" if "?" in base_url else "?"
+        replay_url = f"{base_url}{sep}testMode=1&voiceEngine=replay&replayMode=realtime&synthetic=1&seed=matrix01"
+        replay_page.goto(replay_url, wait_until="networkidle")
+
+        replay_page.evaluate(
+            """() => {
+              window.__KOEDEAM_TEST__?.setReplayEvents?.([
+                { type: 'start', atMs: 0 },
+                { type: 'result', atMs: 2000, isFinal: true, text: '重畳検証', confidence: 0.9 },
+                { type: 'end', atMs: 7000 }
+              ]);
+            }"""
+        )
+        replay_page.click("#btnMic")
+        replay_page.wait_for_timeout(250)
+
+        replay_page.evaluate("() => document.getElementById('btnBrandDocuments')?.click()")
+        replay_page.wait_for_timeout(120)
+        replay_documents = replay_page.evaluate(
+            """() => ({
+              statusInput: document.getElementById('statusInput')?.textContent || '',
+              sidebarOpen: document.body.classList.contains('with-sidebar')
+            })"""
+        )
+        replay_report["keep_on_documents"] = replay_documents
+        if "VOICE:OFF" in replay_documents["statusInput"]:
+            failures.append("replay voice: opening documents stopped voice unexpectedly")
+
+        replay_page.click("#btnMenu")
+        replay_page.click("button[data-menu='settings']")
+        replay_page.wait_for_timeout(120)
+        replay_settings = replay_page.evaluate(
+            """() => ({
+              statusInput: document.getElementById('statusInput')?.textContent || '',
+              settingsOpen: !!document.getElementById('dlgSettings')?.open
+            })"""
+        )
+        replay_report["stop_on_settings"] = replay_settings
+        if "VOICE:OFF" not in replay_settings["statusInput"]:
+            failures.append("replay voice: opening settings did not stop voice")
+        if replay_settings["settingsOpen"]:
+            replay_page.click("#btnCloseSettings")
+            replay_page.wait_for_timeout(80)
+
+        replay_page.evaluate(
+            """() => {
+              window.__KOEDEAM_TEST__?.setReplayEvents?.([
+                { type: 'start', atMs: 0 },
+                { type: 'result', atMs: 1500, isFinal: true, text: '検索停止検証', confidence: 0.9 },
+                { type: 'end', atMs: 5000 }
+              ]);
+            }"""
+        )
+        replay_page.click("#btnMic")
+        replay_page.wait_for_timeout(250)
+        replay_page.click("#btnReplace")
+        replay_page.wait_for_timeout(120)
+        replay_search = replay_page.evaluate(
+            """() => ({
+              statusInput: document.getElementById('statusInput')?.textContent || '',
+              searchOpen: !!document.getElementById('dlgSearch')?.open
+            })"""
+        )
+        replay_report["stop_on_search"] = replay_search
+        if "VOICE:OFF" not in replay_search["statusInput"]:
+            failures.append("replay voice: opening search did not stop voice")
+        if replay_search["searchOpen"]:
+            replay_page.click("#btnCloseSearch")
+            replay_page.wait_for_timeout(80)
+
+        # insert pattern overlap using replay result
+        replay_page.click("#btnMenu")
+        replay_page.click("button[data-menu='settings']")
+        replay_page.wait_for_timeout(80)
+        replay_page.evaluate(
+            """() => {
+              document.querySelector("#dlgSettings .tab-btn[data-tab='voice']")?.click();
+              document.querySelector("input[name='voiceMode'][value='cursor']")?.click();
+              document.getElementById('btnCloseSettings')?.click();
+            }"""
+        )
+        replay_page.wait_for_timeout(80)
+        replay_page.evaluate(
+            """() => {
+              const ta = document.getElementById('editor');
+              ta.value = 'ABCD';
+              ta.focus();
+              ta.setSelectionRange(2, 2);
+            }"""
+        )
+        replay_page.evaluate(
+            """() => {
+              window.__KOEDEAM_TEST__?.setReplayEvents?.([
+                { type: 'start', atMs: 0 },
+                { type: 'result', atMs: 50, isFinal: true, text: 'X', confidence: 0.9 },
+                { type: 'end', atMs: 200 }
+              ]);
+            }"""
+        )
+        replay_page.click("#btnMic")
+        replay_page.wait_for_timeout(650)
+        cursor_insert_value = replay_page.evaluate("() => document.getElementById('editor').value")
+        replay_report["insert_cursor"] = {"value": cursor_insert_value}
+        if cursor_insert_value != "ABXCD":
+            failures.append("replay voice: cursor insert mode did not insert at caret")
+
+        replay_page.click("#btnMenu")
+        replay_page.click("button[data-menu='settings']")
+        replay_page.wait_for_timeout(80)
+        replay_page.evaluate(
+            """() => {
+              document.querySelector("#dlgSettings .tab-btn[data-tab='voice']")?.click();
+              document.querySelector("input[name='voiceMode'][value='append']")?.click();
+              document.getElementById('btnCloseSettings')?.click();
+            }"""
+        )
+        replay_page.wait_for_timeout(80)
+        replay_page.evaluate(
+            """() => {
+              const ta = document.getElementById('editor');
+              ta.value = 'ABCD';
+              ta.focus();
+              ta.setSelectionRange(1, 1);
+            }"""
+        )
+        replay_page.evaluate(
+            """() => {
+              window.__KOEDEAM_TEST__?.setReplayEvents?.([
+                { type: 'start', atMs: 0 },
+                { type: 'result', atMs: 50, isFinal: true, text: 'Y', confidence: 0.9 },
+                { type: 'end', atMs: 200 }
+              ]);
+            }"""
+        )
+        replay_page.click("#btnMic")
+        replay_page.wait_for_timeout(650)
+        append_insert_value = replay_page.evaluate("() => document.getElementById('editor').value")
+        replay_report["insert_append"] = {"value": append_insert_value}
+        if not append_insert_value.startswith("ABCD") or "Y" not in append_insert_value:
+            failures.append("replay voice: append insert mode did not append at document end")
+
+        report["replay_voice_matrix"] = replay_report
+        replay_context.close()
+
         # 4) Force reload prerequisites (API availability + cache operable)
         force_reload_pre = page.evaluate(
             """async () => {
@@ -767,6 +942,7 @@ def run(base_url: str) -> int:
     print(f"Field Test ZIP: {as_bool(all(not f.startswith('field test zip:') for f in failures))}")
     print(f"Candidate Select: {as_bool(all(not f.startswith('candidate:') for f in failures))}")
     print(f"Voice Recovery: {as_bool(all(not f.startswith('voice:') for f in failures))}")
+    print(f"Replay Voice Matrix: {as_bool(all(not f.startswith('replay voice:') for f in failures))}")
     print(f"Force Reload Preconditions: {as_bool(all(not f.startswith('force reload precondition') for f in failures))}")
     print("")
     print(json.dumps(report, ensure_ascii=False, indent=2))
