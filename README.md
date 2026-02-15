@@ -17,6 +17,18 @@
 - 編集で整えてすぐ共有する
 - 本文はサーバー保存しない
 
+```mermaid
+flowchart LR
+    THINK(fa:fa-brain アイディア)-->SPEACH
+    SPEACH(fa:fa-microphone 文字入力<br>（音声認識）) -->KEYBOARD(fa:fa-edit 文章編集<br>（キーボード）)
+    KEYBOARD --> lightbulb(fa:fa-lightbulb 編集中の気づき)-->SPEACH
+    KEYBOARD --> SHARE(fa:fa-share-nodes 共有する！)
+    SHARE-->AI[fa:fa-robot 生成AI<br>（ChatGPT, Geminiなど）]
+    SHARE-->CLIPBOARD[fa:fa-clipboard クリップボード]
+    SHARE-->SNS[fa:fa-retweet SNS<br>（X, instagramなど）]
+    SHARE-->OTHERS[fa:fa-pen その他サービス<br>（アプリなど） ]
+```
+
 ## Koedeamの紹介
 
 歩いているときや、ふとした時の思いつきを、特に整理せず前後の脈絡もなく、ひとまずパッとメモしておきたい。  
