@@ -285,6 +285,100 @@ def run(base_url: str) -> int:
         page.click("#btnCloseSettings")
         page.wait_for_timeout(80)
 
+        # 1.8) Dialog/Panel transition matrix (regression guard)
+        transition_matrix = {}
+
+        def ui_state() -> Dict[str, bool]:
+            return page.evaluate(
+                """() => ({
+                  menuOpen: !document.getElementById('menuOverlay')?.classList.contains('hidden'),
+                  sidebarOpen: document.body.classList.contains('with-sidebar'),
+                  templatesVisible: !(document.getElementById('panelTemplates')?.classList.contains('hidden') ?? true),
+                  documentsVisible: !(document.getElementById('panelDocuments')?.classList.contains('hidden') ?? true),
+                  historyVisible: !(document.getElementById('panelHistory')?.classList.contains('hidden') ?? true),
+                  settingsOpen: !!document.getElementById('dlgSettings')?.open,
+                  searchOpen: !!document.getElementById('dlgSearch')?.open,
+                  shareOpen: !!document.getElementById('dlgShare')?.open,
+                  helpOpen: !!document.getElementById('dlgHelp')?.open
+                })"""
+            )
+
+        def close_transient() -> None:
+            page.evaluate(
+                """() => {
+                  document.getElementById('btnCloseMenu')?.click();
+                  document.getElementById('btnCloseSearch')?.click();
+                  document.getElementById('btnCloseShare')?.click();
+                  document.getElementById('btnCloseHelp')?.click();
+                  document.getElementById('btnCloseSettings')?.click();
+                  if (document.body.classList.contains('with-sidebar')) {
+                    document.getElementById('btnCloseSidebar')?.click();
+                  }
+                }"""
+            )
+            page.wait_for_timeout(120)
+
+        # Case A: Share dialog blocks Search open.
+        close_transient()
+        page.click("#btnShare")
+        page.wait_for_timeout(80)
+        page.evaluate("() => document.getElementById('btnReplace')?.click()")
+        page.wait_for_timeout(80)
+        case_a = ui_state()
+        transition_matrix["share_blocks_search"] = case_a
+        if not case_a["shareOpen"] or case_a["searchOpen"]:
+            failures.append("transition: share/search blocking failed")
+
+        # Case B: Help dialog blocks Menu open.
+        close_transient()
+        page.click("#btnMenu")
+        page.click("button[data-menu='help']")
+        page.wait_for_timeout(80)
+        page.evaluate("() => document.getElementById('btnMenu')?.click()")
+        page.wait_for_timeout(80)
+        case_b = ui_state()
+        transition_matrix["help_blocks_menu"] = case_b
+        if not case_b["helpOpen"] or case_b["menuOpen"]:
+            failures.append("transition: help/menu blocking failed")
+
+        # Case C: Sidebar(any) -> Share closes sidebar.
+        close_transient()
+        page.evaluate("() => document.getElementById('btnBrandDocuments')?.click()")
+        page.wait_for_timeout(80)
+        page.click("#btnShare")
+        page.wait_for_timeout(80)
+        case_c = ui_state()
+        transition_matrix["share_closes_sidebar"] = case_c
+        if not case_c["shareOpen"] or case_c["sidebarOpen"]:
+            failures.append("transition: share did not close sidebar")
+
+        # Case D: Sidebar(documents) -> Settings closes sidebar and opens settings.
+        close_transient()
+        page.evaluate("() => document.getElementById('btnBrandDocuments')?.click()")
+        page.wait_for_timeout(80)
+        page.click("#btnMenu")
+        page.click("button[data-menu='settings']")
+        page.wait_for_timeout(80)
+        case_d = ui_state()
+        transition_matrix["settings_closes_sidebar"] = case_d
+        if not case_d["settingsOpen"] or case_d["sidebarOpen"]:
+            failures.append("transition: settings did not close sidebar")
+
+        # Case E: Sidebar tabs switch (documents -> history) keeps sidebar and toggles section.
+        close_transient()
+        page.evaluate("() => document.getElementById('btnBrandDocuments')?.click()")
+        page.wait_for_timeout(80)
+        page.click("#btnMenu")
+        page.click("button[data-menu='snapshot']")
+        page.wait_for_timeout(80)
+        case_e = ui_state()
+        transition_matrix["sidebar_tab_switch"] = case_e
+        if not case_e["sidebarOpen"] or not case_e["historyVisible"] or case_e["documentsVisible"]:
+            failures.append("transition: sidebar tab switch failed (documents -> history)")
+
+        close_transient()
+        report["transition_matrix"] = transition_matrix
+
         # 2) Keyboard behavior proxy (non-device simulation)
         page.click("#btnEditTools")
         keyboard_proxy = page.evaluate(
@@ -608,6 +702,7 @@ def run(base_url: str) -> int:
     print(f"Settings Categories: {as_bool(all(not f.startswith('settings category:') for f in failures))}")
     print(f"canOpen Suppression: {as_bool(all(not f.startswith('canOpen:') for f in failures))}")
     print(f"Settings Persistence: {as_bool(all(not f.startswith('settings persist:') for f in failures))}")
+    print(f"Transition Matrix: {as_bool(all(not f.startswith('transition:') for f in failures))}")
     print(f"Keyboard Proxy: {as_bool('keyboard proxy: bottombar did not move with --kb-offset' not in failures and 'keyboard proxy: edit panel did not move with --kb-offset' not in failures)}")
     print(f"Edit Mode Split: {as_bool(all(not f.startswith('edit mode:') for f in failures))}")
     print(f"Time Menu: {as_bool(all(not f.startswith('time menu:') for f in failures))}")
