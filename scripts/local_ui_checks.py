@@ -224,6 +224,26 @@ def run(base_url: str) -> int:
         )
         page.click("#btnCloseSettings")
         page.wait_for_timeout(120)
+        settings_closed_once = page.evaluate("() => !document.getElementById('dlgSettings')?.open")
+        report["settings_close_action"] = {"closed": settings_closed_once}
+        if not settings_closed_once:
+            failures.append("settings close: close button did not close dialog")
+
+        page.click("#btnReplace")
+        page.wait_for_timeout(80)
+        reopen_check = page.evaluate(
+            """() => ({
+              settingsOpen: !!document.getElementById('dlgSettings')?.open,
+              searchOpen: !!document.getElementById('dlgSearch')?.open
+            })"""
+        )
+        report["settings_reopen_check"] = reopen_check
+        if reopen_check["settingsOpen"]:
+            failures.append("settings close: dialog reopened unexpectedly after opening other panel")
+        if reopen_check["searchOpen"]:
+            page.click("#btnCloseSearch")
+            page.wait_for_timeout(50)
+
         page.reload(wait_until="networkidle")
         page.click("#btnMenu")
         page.click("button[data-menu='settings']")

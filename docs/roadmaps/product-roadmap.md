@@ -54,6 +54,9 @@ Reorganize settings into:
 - Other
 - merged to main: `955d8b9`
 
+## WI-105 (implement) Settings Dialog Open/Close Stabilization [doing]
+Stabilize Settings dialog close behavior to avoid intermittent non-close/reopen symptoms.
+
 ---
 
 # EPIC-1.5: VoiceEngine Abstraction

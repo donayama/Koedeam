@@ -831,7 +831,11 @@
         el.dlgFieldTestConsent?.close();
       });
     }
-    el.btnCloseSettings.addEventListener("click", () => el.dlgSettings.close());
+    el.btnCloseSettings.addEventListener("click", () => closeSettingsDialog());
+    el.dlgSettings.addEventListener("cancel", (evt) => {
+      evt.preventDefault();
+      closeSettingsDialog();
+    });
     el.dlgSettings.addEventListener("close", () => applyPrimary("EDIT"));
     el.btnResetApp.addEventListener("click", resetApp);
     if (el.btnForceReload) {
@@ -3205,7 +3209,9 @@
     setEditToolsVisible(false);
     applyPrimary("CONFIG");
     enforceKeyboardPolicy();
-    el.dlgSettings.showModal();
+    if (!el.dlgSettings.open) {
+      el.dlgSettings.showModal();
+    }
     applyTypography();
     applyToolbarVisibility();
     renderTemplates();
@@ -3214,6 +3220,16 @@
     applyFieldTestUI();
     applyEditPanelPosition();
     applySettingsTab(section || "voice");
+  }
+
+  function closeSettingsDialog() {
+    if (!el.dlgSettings) return;
+    if (el.dlgSettings.open) {
+      el.dlgSettings.close();
+      return;
+    }
+    applyPrimary("EDIT");
+    enforceKeyboardPolicy();
   }
 
   function applySettingsTab(tab) {
