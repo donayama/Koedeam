@@ -1,3 +1,4 @@
+<<<<<<< ours
 # Koedeam（コエデアム）
 
 無料で使える、声で編む草稿エディタです。  
@@ -16,6 +17,18 @@
 - 音声で思考を止めずに草稿化する
 - 編集で整えてすぐ共有する
 - 本文はサーバー保存しない
+
+```mermaid
+flowchart LR
+    THINK(fa:fa-brain アイディア)-->SPEACH
+    SPEACH(fa:fa-microphone 文字入力<br>（音声認識）) -->KEYBOARD(fa:fa-edit 文章編集<br>（キーボード）)
+    KEYBOARD --> lightbulb(fa:fa-lightbulb 編集中の気づき)-->SPEACH
+    KEYBOARD --> SHARE(fa:fa-share-nodes 共有する！)
+    SHARE-->AI[fa:fa-robot 生成AI<br>（ChatGPT, Geminiなど）]
+    SHARE-->CLIPBOARD[fa:fa-clipboard クリップボード]
+    SHARE-->SNS[fa:fa-retweet SNS<br>（X, instagramなど）]
+    SHARE-->OTHERS[fa:fa-pen その他サービス<br>（アプリなど） ]
+```
 
 ## Koedeamの紹介
 
@@ -218,3 +231,45 @@ python scripts/playwright_replay_checks.py --url http://localhost:8000/app/
 7. `Update Banner` が `version.json` 差分で表示される
 8. iOSで入力タップ時に自動ズームしない
 
+=======
+# Fake-JRPG-BGM-Remotion
+
+mp3 と画像を素材に、Remotion で 1 本の動画を書き出すための最小構成です。
+
+## セットアップ
+
+```bash
+npm install
+```
+
+## 使い方
+
+1. BGM を配置: `public/assets/audio/bgm.mp3`
+2. 画像を配置: `public/assets/images/scene-01.jpg` など
+3. `src/data/video-config.ts` で以下を調整
+   - `totalDurationInSeconds`
+   - `imagePaths`
+   - 解像度や fps
+
+## プレビュー
+
+```bash
+npm run dev
+```
+
+## 書き出し
+
+```bash
+npm run render JRPGSlideshow out/video.mp4
+```
+
+## origin の設定
+
+このリポジトリを次の URL に push する場合:
+
+```bash
+git remote add origin https://github.com/donayama/Fake-JRPG-BGM-Remotion.git
+# すでに origin がある場合は
+git remote set-url origin https://github.com/donayama/Fake-JRPG-BGM-Remotion.git
+```
+>>>>>>> theirs
