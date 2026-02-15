@@ -762,6 +762,28 @@ def run(base_url: str) -> int:
         if "VOICE:OFF" not in stopped_state["statusInput"]:
             failures.append("voice: input state did not return to VOICE_OFF on stop")
 
+        # 3.2) Lifecycle recovery guard: pageshow(persisted) should force VOICE_OFF.
+        page.click("#btnMic")
+        page.wait_for_timeout(50)
+        lifecycle_before = page.evaluate("window.__speechMock.stopCount")
+        page.evaluate(
+            """() => {
+              window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true }));
+            }"""
+        )
+        page.wait_for_timeout(150)
+        lifecycle_state = page.evaluate(
+            """() => ({
+              stopCount: window.__speechMock.stopCount,
+              statusInput: document.getElementById('statusInput')?.textContent || ''
+            })"""
+        )
+        report["voice_lifecycle_pageshow_stop"] = lifecycle_state
+        if lifecycle_state["stopCount"] <= lifecycle_before:
+            failures.append("voice: pageshow persisted did not stop active speech")
+        if "VOICE:OFF" not in lifecycle_state["statusInput"]:
+            failures.append("voice: lifecycle guard did not move input state to VOICE_OFF")
+
         # 3.5) Replay VoiceEngine overlap matrix (pseudo voice engine path)
         replay_report: Dict[str, object] = {}
         replay_context = browser.new_context(accept_downloads=False, viewport={"width": 1100, "height": 700})

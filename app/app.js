@@ -138,6 +138,9 @@
     voiceManualStop: false,
     voicePending: false,
     voiceCueCtx: null,
+    voiceLifecyclePollTimer: null,
+    voiceLifecycleLastTick: 0,
+    voiceHiddenAt: 0,
     stopVoiceInput: null,
     startVoiceInput: null,
     editPanelMode: "navigation",
@@ -2377,6 +2380,66 @@
       sessionRecord("voice.stop.requested", { reason: "manual" });
       voiceEngine.stop();
     };
+
+    const stopVoiceByLifecycle = (reason) => {
+      if (!state.speaking) return;
+      if (state.voiceManualStop) return;
+      clearRestartTimer();
+      state.voiceManualStop = true;
+      state.speaking = false;
+      applyVoiceSessionState("STOPPED");
+      sessionRecord("voice.stop.lifecycle", { reason });
+      voiceEngine.stop();
+      toast("復帰検知のため音声入力を停止しました");
+    };
+
+    const setupVoiceLifecycleGuard = () => {
+      const SLEEP_GAP_MS = 45000;
+      const POLL_MS = 15000;
+      state.voiceLifecycleLastTick = Date.now();
+      state.voiceHiddenAt = 0;
+      if (state.voiceLifecyclePollTimer) {
+        clearInterval(state.voiceLifecyclePollTimer);
+      }
+      state.voiceLifecyclePollTimer = setInterval(() => {
+        const now = Date.now();
+        const gap = now - Number(state.voiceLifecycleLastTick || now);
+        state.voiceLifecycleLastTick = now;
+        if (gap > SLEEP_GAP_MS) {
+          stopVoiceByLifecycle("timer-gap");
+        }
+      }, POLL_MS);
+      document.addEventListener("visibilitychange", () => {
+        const now = Date.now();
+        state.voiceLifecycleLastTick = now;
+        if (document.visibilityState === "hidden") {
+          state.voiceHiddenAt = now;
+          return;
+        }
+        const hiddenGap = state.voiceHiddenAt ? (now - state.voiceHiddenAt) : 0;
+        state.voiceHiddenAt = 0;
+        if (hiddenGap > SLEEP_GAP_MS) {
+          stopVoiceByLifecycle("visibility-resume");
+        }
+      });
+      window.addEventListener("pageshow", (evt) => {
+        state.voiceLifecycleLastTick = Date.now();
+        if (evt?.persisted) {
+          stopVoiceByLifecycle("pageshow-persisted");
+        }
+      });
+      window.addEventListener("pagehide", () => {
+        state.voiceLifecycleLastTick = Date.now();
+      });
+      document.addEventListener("freeze", () => {
+        stopVoiceByLifecycle("freeze");
+      });
+      document.addEventListener("resume", () => {
+        state.voiceLifecycleLastTick = Date.now();
+        stopVoiceByLifecycle("resume");
+      });
+    };
+    setupVoiceLifecycleGuard();
 
     const scheduleRestart = (reason) => {
       if (!canAutoRestart()) {
