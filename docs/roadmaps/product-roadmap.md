@@ -54,7 +54,7 @@ Reorganize settings into:
 - Other
 - merged to main: `955d8b9`
 
-## WI-105 (implement) Settings Dialog Open/Close Stabilization [doing]
+## WI-105 (implement) Settings Dialog Open/Close Stabilization [done]
 Stabilize Settings dialog close behavior to avoid intermittent non-close/reopen symptoms.
 
 ## WI-106 (implement) Voice Keep-Alive on Non-Blocking Panels [done]

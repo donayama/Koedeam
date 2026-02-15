@@ -229,10 +229,18 @@ def run(base_url: str) -> int:
         )
         page.click("#btnCloseSettings")
         page.wait_for_timeout(120)
-        settings_closed_once = page.evaluate("() => !document.getElementById('dlgSettings')?.open")
+        settings_closed_once = page.evaluate(
+            """() => {
+              const dlg = document.getElementById('dlgSettings');
+              if (!dlg) return false;
+              const style = window.getComputedStyle(dlg);
+              const visible = style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0';
+              return !dlg.open && !visible;
+            }"""
+        )
         report["settings_close_action"] = {"closed": settings_closed_once}
         if not settings_closed_once:
-            failures.append("settings close: close button did not close dialog")
+            failures.append("settings close: close button did not close/hide dialog")
 
         page.click("#btnReplace")
         page.wait_for_timeout(80)

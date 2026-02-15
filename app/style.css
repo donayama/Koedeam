@@ -393,9 +393,11 @@ select {
   width: min(680px, 94vw);
   max-height: min(84vh, calc(100dvh - 20px));
   overflow: hidden;
-  display: flex;
   flex-direction: column;
   overscroll-behavior: contain;
+}
+#dlgSettings[open] {
+  display: flex;
 }
 #dlgSettings .settings-bar { flex: 0 0 auto; }
 #dlgSettings > .tab-panel.active {
