@@ -762,6 +762,62 @@ def run(base_url: str) -> int:
         if "VOICE:OFF" not in stopped_state["statusInput"]:
             failures.append("voice: input state did not return to VOICE_OFF on stop")
 
+        # 3.1) Command mode + keyboard selection + voice cut
+        page.click("#btnMenu")
+        page.click("button[data-menu='settings']")
+        page.wait_for_timeout(80)
+        page.evaluate(
+            """() => {
+              document.querySelector("#dlgSettings .tab-btn[data-tab='voice']")?.click();
+              document.querySelector("input[name='voiceMode'][value='command']")?.click();
+              document.getElementById('btnCloseSettings')?.click();
+            }"""
+        )
+        page.wait_for_timeout(80)
+        page.evaluate(
+            """() => {
+              const ta = document.getElementById('editor');
+              ta.value = 'KEYCUT';
+              ta.focus();
+              ta.setSelectionRange(6, 6);
+              ta.dispatchEvent(new Event('input', { bubbles: true }));
+            }"""
+        )
+        page.click("#btnMic")
+        page.wait_for_timeout(60)
+        page.click("#editor")
+        page.wait_for_timeout(30)
+        page.keyboard.press("Control+A")
+        page.wait_for_timeout(30)
+        selection_state = page.evaluate(
+            """() => {
+              const ta = document.getElementById('editor');
+              return {
+                start: ta.selectionStart,
+                end: ta.selectionEnd,
+                value: ta.value
+              };
+            }"""
+        )
+        page.evaluate("window.__speechMock.emitFinal('削除')")
+        page.wait_for_timeout(120)
+        cut_state = page.evaluate(
+            """() => ({
+              value: document.getElementById('editor')?.value || '',
+              statusInput: document.getElementById('statusInput')?.textContent || ''
+            })"""
+        )
+        report["voice_command_keyboard_cut"] = {
+            "selection": selection_state,
+            "afterCut": cut_state,
+        }
+        if selection_state["start"] == selection_state["end"]:
+            failures.append("voice command keyboard: keyboard selection did not change during command input")
+        if cut_state["value"] != "":
+            failures.append("voice command keyboard: voice edit command did not apply after keyboard selection")
+        page.click("#btnMic")
+        page.wait_for_timeout(50)
+
         # 3.2) Lifecycle recovery guard: pageshow(persisted) should force VOICE_OFF.
         page.click("#btnMic")
         page.wait_for_timeout(50)
@@ -929,6 +985,104 @@ def run(base_url: str) -> int:
         if not append_insert_value.startswith("ABCD") or "Y" not in append_insert_value:
             failures.append("replay voice: append insert mode did not append at document end")
 
+        # command mode: delete line command should apply edit action
+        replay_page.click("#btnMenu")
+        replay_page.click("button[data-menu='settings']")
+        replay_page.wait_for_timeout(80)
+        replay_page.evaluate(
+            """() => {
+              document.querySelector("#dlgSettings .tab-btn[data-tab='voice']")?.click();
+              document.querySelector("input[name='voiceMode'][value='command']")?.click();
+              document.getElementById('btnCloseSettings')?.click();
+            }"""
+        )
+        replay_page.wait_for_timeout(80)
+        replay_page.evaluate(
+            """() => {
+              const ta = document.getElementById('editor');
+              ta.value = 'LINE1\\nLINE2\\n';
+              ta.focus();
+              ta.setSelectionRange(7, 7);
+            }"""
+        )
+        replay_page.evaluate(
+            """() => {
+              window.__KOEDEAM_TEST__?.setReplayEvents?.([
+                { type: 'start', atMs: 0 },
+                { type: 'result', atMs: 50, isFinal: true, text: '行削除', confidence: 0.9 },
+                { type: 'end', atMs: 200 }
+              ]);
+            }"""
+        )
+        replay_page.click("#btnMic")
+        replay_page.wait_for_timeout(650)
+        command_delete_value = replay_page.evaluate("() => document.getElementById('editor').value")
+        replay_report["command_delete_line"] = {"value": command_delete_value}
+        if command_delete_value != "LINE1\n":
+            failures.append("replay command: line delete command did not apply in command mode")
+
+        # command mode: search command should open Search Panel without inserting transcript text
+        replay_page.evaluate(
+            """() => {
+              const ta = document.getElementById('editor');
+              ta.value = 'BASE';
+              ta.focus();
+              ta.setSelectionRange(4, 4);
+              window.__KOEDEAM_TEST__?.setReplayEvents?.([
+                { type: 'start', atMs: 0 },
+                { type: 'result', atMs: 50, isFinal: true, text: '検索', confidence: 0.9 },
+                { type: 'end', atMs: 220 }
+              ]);
+            }"""
+        )
+        replay_page.click("#btnMic")
+        replay_page.wait_for_timeout(500)
+        command_search_state = replay_page.evaluate(
+            """() => ({
+              searchOpen: !!document.getElementById('dlgSearch')?.open,
+              editorValue: document.getElementById('editor')?.value || '',
+              statusInput: document.getElementById('statusInput')?.textContent || ''
+            })"""
+        )
+        replay_report["command_open_search"] = command_search_state
+        if not command_search_state["searchOpen"]:
+            failures.append("replay command: search command did not open search dialog")
+        if command_search_state["editorValue"] != "BASE":
+            failures.append("replay command: command transcript was inserted unexpectedly")
+        if "VOICE:OFF" not in command_search_state["statusInput"]:
+            failures.append("replay command: opening search from command mode did not stop voice")
+        if command_search_state["searchOpen"]:
+            replay_page.click("#btnCloseSearch")
+            replay_page.wait_for_timeout(80)
+
+        # command mode: stop command should switch mode back to cursor
+        replay_page.click("#btnMenu")
+        replay_page.click("button[data-menu='settings']")
+        replay_page.wait_for_timeout(80)
+        replay_page.evaluate(
+            """() => {
+              document.querySelector("#dlgSettings .tab-btn[data-tab='voice']")?.click();
+              document.querySelector("input[name='voiceMode'][value='command']")?.click();
+              document.getElementById('btnCloseSettings')?.click();
+              window.__KOEDEAM_TEST__?.setReplayEvents?.([
+                { type: 'start', atMs: 0 },
+                { type: 'result', atMs: 50, isFinal: true, text: '終わり', confidence: 0.9 },
+                { type: 'end', atMs: 220 }
+              ]);
+            }"""
+        )
+        replay_page.click("#btnMic")
+        replay_page.wait_for_timeout(500)
+        command_stop_state = replay_page.evaluate(
+            """() => ({
+              cursorChecked: !!document.querySelector("input[name='voiceMode'][value='cursor']")?.checked,
+              buttonLabel: document.getElementById('btnVoiceMode')?.textContent || ''
+            })"""
+        )
+        replay_report["command_stop_mode"] = command_stop_state
+        if not command_stop_state["cursorChecked"] and "カーソル" not in command_stop_state["buttonLabel"]:
+            failures.append("replay command: stop command did not leave command mode")
+
         report["replay_voice_matrix"] = replay_report
         replay_context.close()
 
@@ -979,10 +1133,12 @@ def run(base_url: str) -> int:
     print(f"Field Test ZIP: {as_bool(all(not f.startswith('field test zip:') for f in failures))}")
     print(f"Candidate Select: {as_bool(all(not f.startswith('candidate:') for f in failures))}")
     print(f"Voice Recovery: {as_bool(all(not f.startswith('voice:') for f in failures))}")
+    print(f"Voice Command Keyboard: {as_bool(all(not f.startswith('voice command keyboard:') for f in failures))}")
     print(f"Replay Voice Matrix: {as_bool(all(not f.startswith('replay voice:') for f in failures))}")
+    print(f"Replay Command Mode: {as_bool(all(not f.startswith('replay command:') for f in failures))}")
     print(f"Force Reload Preconditions: {as_bool(all(not f.startswith('force reload precondition') for f in failures))}")
     print("")
-    print(json.dumps(report, ensure_ascii=False, indent=2))
+    print(json.dumps(report, ensure_ascii=True, indent=2))
     if failures:
         print("")
         print("Failures:")

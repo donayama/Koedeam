@@ -77,6 +77,12 @@ Add Cut/Paste controls to `Edit Panel > Navigation > 範囲選択` for selection
 Use pseudo VoiceEngine (`testMode + replay/synthetic`) to verify overlap behavior across voice input, panel transitions, and insert patterns.
 - merged to main: `717e60c`
 
+## WI-111 (implement) Voice Command Mode ("声で編む") [todo]
+Add a third voice input mode `command` in addition to `append` / `cursor`.
+- In `command` mode, execute local dictionary-matched edit commands from recognized speech (e.g. cut/copy/paste/select/delete and open search/template/share panels).
+- Keep this local-first: start with direct phrase matching, and keep room for optional future morphological parsing (e.g. kuromoji.js) without changing the UX contract.
+- Restrict command scope to on-screen operations only (open panel/dialog only; no destination/template selection automation).
+
 ---
 
 # EPIC-1.5: VoiceEngine Abstraction

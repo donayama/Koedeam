@@ -153,6 +153,16 @@ button, .btn-icon, .nav-pad, .nav-wide, .chip, .tab-btn {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+#appMessage[data-tone="warning"] {
+  background: color-mix(in srgb, #f59e0b 18%, var(--surface));
+  border-color: color-mix(in srgb, #f59e0b 48%, var(--line));
+  color: color-mix(in srgb, #7c2d12 70%, var(--fg));
+}
+#appMessage[data-tone="error"] {
+  background: color-mix(in srgb, #dc2626 14%, var(--surface));
+  border-color: color-mix(in srgb, #dc2626 52%, var(--line));
+  color: color-mix(in srgb, #7f1d1d 70%, var(--fg));
+}
 #appMessage:empty { display: none; }
 .help-shortcuts a {
   display: inline-flex;

@@ -36,6 +36,75 @@
     { id: uid(), name: "チェックリスト作成", text: "次の作業内容をチェックリスト化してください。\n優先度(高/中/低)も付けてください。\n\n[作業内容]\n", updatedAt: Date.now() }
   ];
 
+  const VOICE_COMMAND_ALIASES = Object.freeze({
+    openSearch: ["検索", "検索する"],
+    openReplace: ["置換", "置き換え"],
+    openTemplates: ["テンプレート", "テンプレ"],
+    openShare: ["共有", "共有する"],
+    openHistory: ["履歴", "履歴を開く", "スナップショット", "スナップショットを開く"],
+    openDocuments: ["文書一覧", "文書一覧を開く", "ドキュメント一覧", "ドキュメント一覧を開く"],
+    openEditPanel: ["編集パネル", "編集パネルを開く", "編集を開く"],
+    closeEditPanel: ["編集パネルを閉じる", "編集を閉じる"],
+    openSettings: ["設定", "設定を開く"],
+    openHelp: ["ヘルプ", "ヘルプを開く"],
+    closeUi: ["閉じる", "戻る", "キャンセル"],
+    saveSnapshot: ["スナップショット保存", "履歴保存"],
+    createDocument: ["新規ドキュメント", "新規文書"],
+    stopCommandMode: ["終わり", "中止", "コマンド終了", "コマンド終わり"],
+    stopVoiceInput: ["停止", "音声停止", "音声を止める", "音声止めて", "止めて"],
+    cutSelection: ["切り取る", "切り取り", "切り取って", "カット", "カットして"],
+    copySelection: ["コピー", "複写"],
+    pasteClipboard: ["貼り付け", "ペースト"],
+    undo: ["元に戻す", "取り消し", "アンドゥ", "戻す"],
+    redo: ["やり直し", "リドゥ"],
+    deleteBackward: ["バックスペース", "一文字削除", "1文字削除"],
+    deleteForward: ["デリート", "削除", "前方削除"],
+    insertComma: ["読点", "カンマ", "てん"],
+    insertPeriod: ["句点", "ピリオド", "まる"],
+    insertNewline: ["改行", "改行する"],
+    selectLine: ["行選択"],
+    selectParagraph: ["段落選択"],
+    selectAll: ["全選択"],
+    clearSelection: ["選択解除", "解除"],
+    selectToLineStart: ["行頭まで選択"],
+    selectToLineEnd: ["行末まで選択"],
+    selectToDocStart: ["最初まで選択"],
+    selectToDocEnd: ["最後まで選択"],
+    expandSelectionUp: ["上に拡張", "選択を上に拡張"],
+    expandSelectionDown: ["下に拡張", "選択を下に拡張"],
+    shrinkSelectionUp: ["上を縮小", "選択を上に縮小"],
+    shrinkSelectionDown: ["下を縮小", "選択を下に縮小"],
+    moveParagraphPrev: ["前の段落", "段落を上へ"],
+    moveParagraphNext: ["次の段落", "段落を下へ"],
+    moveLineStart: ["行頭へ", "行頭に移動"],
+    moveLineEnd: ["行末へ", "行末に移動"],
+    moveDocStart: ["文頭へ", "最初へ移動"],
+    moveDocEnd: ["文末へ", "最後へ移動"],
+    moveUp: ["上へ", "上に移動"],
+    moveDown: ["下へ", "下に移動"],
+    moveLeft: ["左へ", "左に移動"],
+    moveRight: ["右へ", "右に移動"],
+    deleteToLineStart: ["行頭まで削除", "行頭まで消す"],
+    deleteToLineEnd: ["行末まで削除", "行末まで消す"],
+    deleteLine: ["行削除", "行を消す"],
+    deleteParagraph: ["段落削除", "段落を消す"],
+    insertTodayToken: ["今日を挿入", "今日トークン"],
+    insertNowToken: ["今を挿入", "今トークン"],
+    insertDatetimeToken: ["日時を挿入", "日時トークン"],
+    expandTodayToken: ["日付に展開", "今日を展開"],
+    expandNowToken: ["時刻に展開", "今を展開"],
+    expandDatetimeToken: ["日時に展開", "日時を展開"]
+  });
+  const VOICE_COMMAND_DICT = (() => {
+    const dict = Object.create(null);
+    Object.entries(VOICE_COMMAND_ALIASES).forEach(([action, phrases]) => {
+      phrases.forEach((phrase) => {
+        dict[normalizeVoiceCommandPhrase(phrase)] = action;
+      });
+    });
+    return Object.freeze(dict);
+  })();
+
   const DEFAULT_SETTINGS = {
     voiceInsertMode: "cursor",
     templateInsertMode: "tail",
@@ -191,7 +260,7 @@
       state.settings.voiceInsertMode = "cursor";
       saveSettings();
     }
-    if (!["cursor", "append"].includes(state.settings.voiceInsertMode)) {
+    if (!["cursor", "append", "command"].includes(state.settings.voiceInsertMode)) {
       state.settings.voiceInsertMode = "cursor";
       saveSettings();
     }
@@ -678,13 +747,13 @@
     el.btnDelete.addEventListener("click", () => deleteByDirection(1));
     if (el.btnVoiceMode) {
       el.btnVoiceMode.addEventListener("click", () => {
-        const modes = ["cursor", "append"];
+        const modes = ["cursor", "append", "command"];
         const idx = modes.indexOf(state.settings.voiceInsertMode);
         const next = modes[(idx + 1) % modes.length] || "cursor";
         state.settings.voiceInsertMode = next;
         applyVoiceModeUI();
         if (state.speaking) {
-          applyInputState(next === "append" ? "VOICE_APPEND" : "VOICE_LOCKED");
+          applyInputState(resolveInputStateForVoiceMode(next));
         }
         saveSettings();
       });
@@ -692,10 +761,10 @@
     el.voiceModeRadios.forEach((radio) => {
       radio.addEventListener("change", () => {
         if (!radio.checked) return;
-        state.settings.voiceInsertMode = radio.value;
+        state.settings.voiceInsertMode = ["cursor", "append", "command"].includes(radio.value) ? radio.value : "cursor";
         applyVoiceModeUI();
         if (state.speaking) {
-          applyInputState(radio.value === "append" ? "VOICE_APPEND" : "VOICE_LOCKED");
+          applyInputState(resolveInputStateForVoiceMode(state.settings.voiceInsertMode));
         }
         saveSettings();
       });
@@ -2521,7 +2590,7 @@
         startTelemetrySession();
         playVoiceStartCue();
         el.btnMic.innerHTML = '<span class="icon">■</span>停止';
-        applyInputState(state.settings.voiceInsertMode === "append" ? "VOICE_APPEND" : "VOICE_LOCKED");
+        applyInputState(resolveInputStateForVoiceMode(state.settings.voiceInsertMode));
         updateCaretUI();
         return;
       }
@@ -2627,7 +2696,267 @@
   }
 
   function insertByVoiceMode(text) {
+    if (state.settings.voiceInsertMode === "command") {
+      runVoiceCommand(text);
+      return;
+    }
     insertVoicePlain(text);
+  }
+
+  function normalizeVoiceCommandPhrase(raw) {
+    return String(raw || "")
+      .trim()
+      .replace(/[　\s]+/g, "")
+      .replace(/[、。,.!！?？]/g, "");
+  }
+
+  function runVoiceCommand(rawText) {
+    const normalized = normalizeVoiceCommandPhrase(rawText);
+    if (!normalized) return;
+    const action = VOICE_COMMAND_DICT[normalized];
+    if (!action) {
+      toast("コマンド一致なし", 1800, "warning");
+      return;
+    }
+    executeVoiceCommandAction(action);
+  }
+
+  function executeVoiceCommandAction(action) {
+    if (action === "openSearch") {
+      openFindReplace(false);
+      return;
+    }
+    if (action === "openReplace") {
+      openFindReplace(true);
+      return;
+    }
+    if (action === "openTemplates") {
+      openSidebarPanel("templates");
+      return;
+    }
+    if (action === "openShare") {
+      el.btnShare.click();
+      return;
+    }
+    if (action === "openHistory") {
+      openSnapshotPanel();
+      return;
+    }
+    if (action === "openDocuments") {
+      openDocumentListPanel();
+      return;
+    }
+    if (action === "openEditPanel") {
+      setEditToolsVisible(true);
+      return;
+    }
+    if (action === "closeEditPanel") {
+      setEditToolsVisible(false);
+      return;
+    }
+    if (action === "openSettings") {
+      openSettings("voice");
+      return;
+    }
+    if (action === "openHelp") {
+      if (el.btnHelp) el.btnHelp.click();
+      return;
+    }
+    if (action === "closeUi") {
+      closeTransientUi();
+      return;
+    }
+    if (action === "saveSnapshot") {
+      snapshotDraft();
+      renderHistory();
+      renderSidebar();
+      return;
+    }
+    if (action === "createDocument") {
+      createDocument();
+      return;
+    }
+    if (action === "stopCommandMode") {
+      state.settings.voiceInsertMode = "cursor";
+      applyVoiceModeUI();
+      if (state.speaking) applyInputState("VOICE_LOCKED");
+      saveSettings();
+      toast("コマンドモード終了");
+      return;
+    }
+    if (action === "stopVoiceInput") {
+      state.stopVoiceInput?.();
+      return;
+    }
+
+    focusEditorForEditAction();
+    if (action === "cutSelection") {
+      void cutSelection();
+      return;
+    }
+    if (action === "copySelection") {
+      void copySelection();
+      return;
+    }
+    if (action === "pasteClipboard") {
+      void pasteClipboard();
+      return;
+    }
+    if (action === "undo") {
+      undoEdit();
+      return;
+    }
+    if (action === "redo") {
+      redoEdit();
+      return;
+    }
+    if (action === "deleteBackward") {
+      deleteByDirection(-1);
+      return;
+    }
+    if (action === "deleteForward") {
+      deleteByDirection(1);
+      return;
+    }
+    if (action === "insertComma") {
+      insertPunctuation("comma");
+      return;
+    }
+    if (action === "insertPeriod") {
+      insertPunctuation("period");
+      return;
+    }
+    if (action === "insertNewline") {
+      insertTextAtCursor("\n");
+      return;
+    }
+    if (action === "selectLine") {
+      selectLine();
+      return;
+    }
+    if (action === "selectParagraph") {
+      selectBlock();
+      return;
+    }
+    if (action === "selectAll") {
+      el.editor.select();
+      return;
+    }
+    if (action === "clearSelection") {
+      clearSelectionRange();
+      return;
+    }
+    if (action === "selectToLineStart") {
+      selectToLineEdge("start");
+      return;
+    }
+    if (action === "selectToLineEnd") {
+      selectToLineEdge("end");
+      return;
+    }
+    if (action === "selectToDocStart") {
+      selectToDocumentEdge("start");
+      return;
+    }
+    if (action === "selectToDocEnd") {
+      selectToDocumentEdge("end");
+      return;
+    }
+    if (action === "expandSelectionUp") {
+      expandSelection(-1);
+      return;
+    }
+    if (action === "expandSelectionDown") {
+      expandSelection(1);
+      return;
+    }
+    if (action === "shrinkSelectionUp") {
+      shrinkSelection(-1);
+      return;
+    }
+    if (action === "shrinkSelectionDown") {
+      shrinkSelection(1);
+      return;
+    }
+    if (action === "moveParagraphPrev") {
+      moveParagraph(-1);
+      return;
+    }
+    if (action === "moveParagraphNext") {
+      moveParagraph(1);
+      return;
+    }
+    if (action === "moveLineStart") {
+      moveToLineEdge("start");
+      return;
+    }
+    if (action === "moveLineEnd") {
+      moveToLineEdge("end");
+      return;
+    }
+    if (action === "moveDocStart") {
+      moveToDocumentEdge("start");
+      return;
+    }
+    if (action === "moveDocEnd") {
+      moveToDocumentEdge("end");
+      return;
+    }
+    if (action === "moveUp") {
+      moveCursorLine(-1);
+      return;
+    }
+    if (action === "moveDown") {
+      moveCursorLine(1);
+      return;
+    }
+    if (action === "moveLeft") {
+      moveCursorChar(-1);
+      return;
+    }
+    if (action === "moveRight") {
+      moveCursorChar(1);
+      return;
+    }
+    if (action === "deleteToLineStart") {
+      deleteToLineEdge("start");
+      return;
+    }
+    if (action === "deleteToLineEnd") {
+      deleteToLineEdge("end");
+      return;
+    }
+    if (action === "deleteLine") {
+      deleteCurrentLine();
+      return;
+    }
+    if (action === "deleteParagraph") {
+      deleteCurrentParagraph();
+      return;
+    }
+    if (action === "insertTodayToken") {
+      runTimeMenuAction("insert-today");
+      return;
+    }
+    if (action === "insertNowToken") {
+      runTimeMenuAction("insert-now");
+      return;
+    }
+    if (action === "insertDatetimeToken") {
+      runTimeMenuAction("insert-datetime");
+      return;
+    }
+    if (action === "expandTodayToken") {
+      runTimeMenuAction("expand-today");
+      return;
+    }
+    if (action === "expandNowToken") {
+      runTimeMenuAction("expand-now");
+      return;
+    }
+    if (action === "expandDatetimeToken") {
+      runTimeMenuAction("expand-datetime");
+    }
   }
 
   function setupServiceWorker() {
@@ -2797,6 +3126,10 @@
     if (state.input === "VOICE_LOCKED") return false;
     if (state.primary === "SEARCH" || state.primary === "MANAGE" || state.primary === "CONFIG") return false;
     return true;
+  }
+
+  function resolveInputStateForVoiceMode(mode) {
+    return mode === "append" || mode === "command" ? "VOICE_APPEND" : "VOICE_LOCKED";
   }
 
   function canOpen(target) {
@@ -2989,13 +3322,17 @@
     if (el.btnVoiceMode) {
       const iconMap = {
         cursor: "⌶",
-        append: "↘"
+        append: "↘",
+        command: "⌘"
       };
       const labelMap = {
         cursor: "音声:カーソル",
-        append: "音声:文末"
+        append: "音声:文末",
+        command: "音声:コマンド"
       };
-      const mode = state.settings.voiceInsertMode === "append" ? "append" : "cursor";
+      const mode = ["cursor", "append", "command"].includes(state.settings.voiceInsertMode)
+        ? state.settings.voiceInsertMode
+        : "cursor";
       el.btnVoiceMode.innerHTML = `<span class="icon">${iconMap[mode]}</span>${labelMap[mode]}`;
     }
     if (el.optVoiceStartTone) {
@@ -4159,10 +4496,15 @@
     }
   }
 
-  function toast(msg, ms = 1800) {
+  function toast(msg, ms = 1800, tone = "info") {
     el.appMessage.textContent = msg;
+    if (tone === "warning" || tone === "error") el.appMessage.dataset.tone = tone;
+    else delete el.appMessage.dataset.tone;
     window.clearTimeout(toast.tid);
-    toast.tid = window.setTimeout(() => { el.appMessage.textContent = ""; }, ms);
+    toast.tid = window.setTimeout(() => {
+      el.appMessage.textContent = "";
+      delete el.appMessage.dataset.tone;
+    }, ms);
   }
 
   function firstLine(text) {
@@ -4330,6 +4672,21 @@
       return;
     }
     el.editor.setSelectionRange(selectionStart, len);
+    ensureSelectionVisible(1);
+  }
+
+  function selectToLineEdge(edge) {
+    const text = el.editor.value;
+    const { selectionStart, selectionEnd } = el.editor;
+    const startLine = getLineBounds(text, selectionStart);
+    const endLine = getLineBounds(text, Math.max(selectionStart, selectionEnd));
+    focusEditorForEditAction();
+    if (edge === "start") {
+      el.editor.setSelectionRange(startLine.start, selectionEnd);
+      ensureSelectionVisible(-1);
+      return;
+    }
+    el.editor.setSelectionRange(selectionStart, endLine.end);
     ensureSelectionVisible(1);
   }
 
