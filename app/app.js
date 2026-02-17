@@ -2715,7 +2715,9 @@
     if (!normalized) return;
     const action = VOICE_COMMAND_DICT[normalized];
     if (!action) {
-      toast("コマンド一致なし", 1800, "warning");
+      const raw = String(rawText || "").trim().replace(/[　\s]+/g, " ");
+      const shown = raw.length > 24 ? `${raw.slice(0, 24)}…` : raw;
+      toast(`コマンド一致なし: ${shown}`, 2200, "warning");
       return;
     }
     executeVoiceCommandAction(action);
