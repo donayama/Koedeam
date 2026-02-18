@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import tempfile
+import time
 import zipfile
 from pathlib import Path
 from typing import Dict, List
@@ -627,7 +628,7 @@ def run(base_url: str) -> int:
             failures.append(f"field test zip: export check failed ({exc})")
         report["field_test_zip"] = field_zip
 
-        # 2.9) Candidate selection (threshold/no-confidence fallback)
+        # 2.9) Candidate selection (visibility/fallback/timing)
         page.evaluate("""() => document.getElementById('btnEditModeEdit')?.click()""")
         page.wait_for_timeout(50)
         page.evaluate(
@@ -660,6 +661,94 @@ def run(base_url: str) -> int:
         report["candidate_apply"] = cand_apply
         if "第二候補" not in cand_apply:
             failures.append("candidate: selecting #2 did not apply expected text")
+
+        # no-confidence + show => keep panel visible
+        page.evaluate(
+            """() => {
+              const nc = document.getElementById('candidateNoConfidenceRule');
+              const idb = document.getElementById('candidateIdleBehavior');
+              if (nc) { nc.value = 'show'; nc.dispatchEvent(new Event('change', { bubbles: true })); }
+              if (idb) { idb.value = 'hold'; idb.dispatchEvent(new Event('change', { bubbles: true })); }
+            }"""
+        )
+        page.evaluate("window.__speechMock.emitFinalCandidates([{text:'信頼値なし候補A'},{text:'信頼値なし候補B'}])")
+        page.wait_for_timeout(120)
+        cand_no_conf_show = page.evaluate(
+            """() => ({
+              panelVisible: !document.getElementById('candidatePanel').classList.contains('hidden'),
+              buttonCount: document.querySelectorAll('#candidateList button[data-candidate-index]').length
+            })"""
+        )
+        report["candidate_no_confidence_show"] = cand_no_conf_show
+        if not cand_no_conf_show["panelVisible"] or cand_no_conf_show["buttonCount"] < 2:
+            failures.append("candidate: no-confidence(show) did not display panel")
+        page.evaluate("""() => document.querySelector('#candidateList button[data-candidate-index="0"]')?.click()""")
+        page.wait_for_timeout(80)
+
+        # no-confidence + direct => direct apply, panel hidden
+        page.evaluate(
+            """() => {
+              const nc = document.getElementById('candidateNoConfidenceRule');
+              const idb = document.getElementById('candidateIdleBehavior');
+              if (nc) { nc.value = 'direct'; nc.dispatchEvent(new Event('change', { bubbles: true })); }
+              if (idb) { idb.value = 'hold'; idb.dispatchEvent(new Event('change', { bubbles: true })); }
+            }"""
+        )
+        before_direct = page.evaluate("""() => document.getElementById('editor').value""")
+        page.evaluate("window.__speechMock.emitFinalCandidates([{text:'信頼値なし直接採用A'},{text:'信頼値なし直接採用B'}])")
+        page.wait_for_timeout(120)
+        cand_no_conf_direct = page.evaluate(
+            """(beforeText) => ({
+              panelHidden: document.getElementById('candidatePanel').classList.contains('hidden'),
+              editor: document.getElementById('editor').value,
+              changed: document.getElementById('editor').value !== beforeText
+            })""",
+            before_direct
+        )
+        report["candidate_no_confidence_direct"] = cand_no_conf_direct
+        if not cand_no_conf_direct["panelHidden"]:
+            failures.append("candidate: no-confidence(direct) should hide panel")
+        if not cand_no_conf_direct["changed"] or "信頼値なし直接採用A" not in cand_no_conf_direct["editor"]:
+            failures.append("candidate: no-confidence(direct) did not insert top candidate")
+
+        # auto idle behavior => top candidate auto-applied after delay
+        page.evaluate(
+            """() => {
+              const th = document.getElementById('candidateThreshold');
+              const nc = document.getElementById('candidateNoConfidenceRule');
+              const idb = document.getElementById('candidateIdleBehavior');
+              if (th) { th.value = '0.95'; th.dispatchEvent(new Event('change', { bubbles: true })); }
+              if (nc) { nc.value = 'show'; nc.dispatchEvent(new Event('change', { bubbles: true })); }
+              if (idb) { idb.value = 'auto'; idb.dispatchEvent(new Event('change', { bubbles: true })); }
+            }"""
+        )
+        auto_before = page.evaluate("""() => document.getElementById('editor').value""")
+        auto_started = time.perf_counter()
+        page.evaluate("window.__speechMock.emitFinalCandidates([{text:'自動採用第一候補', confidence:0.5},{text:'自動採用第二候補', confidence:0.4}])")
+        page.wait_for_function(
+            """(beforeText) => {
+              const editor = document.getElementById('editor');
+              return !!editor && editor.value !== beforeText && editor.value.includes('自動採用第一候補');
+            }""",
+            arg=auto_before,
+            timeout=5000
+        )
+        auto_elapsed_ms = int((time.perf_counter() - auto_started) * 1000)
+        cand_auto_apply = page.evaluate(
+            """(elapsedMs) => ({
+              elapsedMs,
+              panelHidden: document.getElementById('candidatePanel').classList.contains('hidden'),
+              editor: document.getElementById('editor').value
+            })""",
+            auto_elapsed_ms
+        )
+        report["candidate_auto_apply"] = cand_auto_apply
+        if "自動採用第一候補" not in cand_auto_apply["editor"]:
+            failures.append("candidate: auto idle did not apply top candidate")
+        if not cand_auto_apply["panelHidden"]:
+            failures.append("candidate: panel should close after auto idle apply")
+        if cand_auto_apply["elapsedMs"] < 2500:
+            failures.append("candidate: auto idle applied too early")
         page.click("#btnMic")
         page.wait_for_timeout(50)
 
