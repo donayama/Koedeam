@@ -2462,6 +2462,40 @@
       toast("復帰検知のため音声入力を停止しました");
     };
 
+    const shouldKeepVoiceAcrossBackground = () => state.layoutMode === "DESKTOP";
+
+    const hasInvalidVoiceHandles = () => {
+      if (state.runtime.voiceEngine === "replay") return false;
+      if (!state.voiceEngine || typeof state.voiceEngine.getNative !== "function") return true;
+      const native = state.voiceEngine.getNative();
+      if (!native) return true;
+      if (!state.recognition) return true;
+      if (state.recognition !== native) return true;
+      if (typeof state.stopVoiceInput !== "function") return true;
+      return false;
+    };
+
+    const sweepVoiceLeakAndForceOff = (reason) => {
+      clearRestartTimer();
+      setVoicePending(false);
+      state.voiceManualStop = false;
+      state.speaking = false;
+      applyVoiceSessionState("STOPPED");
+      applyInputState("VOICE_OFF");
+      el.btnMic.innerHTML = '<span class="icon">🎤</span>音声入力';
+      hideCandidatePanel();
+      closeTelemetrySession(`lifecycle-sweep:${reason}`);
+      sessionRecord("voice.lifecycle.sweep", {
+        reason,
+        hasVoiceEngine: !!state.voiceEngine,
+        hasRecognition: !!state.recognition
+      });
+      state.recognition = null;
+      state.stopVoiceInput = null;
+      state.startVoiceInput = null;
+      toast("音声状態を再初期化しました");
+    };
+
     const setupVoiceLifecycleGuard = () => {
       const SLEEP_GAP_MS = 45000;
       const POLL_MS = 15000;
@@ -2475,7 +2509,11 @@
         const gap = now - Number(state.voiceLifecycleLastTick || now);
         state.voiceLifecycleLastTick = now;
         if (gap > SLEEP_GAP_MS) {
-          stopVoiceByLifecycle("timer-gap");
+          if (hasInvalidVoiceHandles()) {
+            sweepVoiceLeakAndForceOff("timer-gap-invalid");
+          } else if (!shouldKeepVoiceAcrossBackground()) {
+            stopVoiceByLifecycle("timer-gap");
+          }
         }
       }, POLL_MS);
       document.addEventListener("visibilitychange", () => {
@@ -2487,25 +2525,48 @@
         }
         const hiddenGap = state.voiceHiddenAt ? (now - state.voiceHiddenAt) : 0;
         state.voiceHiddenAt = 0;
-        if (hiddenGap > SLEEP_GAP_MS) {
+        if (hasInvalidVoiceHandles()) {
+          sweepVoiceLeakAndForceOff("visibility-resume-invalid");
+          return;
+        }
+        if (!shouldKeepVoiceAcrossBackground() && hiddenGap > SLEEP_GAP_MS) {
           stopVoiceByLifecycle("visibility-resume");
         }
       });
       window.addEventListener("pageshow", (evt) => {
         state.voiceLifecycleLastTick = Date.now();
-        if (evt?.persisted) {
+        if (hasInvalidVoiceHandles()) {
+          sweepVoiceLeakAndForceOff("pageshow-invalid");
+          return;
+        }
+        if (evt?.persisted && !shouldKeepVoiceAcrossBackground()) {
           stopVoiceByLifecycle("pageshow-persisted");
         }
       });
       window.addEventListener("pagehide", () => {
         state.voiceLifecycleLastTick = Date.now();
+        if (hasInvalidVoiceHandles()) {
+          sweepVoiceLeakAndForceOff("pagehide-invalid");
+        }
       });
       document.addEventListener("freeze", () => {
-        stopVoiceByLifecycle("freeze");
+        if (hasInvalidVoiceHandles()) {
+          sweepVoiceLeakAndForceOff("freeze-invalid");
+          return;
+        }
+        if (!shouldKeepVoiceAcrossBackground()) {
+          stopVoiceByLifecycle("freeze");
+        }
       });
       document.addEventListener("resume", () => {
         state.voiceLifecycleLastTick = Date.now();
-        stopVoiceByLifecycle("resume");
+        if (hasInvalidVoiceHandles()) {
+          sweepVoiceLeakAndForceOff("resume-invalid");
+          return;
+        }
+        if (!shouldKeepVoiceAcrossBackground()) {
+          stopVoiceByLifecycle("resume");
+        }
       });
     };
     setupVoiceLifecycleGuard();

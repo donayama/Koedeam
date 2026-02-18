@@ -831,14 +831,19 @@ def run(base_url: str) -> int:
         lifecycle_state = page.evaluate(
             """() => ({
               stopCount: window.__speechMock.stopCount,
-              statusInput: document.getElementById('statusInput')?.textContent || ''
+              statusInput: document.getElementById('statusInput')?.textContent || '',
+              layout: document.getElementById('statusLayout')?.textContent || ''
             })"""
         )
         report["voice_lifecycle_pageshow_stop"] = lifecycle_state
-        if lifecycle_state["stopCount"] <= lifecycle_before:
-            failures.append("voice: pageshow persisted did not stop active speech")
-        if "VOICE:OFF" not in lifecycle_state["statusInput"]:
-            failures.append("voice: lifecycle guard did not move input state to VOICE_OFF")
+        if lifecycle_state["layout"] == "DESKTOP":
+            if "VOICE:OFF" in lifecycle_state["statusInput"]:
+                failures.append("voice: desktop lifecycle policy should keep voice running across background")
+        else:
+            if lifecycle_state["stopCount"] <= lifecycle_before:
+                failures.append("voice: pageshow persisted did not stop active speech")
+            if "VOICE:OFF" not in lifecycle_state["statusInput"]:
+                failures.append("voice: lifecycle guard did not move input state to VOICE_OFF")
 
         # 3.5) Replay VoiceEngine overlap matrix (pseudo voice engine path)
         replay_report: Dict[str, object] = {}
