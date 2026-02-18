@@ -102,6 +102,7 @@ def run(base_url: str) -> int:
             "btnEditTools",
             "editToolsPanel",
             "btnForceReload",
+            "btnOverflowForceReload",
             "btnUpdateApp",
             "btnBrandDocuments",
             "btnSnapshot",
@@ -1253,6 +1254,23 @@ def run(base_url: str) -> int:
         if not command_stop_state["cursorChecked"] and "カーソル" not in command_stop_state["buttonLabel"]:
             failures.append("replay command: stop command did not leave command mode")
 
+        # overflow menu: force reload entry should trigger forceReload in test mode
+        replay_page.click("#btnMenu")
+        replay_page.wait_for_timeout(80)
+        replay_page.click("button[data-menu='force-reload']")
+        replay_page.wait_for_timeout(120)
+        replay_force_reload = replay_page.evaluate(
+            """() => ({
+              invoked: !!window.__KOEDEAM_TEST__?.forceReloadInvoked,
+              hasButton: !!document.getElementById('btnOverflowForceReload')
+            })"""
+        )
+        replay_report["overflow_force_reload"] = replay_force_reload
+        if not replay_force_reload["hasButton"]:
+            failures.append("force reload overflow: menu entry is missing")
+        if not replay_force_reload["invoked"]:
+            failures.append("force reload overflow: menu entry did not call forceReload")
+
         report["replay_voice_matrix"] = replay_report
         replay_context.close()
 
@@ -1308,6 +1326,7 @@ def run(base_url: str) -> int:
     print(f"Voice Command Keyboard: {as_bool(all(not f.startswith('voice command keyboard:') for f in failures))}")
     print(f"Replay Voice Matrix: {as_bool(all(not f.startswith('replay voice:') for f in failures))}")
     print(f"Replay Command Mode: {as_bool(all(not f.startswith('replay command:') for f in failures))}")
+    print(f"Force Reload Overflow: {as_bool(all(not f.startswith('force reload overflow:') for f in failures))}")
     print(f"Force Reload Preconditions: {as_bool(all(not f.startswith('force reload precondition') for f in failures))}")
     print("")
     print(json.dumps(report, ensure_ascii=True, indent=2))

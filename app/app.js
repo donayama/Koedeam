@@ -390,7 +390,8 @@
       replayEventsUrl: state.runtime.replayEventsUrl || "",
       synthetic: !!state.runtime.synthetic,
       syntheticSeed: state.runtime.syntheticSeed || "koedeam-seed",
-      syntheticText: state.runtime.syntheticText || ""
+      syntheticText: state.runtime.syntheticText || "",
+      forceReloadInvoked: !!existing.forceReloadInvoked
     };
   }
 
@@ -1049,6 +1050,7 @@
       } else if (act === "documents") openDocumentListPanel();
       else if (act === "snapshot") openSnapshotPanel();
       else if (act === "settings") openSettings("voice");
+      else if (act === "force-reload") forceReload();
       else if (act === "settings-voice") openSettings("voice");
       else if (act === "settings-display") openSettings("display");
       else if (act === "settings-edit") openSettings("edit");
@@ -4468,6 +4470,11 @@
   }
 
   async function forceReload() {
+    if (state.runtime.testMode) {
+      if (window.__KOEDEAM_TEST__) window.__KOEDEAM_TEST__.forceReloadInvoked = true;
+      toast("testMode: 強制リロード呼び出しを確認", 1200);
+      return;
+    }
     const ok = confirm("Service Worker とキャッシュを解除して再読み込みします。よろしいですか？");
     if (!ok) return;
     try {
