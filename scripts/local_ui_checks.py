@@ -224,7 +224,8 @@ def run(base_url: str) -> int:
               if (ib) { ib.value = 'hold'; ib.dispatchEvent(new Event('change', { bubbles: true })); }
               if (ud) { ud.value = '5'; ud.dispatchEvent(new Event('change', { bubbles: true })); }
 
-              const mode = document.querySelector("input[name='templateInsertMode'][value='head']");
+              pick("#dlgSettings .tab-btn[data-tab='templates']");
+              const mode = document.querySelector("#panelSettingsTemplates input[name='templateInsertModeSetting'][value='head']");
               if (mode) { mode.checked = true; mode.dispatchEvent(new Event('change', { bubbles: true })); }
             }"""
         )
@@ -301,12 +302,15 @@ def run(base_url: str) -> int:
 
         template_insert_mode_persist = page.evaluate(
             """() => ({
-              templateInsertHead: document.querySelector("input[name='templateInsertMode'][value='head']")?.checked || false
+              settingsTemplateInsertHead: document.querySelector("#panelSettingsTemplates input[name='templateInsertModeSetting'][value='head']")?.checked || false,
+              sidebarTemplateInsertHead: document.querySelector("#panelTemplates input[name='templateInsertMode'][value='head']")?.checked || false
             })"""
         )
         report["template_insert_mode_persistence"] = template_insert_mode_persist
-        if not template_insert_mode_persist["templateInsertHead"]:
-            failures.append("template insert: mode did not restore")
+        if not template_insert_mode_persist["settingsTemplateInsertHead"]:
+            failures.append("template insert: settings default mode did not restore")
+        if not template_insert_mode_persist["sidebarTemplateInsertHead"]:
+            failures.append("template insert: sidebar mode did not sync with settings default")
 
         # 1.8) Dialog/Panel transition matrix (regression guard)
         transition_matrix = {}

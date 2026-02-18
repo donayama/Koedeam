@@ -5139,7 +5139,7 @@
       editGroupToggles: Array.from(document.querySelectorAll("#editToolsPanel .edit-group-toggle[data-section]")),
       editGroups: Array.from(document.querySelectorAll("#editToolsPanel .edit-group")),
       voiceModeRadios: Array.from(document.querySelectorAll("input[name='voiceMode']")),
-      templateInsertModeRadios: Array.from(document.querySelectorAll("input[name='templateInsertMode']")),
+      templateInsertModeRadios: Array.from(document.querySelectorAll("input[name='templateInsertMode'], input[name='templateInsertModeSetting']")),
       voiceContinuousRadios: Array.from(document.querySelectorAll("input[name='voiceContinuous']")),
       voiceLangRadios: Array.from(document.querySelectorAll("input[name='voiceLang']")),
       optVoiceStartTone: document.getElementById("optVoiceStartTone"),
