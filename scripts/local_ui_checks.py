@@ -312,6 +312,42 @@ def run(base_url: str) -> int:
         if not template_insert_mode_persist["sidebarTemplateInsertHead"]:
             failures.append("template insert: sidebar mode did not sync with settings default")
 
+        # 1.75) localStorage capacity monitor warning
+        storage_monitor = page.evaluate(
+            """() => {
+              const key = 'koedeam.storage.warn.fill';
+              const chunk = 'x'.repeat(1024);
+              let payload = '';
+              for (let i = 0; i < 3600; i += 1) payload += chunk;
+              try {
+                localStorage.setItem(key, payload);
+              } catch (e) {
+                return { prepared: false, warningShown: false, tone: '', text: '', error: String(e) };
+              }
+              const toneToggle = document.getElementById('optVoiceStartTone');
+              if (toneToggle) {
+                toneToggle.checked = !toneToggle.checked;
+                toneToggle.dispatchEvent(new Event('change', { bubbles: true }));
+              }
+              const msg = document.getElementById('appMessage');
+              const tone = msg?.dataset?.tone || '';
+              const text = msg?.textContent || '';
+              localStorage.removeItem(key);
+              return {
+                prepared: true,
+                warningShown: tone === 'warning' && text.includes('保存領域'),
+                tone,
+                text,
+                error: ''
+              };
+            }"""
+        )
+        report["storage_capacity_monitor"] = storage_monitor
+        if not storage_monitor["prepared"]:
+            failures.append(f"storage monitor: setup failed ({storage_monitor['error']})")
+        elif not storage_monitor["warningShown"]:
+            failures.append("storage monitor: near-limit warning was not shown")
+
         # 1.8) Dialog/Panel transition matrix (regression guard)
         transition_matrix = {}
 
@@ -1258,6 +1294,7 @@ def run(base_url: str) -> int:
     print(f"canOpen Suppression: {as_bool(all(not f.startswith('canOpen:') for f in failures))}")
     print(f"Settings Persistence: {as_bool(all(not f.startswith('settings persist:') for f in failures))}")
     print(f"Template Insert Persistence: {as_bool(all(not f.startswith('template insert:') for f in failures))}")
+    print(f"Storage Capacity Monitor: {as_bool(all(not f.startswith('storage monitor:') for f in failures))}")
     print(f"Transition Matrix: {as_bool(all(not f.startswith('transition:') for f in failures))}")
     print(f"Keyboard Proxy: {as_bool('keyboard proxy: bottombar did not move with --kb-offset' not in failures and 'keyboard proxy: edit panel did not move with --kb-offset' not in failures)}")
     print(f"Edit Mode Split: {as_bool(all(not f.startswith('edit mode:') for f in failures))}")

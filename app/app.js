@@ -10,6 +10,9 @@
     fieldTestSession: "koedeam.fieldTestSession"
   };
   const MAX_SHARE_SHORTCUTS = 12;
+  const STORAGE_QUOTA_ESTIMATE_BYTES = 5 * 1024 * 1024;
+  const STORAGE_WARN_SOFT_RATIO = 0.8;
+  const STORAGE_WARN_HARD_RATIO = 0.92;
   const DEFAULT_SHARE_SHORTCUT_DEFS = [
     { name: "メール", urlTemplate: "mailto:?subject={title}&body={text}" },
     { name: "LINE", urlTemplate: "https://line.me/R/share?text={prompt}" },
@@ -234,7 +237,8 @@
       maxDepth: 3
     },
     fieldTestPersistTimer: null,
-    nextInputReason: ""
+    nextInputReason: "",
+    storageWarnBand: "ok"
   };
 
   const el = getElements();
@@ -349,6 +353,7 @@
     setupViewportWatcher();
     seedUndoState();
     persistSessionJsonNow();
+    updateStorageCapacityWarning();
   }
 
   function parseRuntimeFlags(search) {
@@ -4558,9 +4563,39 @@
     try {
       const payload = typeof value === "string" ? value : JSON.stringify(value);
       localStorage.setItem(key, payload);
+      updateStorageCapacityWarning();
     } catch {
+      updateStorageCapacityWarning(true);
       toast("保存に失敗しました");
     }
+  }
+
+  function estimateKoedeamStorageBytes() {
+    try {
+      let total = 0;
+      for (let i = 0; i < localStorage.length; i += 1) {
+        const k = localStorage.key(i) || "";
+        if (!k.startsWith("koedeam.")) continue;
+        const v = localStorage.getItem(k) || "";
+        total += (k.length + v.length) * 2;
+      }
+      return total;
+    } catch {
+      return 0;
+    }
+  }
+
+  function updateStorageCapacityWarning(forceToast = false) {
+    const used = estimateKoedeamStorageBytes();
+    const ratio = STORAGE_QUOTA_ESTIMATE_BYTES > 0 ? (used / STORAGE_QUOTA_ESTIMATE_BYTES) : 0;
+    const nextBand = ratio >= STORAGE_WARN_HARD_RATIO ? "hard" : (ratio >= STORAGE_WARN_SOFT_RATIO ? "soft" : "ok");
+    const bandChanged = nextBand !== state.storageWarnBand;
+    state.storageWarnBand = nextBand;
+    if (nextBand === "ok") return;
+    if (!bandChanged && !forceToast) return;
+    const usedMb = (used / (1024 * 1024)).toFixed(2);
+    const limitMb = (STORAGE_QUOTA_ESTIMATE_BYTES / (1024 * 1024)).toFixed(0);
+    toast(`保存領域が逼迫しています (${usedMb}MB / ${limitMb}MB)。不要な履歴や文書の整理を検討してください。`, 3600, "warning");
   }
 
   function toast(msg, ms = 1800, tone = "info") {
