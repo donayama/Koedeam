@@ -1408,12 +1408,23 @@
   function renderDocumentLists() {
     if (!el.documentsList) return;
     const docs = state.settings.documents || [];
+    const snapshotStats = new Map();
+    (state.recentDrafts || []).forEach((h) => {
+      const docId = `${h?.docId || ""}`.trim();
+      if (!docId) return;
+      const prev = snapshotStats.get(docId) || { count: 0, latestAt: 0 };
+      prev.count += 1;
+      prev.latestAt = Math.max(prev.latestAt, Number(h?.updatedAt || 0));
+      snapshotStats.set(docId, prev);
+    });
     const html = docs.map((doc) => {
       const active = doc.id === state.settings.currentDocId;
       const text = String(doc.text || "");
       const chars = text.length;
       const lines = text ? text.split("\n").length : 0;
       const snippet = preview(text);
+      const snap = snapshotStats.get(doc.id) || { count: 0, latestAt: 0 };
+      const snapLatest = snap.latestAt > 0 ? new Date(snap.latestAt).toLocaleString() : "なし";
       return `<div class="dialog-item doc-item">
         <div class="doc-item-row">
           <div class="doc-main">
@@ -1425,6 +1436,8 @@
               <span>${chars}字</span>
               <span>${lines}行</span>
               <span>ID:${escapeHtml(doc.id.slice(-6))}</span>
+              <span class="doc-snapshot-count">📸${snap.count}</span>
+              <span class="doc-snapshot-latest">SNAP:${escapeHtml(snapLatest)}</span>
             </div>
             <p class="compact-preview">${escapeHtml(snippet || "（本文なし）")}</p>
           </div>

@@ -352,6 +352,16 @@ select {
   border-radius: 999px;
   padding: 1px 6px;
 }
+.doc-meta .doc-snapshot-count {
+  border-color: color-mix(in srgb, var(--line) 65%, #0ea5e9 35%);
+  font-weight: 700;
+}
+.doc-meta .doc-snapshot-latest {
+  max-width: min(46vw, 220px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .doc-item-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;

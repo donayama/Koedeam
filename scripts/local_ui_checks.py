@@ -527,7 +527,19 @@ def run(base_url: str) -> int:
         if range_toolbar_state["value"] != "HELLO WORLD":
             failures.append("range toolbar: cut/paste buttons did not restore expected text")
 
-        # 2.56) Document List action rail layout (desktop: open button stays on right side)
+        # 2.56) Document List action rail + snapshot marker
+        page.evaluate(
+            """() => {
+              const ta = document.getElementById('editor');
+              if (!ta) return;
+              ta.value = 'SNAP MARKER CHECK';
+              ta.focus();
+              ta.setSelectionRange(0, 0);
+              ta.dispatchEvent(new Event('input', { bubbles: true }));
+              document.getElementById('btnSnapshot')?.click();
+            }"""
+        )
+        page.wait_for_timeout(120)
         page.evaluate("() => document.getElementById('btnBrandDocuments')?.click()")
         page.wait_for_timeout(120)
         doc_layout = page.evaluate(
@@ -543,11 +555,17 @@ def run(base_url: str) -> int:
               const openRect = openBtn.getBoundingClientRect();
               const rowStyle = window.getComputedStyle(row).gridTemplateColumns || '';
               const actions = rail.querySelectorAll('button[data-doc-act]').length;
+              const snapCountText = row.querySelector('.doc-snapshot-count')?.textContent || '';
+              const snapLatestText = row.querySelector('.doc-snapshot-latest')?.textContent || '';
+              const snapCount = Number((snapCountText.match(/[0-9]+/) || ['0'])[0]);
               return {
                 hasLayout: true,
                 openRight: openRect.left >= (mainRect.right - 2),
                 actions,
-                compact: rowStyle.trim() === '1fr'
+                compact: rowStyle.trim() === '1fr',
+                hasSnapshotMarker: snapCountText.startsWith('📸'),
+                snapshotCount: snapCount,
+                snapshotLatestText: snapLatestText
               };
             }"""
         )
@@ -560,6 +578,10 @@ def run(base_url: str) -> int:
             failures.append("document list: desktop layout unexpectedly collapsed")
         if not doc_layout["openRight"]:
             failures.append("document list: open button is not aligned on the right side")
+        if not doc_layout["hasSnapshotMarker"] or doc_layout["snapshotCount"] < 1:
+            failures.append("document list: snapshot marker did not show count")
+        if "SNAP:" not in doc_layout["snapshotLatestText"]:
+            failures.append("document list: snapshot latest marker is missing")
         page.evaluate("() => document.getElementById('btnCloseSidebar')?.click()")
         page.wait_for_timeout(80)
 
