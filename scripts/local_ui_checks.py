@@ -103,6 +103,8 @@ def run(base_url: str) -> int:
             "editToolsPanel",
             "btnForceReload",
             "btnOverflowForceReload",
+            "updateToastVersion",
+            "updateToastNote",
             "btnUpdateApp",
             "btnBrandDocuments",
             "btnSnapshot",

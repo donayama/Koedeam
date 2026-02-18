@@ -3259,6 +3259,9 @@
       const json = await r.json();
       const remote = `${json.version || ""}`.trim();
       if (!remote || remote === APP_VERSION) return;
+      const note = `${json.message || json.note || json.releaseNote || json.summary || ""}`.trim();
+      if (el.updateToastVersion) el.updateToastVersion.textContent = `更新できます (v${remote})`;
+      if (el.updateToastNote) el.updateToastNote.textContent = note || "新しいバージョンを利用できます。";
       if (!el.updateToast.classList.contains("hidden")) return;
       el.updateToast.classList.remove("hidden");
       applySystemState("UPDATE_AVAILABLE");
@@ -5253,6 +5256,8 @@
       btnCloseMenu: document.getElementById("btnCloseMenu"),
 
       updateToast: document.getElementById("updateToast"),
+      updateToastVersion: document.getElementById("updateToastVersion"),
+      updateToastNote: document.getElementById("updateToastNote"),
       btnUpdateApp: document.getElementById("btnUpdateApp"),
       btnUpdateLater: document.getElementById("btnUpdateLater")
     };

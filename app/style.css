@@ -825,6 +825,22 @@ select {
   padding: 10px;
   z-index: 5;
 }
+.update-toast-main {
+  display: grid;
+  gap: 2px;
+  margin-right: 8px;
+  min-width: 0;
+}
+.update-toast-main strong,
+.update-toast-main span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.update-toast-main span {
+  opacity: .9;
+  font-size: 12px;
+}
 .hidden { display: none !important; }
 .desktop-only { display:none; }
 body.voice-append #editor { background: color-mix(in srgb, var(--panel) 92%, #0ea5e9 8%); }
