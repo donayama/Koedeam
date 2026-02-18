@@ -484,6 +484,42 @@ def run(base_url: str) -> int:
         if range_toolbar_state["value"] != "HELLO WORLD":
             failures.append("range toolbar: cut/paste buttons did not restore expected text")
 
+        # 2.56) Document List action rail layout (desktop: open button stays on right side)
+        page.evaluate("() => document.getElementById('btnBrandDocuments')?.click()")
+        page.wait_for_timeout(120)
+        doc_layout = page.evaluate(
+            """() => {
+              const row = document.querySelector('#documentsList .doc-item-row');
+              const main = row?.querySelector('.doc-main');
+              const rail = row?.querySelector('.doc-actions-rail');
+              const openBtn = row?.querySelector('button[data-doc-act="open"]');
+              if (!row || !main || !rail || !openBtn) {
+                return { hasLayout: false, openRight: false, actions: 0, compact: false };
+              }
+              const mainRect = main.getBoundingClientRect();
+              const openRect = openBtn.getBoundingClientRect();
+              const rowStyle = window.getComputedStyle(row).gridTemplateColumns || '';
+              const actions = rail.querySelectorAll('button[data-doc-act]').length;
+              return {
+                hasLayout: true,
+                openRight: openRect.left >= (mainRect.right - 2),
+                actions,
+                compact: rowStyle.trim() === '1fr'
+              };
+            }"""
+        )
+        report["document_list_layout"] = doc_layout
+        if not doc_layout["hasLayout"]:
+            failures.append("document list: layout wrappers are missing")
+        if doc_layout["actions"] < 2:
+            failures.append("document list: open/delete actions are incomplete")
+        if doc_layout["compact"]:
+            failures.append("document list: desktop layout unexpectedly collapsed")
+        if not doc_layout["openRight"]:
+            failures.append("document list: open button is not aligned on the right side")
+        page.evaluate("() => document.getElementById('btnCloseSidebar')?.click()")
+        page.wait_for_timeout(80)
+
         # 2.6) Time menu insert/expand behavior
         page.evaluate("""() => document.getElementById('btnEditModeEdit')?.click()""")
         page.evaluate(
@@ -1221,6 +1257,7 @@ def run(base_url: str) -> int:
     print(f"Transition Matrix: {as_bool(all(not f.startswith('transition:') for f in failures))}")
     print(f"Keyboard Proxy: {as_bool('keyboard proxy: bottombar did not move with --kb-offset' not in failures and 'keyboard proxy: edit panel did not move with --kb-offset' not in failures)}")
     print(f"Edit Mode Split: {as_bool(all(not f.startswith('edit mode:') for f in failures))}")
+    print(f"Document List Layout: {as_bool(all(not f.startswith('document list:') for f in failures))}")
     print(f"Time Menu: {as_bool(all(not f.startswith('time menu:') for f in failures))}")
     print(f"Undo/Redo: {as_bool(all(not f.startswith('undo:') and not f.startswith('redo:') for f in failures))}")
     print(f"Telemetry Export: {as_bool(all(not f.startswith('telemetry:') for f in failures))}")

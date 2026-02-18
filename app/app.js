@@ -1407,20 +1407,24 @@
       const chars = text.length;
       const lines = text ? text.split("\n").length : 0;
       const snippet = preview(text);
-      return `<div class="dialog-item">
-        <div class="dialog-item-head">
-          <strong>${active ? "● " : ""}${escapeHtml(doc.title || "無題ドキュメント")}</strong>
-          <small>${new Date(doc.updatedAt || Date.now()).toLocaleString()}</small>
-        </div>
-        <div class="doc-meta">
-          <span>${chars}字</span>
-          <span>${lines}行</span>
-          <span>ID:${escapeHtml(doc.id.slice(-6))}</span>
-        </div>
-        <p class="compact-preview">${escapeHtml(snippet || "（本文なし）")}</p>
-        <div class="dialog-actions">
-          <button type="button" data-doc-act="open" data-id="${doc.id}">開く</button>
-          <button type="button" data-doc-act="delete" data-id="${doc.id}">削除</button>
+      return `<div class="dialog-item doc-item">
+        <div class="doc-item-row">
+          <div class="doc-main">
+            <div class="dialog-item-head doc-item-head">
+              <strong>${active ? "● " : ""}${escapeHtml(doc.title || "無題ドキュメント")}</strong>
+              <small>${new Date(doc.updatedAt || Date.now()).toLocaleString()}</small>
+            </div>
+            <div class="doc-meta">
+              <span>${chars}字</span>
+              <span>${lines}行</span>
+              <span>ID:${escapeHtml(doc.id.slice(-6))}</span>
+            </div>
+            <p class="compact-preview">${escapeHtml(snippet || "（本文なし）")}</p>
+          </div>
+          <div class="doc-actions-rail">
+            <button type="button" class="doc-open-btn" data-doc-act="open" data-id="${doc.id}">開く</button>
+            <button type="button" data-doc-act="delete" data-id="${doc.id}">削除</button>
+          </div>
         </div>
       </div>`;
     }).join("");
