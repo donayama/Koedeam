@@ -36,7 +36,17 @@
     { id: uid(), name: "PRDたたき台", text: "# PRD Draft\n## 背景\n\n## 課題\n\n## 目標\n\n## 機能要件\n- \n\n## 非機能要件\n- \n\n## 受け入れ条件\n- ", updatedAt: Date.now() },
     { id: uid(), name: "障害報告テンプレ", text: "# 障害報告\n- 発生日:\n- 影響範囲:\n- 検知方法:\n\n## 原因\n\n## 暫定対応\n\n## 恒久対応\n\n## 再発防止\n", updatedAt: Date.now() },
     { id: uid(), name: "翻訳依頼（日→英）", text: "次の日本語を自然なビジネス英語に翻訳してください。\n語調: 丁寧 / 簡潔\n\n[原文]\n", updatedAt: Date.now() },
-    { id: uid(), name: "チェックリスト作成", text: "次の作業内容をチェックリスト化してください。\n優先度(高/中/低)も付けてください。\n\n[作業内容]\n", updatedAt: Date.now() }
+    { id: uid(), name: "チェックリスト作成", text: "次の作業内容をチェックリスト化してください。\n優先度(高/中/低)も付けてください。\n\n[作業内容]\n", updatedAt: Date.now() },
+    { id: uid(), name: "1on1メモ", text: "# 1on1メモ\n- 日時:\n- 参加者:\n\n## 話したこと\n- \n\n## 困りごと\n- \n\n## 次回までのアクション\n- [ ] ", updatedAt: Date.now() },
+    { id: uid(), name: "日報", text: "# 日報\n- 日付:\n\n## 今日やったこと\n- \n\n## 学び・気づき\n- \n\n## 明日やること\n- [ ] ", updatedAt: Date.now() },
+    { id: uid(), name: "週報", text: "# 週報\n- 週:\n\n## 今週の成果\n- \n\n## 課題\n- \n\n## 来週の計画\n- [ ] ", updatedAt: Date.now() },
+    { id: uid(), name: "ユーザーインタビュー要約", text: "次のインタビュー記録を要約してください。\n出力: 1)発見 2)課題 3)改善仮説\n\n[記録]\n", updatedAt: Date.now() },
+    { id: uid(), name: "リリースノート草案", text: "# リリースノート\n- バージョン:\n- 日付:\n\n## 追加\n- \n\n## 改善\n- \n\n## 修正\n- \n\n## 既知の問題\n- ", updatedAt: Date.now() },
+    { id: uid(), name: "仕様レビュー依頼", text: "次の仕様文をレビューしてください。\n観点: 抜け漏れ / 曖昧表現 / テスト観点\n\n[仕様]\n", updatedAt: Date.now() },
+    { id: uid(), name: "営業フォロー文面", text: "件名：先日のご相談の件\n\n○○様\n\nお世話になっております。\n先日のご相談について、要点を以下に整理しました。\n\n- \n\nご不明点があればご連絡ください。", updatedAt: Date.now() },
+    { id: uid(), name: "採用面談メモ", text: "# 面談メモ\n- 候補者:\n- 面談日:\n\n## 強み\n- \n\n## 懸念点\n- \n\n## 次アクション\n- [ ] ", updatedAt: Date.now() },
+    { id: uid(), name: "会議アジェンダ", text: "# 会議アジェンダ\n- 日時:\n- 参加者:\n- 目的:\n\n## 議題\n1. \n2. \n3. \n\n## 期待アウトプット\n- ", updatedAt: Date.now() },
+    { id: uid(), name: "意思決定ログ", text: "# 意思決定ログ\n- 日付:\n- テーマ:\n\n## 選択肢\n- A:\n- B:\n\n## 判断理由\n- \n\n## 決定事項\n- \n\n## 見直し条件\n- ", updatedAt: Date.now() }
   ];
 
   const VOICE_COMMAND_ALIASES = Object.freeze({
