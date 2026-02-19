@@ -138,11 +138,48 @@ Add release/version message surface tied to update notification.
 - Show concise per-version change note when update is available.
 - merged to main: `0a93f7a`
 
+## WI-122 (implement) Voice Command Unmatched Trace Visibility [todo][P1]
+When a voice command is not matched, explicitly show what was recognized and why it was rejected.
+- Clarify raw/normalized command text and dictionary mismatch reason in UI feedback.
+- Scope: troubleshooting visibility only (no command execution expansion in this WI).
+
+## WI-123 (prepare→implement) Voice Stop Failure Recovery Fallback [doing][P1]
+If voice stop fails, apply fallback recovery (e.g., forced restart then stop) to guarantee OFF transition.
+- Audit whether current lifecycle/error recovery already covers this path.
+- Add deterministic test cases for stop-failure scenarios.
+
+## WI-124 (consider) Command Dictionary Switching Strategy [todo][P2]
+Define how command dictionaries can be switched by context/preset without degrading reliability.
+- Cover data structure, runtime switching trigger, and UI affordance.
+
+## WI-125 (consider→implement) Candidate Feature Value Review (Keep/Remove) [todo][P2]
+Evaluate whether candidate-selection provides practical value in real usage.
+- Decide keep/remove criteria based on dogfooding + telemetry/replay evidence.
+
+## WI-126 (consider) AI Assist Feedback UX (OpenAI/Gemini) [todo][P2]
+Define minimal and practical execution/feedback UX for AI API actions in a memo-first editor.
+- Keep scope aligned with single-pane memo workflow (no complex multi-view assumptions).
+
+## WI-127 (consider) iOS Shortcuts Integration Examples [todo][P2]
+Collect and document useful iOS Shortcuts interop patterns for Koedeam workflows.
+- Focus on practical templates and reproducible steps.
+
+## WI-128 (consider) Cross-Platform Speech Engine Options Survey [todo][P2]
+Survey speech-recognition engine options usable on both smartphone and PC.
+- Compare capability, privacy, latency, and deployment fit for Koedeam constraints.
+
 ### Recommended Processing Order (Dogfooding)
 1. WI-114 `[doing][P1]` Snapshot model unification completion
-2. WI-304 `[P1]` 方針見直し（音声プライバシー同意導線）
-3. WI-503 `[pending]` GitHub Actions Workflow
-4. WI-119 `[P3][pending]` IndexedDB migration plan
+2. WI-122 `[P1]` unmatched command trace visibility
+3. WI-123 `[P1]` voice stop failure recovery fallback
+4. WI-304 `[P1]` 方針見直し（音声プライバシー同意導線）
+5. WI-503 `[pending]` GitHub Actions Workflow
+6. WI-124 `[P2]` dictionary switching strategy
+7. WI-125 `[P2]` candidate feature keep/remove review
+8. WI-126 `[P2]` AI assist feedback UX
+9. WI-127 `[P2]` iOS Shortcuts examples
+10. WI-128 `[P2]` speech engine options survey
+11. WI-119 `[P3][pending]` IndexedDB migration plan
 
 ---
 

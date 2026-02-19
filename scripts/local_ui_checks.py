@@ -41,6 +41,10 @@ SPEECH_STUB = r"""
     }
     stop() {
       window.__speechMock.stopCount += 1;
+      if (window.__speechMock.dropNextStopEnd) {
+        window.__speechMock.dropNextStopEnd = false;
+        return;
+      }
       this._emit('end');
     }
   }
@@ -49,6 +53,10 @@ SPEECH_STUB = r"""
     instances: [],
     startCount: 0,
     stopCount: 0,
+    dropNextStopEnd: false,
+    failNextStopEnd() {
+      this.dropNextStopEnd = true;
+    },
     emitError(error) {
       const rec = this.instances[0];
       if (!rec) return;
@@ -951,6 +959,39 @@ def run(base_url: str) -> int:
             failures.append("voice: mic second click did not stop session")
         if "VOICE:OFF" not in stopped_state["statusInput"]:
             failures.append("voice: input state did not return to VOICE_OFF on stop")
+
+        # 3.0) Stop failure fallback: if stop loses end event, app should recover to OFF.
+        page.click("#btnMic")
+        page.wait_for_timeout(60)
+        stop_fail_before = page.evaluate(
+            """() => ({
+              startCount: window.__speechMock.startCount,
+              stopCount: window.__speechMock.stopCount
+            })"""
+        )
+        page.evaluate("window.__speechMock.failNextStopEnd()")
+        page.click("#btnMic")
+        page.wait_for_timeout(1500)
+        stop_fail_state = page.evaluate(
+            """() => ({
+              startCount: window.__speechMock.startCount,
+              stopCount: window.__speechMock.stopCount,
+              statusInput: document.getElementById('statusInput')?.textContent || '',
+              micLabel: document.getElementById('btnMic')?.textContent || ''
+            })"""
+        )
+        report["voice_stop_fallback"] = {
+            "before": stop_fail_before,
+            "after": stop_fail_state,
+        }
+        if stop_fail_state["startCount"] <= stop_fail_before["startCount"]:
+            failures.append("voice fallback: stop failure did not attempt restart recovery")
+        if stop_fail_state["stopCount"] <= stop_fail_before["stopCount"] + 1:
+            failures.append("voice fallback: stop failure did not attempt retry stop")
+        if "VOICE:OFF" not in stop_fail_state["statusInput"]:
+            failures.append("voice fallback: stop failure did not converge to VOICE_OFF")
+        if "音声入力" not in stop_fail_state["micLabel"]:
+            failures.append("voice fallback: mic label did not return to standby")
 
         # 3.1) Command mode + keyboard selection + voice cut
         page.click("#btnMenu")

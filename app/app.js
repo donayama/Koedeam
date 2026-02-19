@@ -217,6 +217,8 @@
     voiceSessionState: "STOPPED",
     voiceRestartTimer: null,
     voiceRestartAttempt: 0,
+    voiceStopFallbackTimer: null,
+    voiceStopFallbackStopTimer: null,
     voiceManualStop: false,
     voicePending: false,
     voiceCueCtx: null,
@@ -2387,6 +2389,19 @@
       clearTimeout(state.voiceRestartTimer);
       state.voiceRestartTimer = null;
     };
+    const STOP_FALLBACK_WAIT_MS = 650;
+    const STOP_FALLBACK_RETRY_DELAY_MS = 120;
+    const STOP_FALLBACK_FORCE_OFF_MS = 650;
+    const clearStopFallbackTimers = () => {
+      if (state.voiceStopFallbackTimer) {
+        clearTimeout(state.voiceStopFallbackTimer);
+        state.voiceStopFallbackTimer = null;
+      }
+      if (state.voiceStopFallbackStopTimer) {
+        clearTimeout(state.voiceStopFallbackStopTimer);
+        state.voiceStopFallbackStopTimer = null;
+      }
+    };
 
     const applyVoiceSessionState = (next) => {
       state.voiceSessionState = next;
@@ -2477,22 +2492,104 @@
 
     const requestStopVoice = () => {
       clearRestartTimer();
+      clearStopFallbackTimers();
       state.voiceManualStop = true;
       state.speaking = false;
+      setVoicePending(false);
       applyVoiceSessionState("STOPPED");
       sessionRecord("voice.stop.requested", { reason: "manual" });
-      voiceEngine.stop();
+      state.voiceStopFallbackTimer = setTimeout(() => {
+        state.voiceStopFallbackTimer = null;
+        if (!state.voiceManualStop) return;
+        sessionRecord("voice.stop.fallback", { reason: "manual", phase: "retry-start" });
+        try {
+          state.voiceManualStop = false;
+          voiceEngine.start();
+        } catch (err) {
+          state.voiceManualStop = true;
+          sessionRecord("voice.stop.fallback", { reason: "manual", phase: "retry-start-failed", error: `${err?.name || err?.message || "unknown"}` });
+          sweepVoiceLeakAndForceOff("stop-fallback-manual-start-failed");
+          return;
+        }
+        state.voiceManualStop = true;
+        state.speaking = false;
+        applyVoiceSessionState("STOPPED");
+        state.voiceStopFallbackStopTimer = setTimeout(() => {
+          state.voiceStopFallbackStopTimer = null;
+          if (!state.voiceManualStop) return;
+          sessionRecord("voice.stop.fallback", { reason: "manual", phase: "retry-stop" });
+          try {
+            voiceEngine.stop();
+          } catch (err) {
+            sessionRecord("voice.stop.fallback", { reason: "manual", phase: "retry-stop-failed", error: `${err?.name || err?.message || "unknown"}` });
+            sweepVoiceLeakAndForceOff("stop-fallback-manual-stop-failed");
+            return;
+          }
+          state.voiceStopFallbackStopTimer = setTimeout(() => {
+            state.voiceStopFallbackStopTimer = null;
+            if (!state.voiceManualStop) return;
+            sessionRecord("voice.stop.fallback", { reason: "manual", phase: "force-off" });
+            sweepVoiceLeakAndForceOff("stop-fallback-manual-force-off");
+          }, STOP_FALLBACK_FORCE_OFF_MS);
+        }, STOP_FALLBACK_RETRY_DELAY_MS);
+      }, STOP_FALLBACK_WAIT_MS);
+      try {
+        voiceEngine.stop();
+      } catch (err) {
+        sessionRecord("voice.stop.failed", { reason: "manual", error: `${err?.name || err?.message || "unknown"}` });
+      }
     };
 
     const stopVoiceByLifecycle = (reason) => {
       if (!state.speaking) return;
       if (state.voiceManualStop) return;
       clearRestartTimer();
+      clearStopFallbackTimers();
       state.voiceManualStop = true;
       state.speaking = false;
+      setVoicePending(false);
       applyVoiceSessionState("STOPPED");
       sessionRecord("voice.stop.lifecycle", { reason });
-      voiceEngine.stop();
+      state.voiceStopFallbackTimer = setTimeout(() => {
+        state.voiceStopFallbackTimer = null;
+        if (!state.voiceManualStop) return;
+        sessionRecord("voice.stop.fallback", { reason: `lifecycle:${reason}`, phase: "retry-start" });
+        try {
+          state.voiceManualStop = false;
+          voiceEngine.start();
+        } catch (err) {
+          state.voiceManualStop = true;
+          sessionRecord("voice.stop.fallback", { reason: `lifecycle:${reason}`, phase: "retry-start-failed", error: `${err?.name || err?.message || "unknown"}` });
+          sweepVoiceLeakAndForceOff(`stop-fallback-lifecycle-${reason}-start-failed`);
+          return;
+        }
+        state.voiceManualStop = true;
+        state.speaking = false;
+        applyVoiceSessionState("STOPPED");
+        state.voiceStopFallbackStopTimer = setTimeout(() => {
+          state.voiceStopFallbackStopTimer = null;
+          if (!state.voiceManualStop) return;
+          sessionRecord("voice.stop.fallback", { reason: `lifecycle:${reason}`, phase: "retry-stop" });
+          try {
+            voiceEngine.stop();
+          } catch (err) {
+            sessionRecord("voice.stop.fallback", { reason: `lifecycle:${reason}`, phase: "retry-stop-failed", error: `${err?.name || err?.message || "unknown"}` });
+            sweepVoiceLeakAndForceOff(`stop-fallback-lifecycle-${reason}-stop-failed`);
+            return;
+          }
+          state.voiceStopFallbackStopTimer = setTimeout(() => {
+            state.voiceStopFallbackStopTimer = null;
+            if (!state.voiceManualStop) return;
+            sessionRecord("voice.stop.fallback", { reason: `lifecycle:${reason}`, phase: "force-off" });
+            sweepVoiceLeakAndForceOff(`stop-fallback-lifecycle-${reason}-force-off`);
+          }, STOP_FALLBACK_FORCE_OFF_MS);
+        }, STOP_FALLBACK_RETRY_DELAY_MS);
+      }, STOP_FALLBACK_WAIT_MS);
+      try {
+        voiceEngine.stop();
+      } catch (err) {
+        sessionRecord("voice.stop.failed", { reason: `lifecycle:${reason}`, error: `${err?.name || err?.message || "unknown"}` });
+      }
       toast("復帰検知のため音声入力を停止しました");
     };
 
@@ -2511,6 +2608,7 @@
 
     const sweepVoiceLeakAndForceOff = (reason) => {
       clearRestartTimer();
+      clearStopFallbackTimers();
       setVoicePending(false);
       state.voiceManualStop = false;
       state.speaking = false;
@@ -2706,6 +2804,7 @@
         state.speaking = false;
         setVoicePending(false);
         clearRestartTimer();
+        clearStopFallbackTimers();
         applyVoiceSessionState("STOPPED");
         applyInputState("VOICE_OFF");
         closeTelemetrySession("error");
@@ -2713,6 +2812,7 @@
         return;
       }
       if (type === "end") {
+        clearStopFallbackTimers();
         if (state.voiceManualStop) {
           state.voiceManualStop = false;
           state.speaking = false;
@@ -2743,6 +2843,7 @@
       }
       applyRecognitionRuntimeSettings();
       try {
+        clearStopFallbackTimers();
         clearRestartTimer();
         applyVoiceSessionState("PERMISSION_WAIT");
         state.voiceManualStop = false;
@@ -2756,6 +2857,7 @@
     state.stopVoiceInput = requestStopVoice;
     state.startVoiceInput = () => {
       applyRecognitionRuntimeSettings();
+      clearStopFallbackTimers();
       clearRestartTimer();
       applyVoiceSessionState("PERMISSION_WAIT");
       state.voiceManualStop = false;
