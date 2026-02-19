@@ -2805,14 +2805,23 @@
       .replace(/[、。,.!！?？]/g, "");
   }
 
+  function summarizeCommandTraceText(raw, max = 24) {
+    const compact = String(raw || "").trim().replace(/[　\s]+/g, " ");
+    if (compact.length <= max) return compact;
+    return `${compact.slice(0, max)}…`;
+  }
+
   function runVoiceCommand(rawText) {
     const normalized = normalizeVoiceCommandPhrase(rawText);
-    if (!normalized) return;
+    const rawShown = summarizeCommandTraceText(rawText);
+    if (!normalized) {
+      toast(`コマンド一致なし raw:${rawShown || "(empty)"} norm:(empty) reason:正規化後空文字`, 2600, "warning");
+      return;
+    }
     const action = VOICE_COMMAND_DICT[normalized];
     if (!action) {
-      const raw = String(rawText || "").trim().replace(/[　\s]+/g, " ");
-      const shown = raw.length > 24 ? `${raw.slice(0, 24)}…` : raw;
-      toast(`コマンド一致なし: ${shown}`, 2200, "warning");
+      const normShown = summarizeCommandTraceText(normalized);
+      toast(`コマンド一致なし raw:${rawShown} norm:${normShown} reason:辞書未登録`, 2600, "warning");
       return;
     }
     executeVoiceCommandAction(action);

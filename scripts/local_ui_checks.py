@@ -1250,6 +1250,43 @@ def run(base_url: str) -> int:
             replay_page.click("#btnCloseSearch")
             replay_page.wait_for_timeout(80)
 
+        # command mode: unmatched command should show trace(raw/norm/reason)
+        replay_page.evaluate(
+            """() => {
+              const ta = document.getElementById('editor');
+              ta.value = 'BASE';
+              ta.focus();
+              ta.setSelectionRange(4, 4);
+              window.__KOEDEAM_TEST__?.setReplayEvents?.([
+                { type: 'start', atMs: 0 },
+                { type: 'result', atMs: 50, isFinal: true, text: '検索して', confidence: 0.9 },
+                { type: 'end', atMs: 220 }
+              ]);
+            }"""
+        )
+        replay_page.click("#btnMic")
+        replay_page.wait_for_timeout(500)
+        command_unmatched_state = replay_page.evaluate(
+            """() => ({
+              message: document.getElementById('appMessage')?.textContent || '',
+              tone: document.getElementById('appMessage')?.dataset?.tone || '',
+              editorValue: document.getElementById('editor')?.value || ''
+            })"""
+        )
+        replay_report["command_unmatched_trace"] = command_unmatched_state
+        if "コマンド一致なし" not in command_unmatched_state["message"]:
+            failures.append("replay command: unmatched message was not shown")
+        if "raw:検索して" not in command_unmatched_state["message"]:
+            failures.append("replay command: unmatched message missing raw trace")
+        if "norm:検索して" not in command_unmatched_state["message"]:
+            failures.append("replay command: unmatched message missing normalized trace")
+        if "reason:辞書未登録" not in command_unmatched_state["message"]:
+            failures.append("replay command: unmatched message missing reason")
+        if command_unmatched_state["tone"] != "warning":
+            failures.append("replay command: unmatched trace should be warning tone")
+        if command_unmatched_state["editorValue"] != "BASE":
+            failures.append("replay command: unmatched command inserted transcript unexpectedly")
+
         # command mode: stop command should switch mode back to cursor
         replay_page.click("#btnMenu")
         replay_page.click("button[data-menu='settings']")
