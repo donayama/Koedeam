@@ -160,9 +160,11 @@ Evaluate whether candidate-selection provides practical value in real usage.
 Define minimal and practical execution/feedback UX for AI API actions in a memo-first editor.
 - Keep scope aligned with single-pane memo workflow (no complex multi-view assumptions).
 
-## WI-127 (consider) iOS Shortcuts Integration Examples [todo][P2]
+## WI-127 (consider) iOS Shortcuts Integration Examples [rejected][P2]
 Collect and document useful iOS Shortcuts interop patterns for Koedeam workflows.
 - Focus on practical templates and reproducible steps.
+- decision: iOS Shortcuts integration is not required for current product direction.
+- note: investigation memo kept at `docs/specs/wi-127-ios-shortcuts-integration.md` for future reference.
 
 ## WI-128 (consider) Cross-Platform Speech Engine Options Survey [rejected][P2]
 Survey speech-recognition engine options usable on both smartphone and PC.
@@ -178,7 +180,7 @@ Survey speech-recognition engine options usable on both smartphone and PC.
 6. WI-124 `[P2]` dictionary switching strategy
 7. WI-125 `[P2]` candidate feature keep/remove review
 8. WI-126 `[P2]` AI assist feedback UX
-9. WI-127 `[P2]` iOS Shortcuts examples
+9. WI-127 `[rejected]` iOS Shortcuts examples
 10. WI-128 `[rejected]` speech engine options survey
 11. WI-119 `[P3][pending]` IndexedDB migration plan
 
@@ -238,3 +240,5 @@ Add first-run informed notice for voice recognition transparency.
 
 ## WI-511 (prepare→implement) Playwright fake-mic WAV input (Chromium optional) [rejected]
 - closed without merge: fake-mic WAV path proved unstable for deterministic verification in current environment.
+
+
