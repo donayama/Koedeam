@@ -164,9 +164,10 @@ Define minimal and practical execution/feedback UX for AI API actions in a memo-
 Collect and document useful iOS Shortcuts interop patterns for Koedeam workflows.
 - Focus on practical templates and reproducible steps.
 
-## WI-128 (consider) Cross-Platform Speech Engine Options Survey [todo][P2]
+## WI-128 (consider) Cross-Platform Speech Engine Options Survey [rejected][P2]
 Survey speech-recognition engine options usable on both smartphone and PC.
 - Compare capability, privacy, latency, and deployment fit for Koedeam constraints.
+- decision: keep current approach (existing browser-based voice input path) for now.
 
 ### Recommended Processing Order (Dogfooding)
 1. WI-114 `[doing][P1]` Snapshot model unification completion
@@ -178,7 +179,7 @@ Survey speech-recognition engine options usable on both smartphone and PC.
 7. WI-125 `[P2]` candidate feature keep/remove review
 8. WI-126 `[P2]` AI assist feedback UX
 9. WI-127 `[P2]` iOS Shortcuts examples
-10. WI-128 `[P2]` speech engine options survey
+10. WI-128 `[rejected]` speech engine options survey
 11. WI-119 `[P3][pending]` IndexedDB migration plan
 
 ---
